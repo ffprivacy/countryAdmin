@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "countryAdmin"
+version = "0.1.0"
+description = "Simple country admin"
+authors = ["ffprivacy <ffprivacy@netcourrier.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+toml = "^0.10.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+countryAdmin = 'countryAdmin.countryAdmin:main'
