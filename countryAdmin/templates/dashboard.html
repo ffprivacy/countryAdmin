@@ -1,0 +1,14 @@
+<html>
+	<body>
+		dashboard
+		{% for process in processes %}
+		      <li>eco={{ process.economic }} env={{ process.environmental }} soc={{ process.social }}</li>
+		{% endfor %}
+		<form action="/dashboard" method="POST">
+			<input type="number" name="economic" />
+			<input type="number" name="environmental" />
+			<input type="number" name="social">
+			<input type="submit" value="Submit">
+		</form>
+	</body>
+</html>
