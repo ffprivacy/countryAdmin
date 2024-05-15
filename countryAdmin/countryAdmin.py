@@ -12,9 +12,11 @@ db = SQLAlchemy(app)
 # Define Process model
 class Process(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    process_id = db.Column(db.Integer, primary_key=False)
     economic = db.Column(db.Float)
     environmental = db.Column(db.Float)
     social = db.Column(db.Integer)
+    selected = db.Column(db.Boolean, default=False)  # Add selected attribute
 
 # Define User model
 class User(db.Model):
@@ -37,6 +39,13 @@ with app.app_context():
 def index():
     return render_template('index.html')
 
+@app.route('/reset_database', methods=['POST'])
+def reset_database():
+    # Delete all records in the Process table
+    db.session.query(Process).delete()
+    db.session.commit()
+    return redirect(url_for('dashboard'))
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -57,6 +66,15 @@ def login():
             return redirect(url_for('dashboard'))
     return render_template('login.html')
 
+@app.route('/select_process', methods=['POST'])
+def select_process():
+    id = request.form.get('id')
+    process = Process.query.get(id)
+    if process:
+        process.selected = not process.selected
+        db.session.commit()
+    return redirect(url_for('dashboard'))
+
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
     if request.method == 'POST':
@@ -64,11 +82,21 @@ def dashboard():
         economic = float(request.form['economic'])
         environmental = float(request.form['environmental'])
         social = int(request.form['social'])
+        process_id = int(request.form['process_id'])
         new_process = Process(economic=economic, environmental=environmental, social=social)
+        selected = db.Column(db.Boolean, default=False)  # New field for selected status
         db.session.add(new_process)
         db.session.commit()
+
     processes = Process.query.all()
-    return render_template('dashboard.html', processes=processes)
+
+    # Calculate total metrics for each kind in the selected governance
+    selected_processes = Process.query.filter_by(selected=True).all()
+    total_economic = sum(process.economic for process in selected_processes)
+    total_environmental = sum(process.environmental for process in selected_processes)
+    total_social = sum(process.social for process in selected_processes)
+
+    return render_template('dashboard.html', processes=processes, total_economic=total_economic, total_environmental=total_environmental, total_social=total_social)
 
 def main():
     app.run(debug=True, port=5000)
