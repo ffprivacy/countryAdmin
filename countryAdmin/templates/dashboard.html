@@ -1,33 +1,32 @@
 <html>
-	<head>
-	    <title>Dashboard</title>
-    	<script src="{{ url_for('static', filename='dashboard.js') }}" defer></script>
-	</head>
-	<body>
-		Dashboard
+<head>
+    <title>Dashboard</title>
+    <script src="/static/dashboard.js" defer=""></script>
+</head>
+<body>
+    <h1>Dashboard</h1>
 
-		<form action="/reset_database" method="POST">
-		    <button type="submit">Reset Database</button>
-		</form>
+    <form action="/reset_database" method="POST">
+        <button type="submit">Reset Database</button>
+    </form>
 
-		<h2>Total Metrics for Selected Governance:</h2>
-    <p>Total Economic Impact: {{ total_economic }}</p>
-    <p>Total Environmental Impact: {{ total_environmental }}</p>
-    <p>Total Social Impact: {{ total_social }}</p>
+    <h2>Total Metrics for Selected Governance:</h2>
+    <p id="total-economic">Total Economic Impact: 0</p>
+    <p id="total-environmental">Total Environmental Impact: 0</p>
+    <p id="total-social">Total Social Impact: 0</p>
 
-		<form action="/dashboard" method="POST" id="process-form">
-			<label for="economic">economic</label>
-			<input type="number" name="economic" value=10 />
-			<label for="environmental">environmental</label>
-			<input type="number" name="environmental" value=10 />
-			<label for="process_id">Process Identifier:</label>
-			<input type="number" name="process_id" id="process_id" value=10 required>
-			<label for="social">social</label>
-			<input type="number" name="social" value=10>
-			<input type="submit" value="Submit" id="submit-btn">
-		</form>
+    <form action="/dashboard" method="POST" id="process-form">
+        <label for="economic">economic</label>
+        <input type="number" name="economic" value="10">
+        <label for="environmental">environmental</label>
+        <input type="number" name="environmental" value="10">
+        <label for="process_id">Process Identifier:</label>
+        <input type="number" name="process_id" id="process_id" value="10" required="">
+        <label for="social">social</label>
+        <input type="number" name="social" value="10">
+        <input type="submit" value="Submit" id="submit-btn">
+    </form>
 
-		<ul id="process-list"></ul>
-
-	</body>
+    <ul id="process-list"></ul>
+</body>
 </html>
