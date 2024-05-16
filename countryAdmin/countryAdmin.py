@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -16,7 +16,7 @@ class Process(db.Model):
     economic = db.Column(db.Float)
     environmental = db.Column(db.Float)
     social = db.Column(db.Integer)
-    selected = db.Column(db.Boolean, default=False)  # Define selected attribute here
+    selected = db.Column(db.Boolean, default=False)
 
 # Define User model
 class User(db.Model):
@@ -83,7 +83,7 @@ def dashboard():
         environmental = float(request.form['environmental'])
         social = int(request.form['social'])
         process_id = int(request.form['process_id'])
-        new_process = Process(process_id=process_id, economic=economic, environmental=environmental, social=social, selected=True)  # selected=True
+        new_process = Process(process_id=process_id, economic=economic, environmental=environmental, social=social, selected=True)
         db.session.add(new_process)
         db.session.commit()
 
@@ -97,6 +97,22 @@ def dashboard():
 
     return render_template('dashboard.html', processes=processes, total_economic=total_economic, total_environmental=total_environmental, total_social=total_social)
 
+# Endpoint to retrieve processes as JSON
+@app.route('/get_processes', methods=['GET'])
+def get_processes():
+    processes = Process.query.all()
+    process_list = []
+    for process in processes:
+        process_data = {
+            'id': process.id,
+            'process_id': process.process_id,
+            'economic': process.economic,
+            'environmental': process.environmental,
+            'social': process.social,
+            'selected': process.selected
+        }
+        process_list.append(process_data)
+    return jsonify(process_list)
 
 def main():
     app.run(debug=True, port=5000)

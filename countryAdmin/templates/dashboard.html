@@ -9,23 +9,13 @@
 		<form action="/reset_database" method="POST">
 		    <button type="submit">Reset Database</button>
 		</form>
-	
-		{% for process in processes %}
-					<li>
-	            id={{ process.process_id }} eco={{ process.economic }}, env={{ process.environmental }}, soc={{ process.social }}
-	            <form action="/select_process" method="POST">
-	                <input class="submit-btn" type="checkbox" name="selected" value="{{ process.selected }}" {% if process.selected %}checked{% endif %}>
-									<input type="number" name="id" value="{{ process.id }}" hidden>
-	            </form>
-	        </li>
-		{% endfor %}
 
 		<h2>Total Metrics for Selected Governance:</h2>
     <p>Total Economic Impact: {{ total_economic }}</p>
     <p>Total Environmental Impact: {{ total_environmental }}</p>
     <p>Total Social Impact: {{ total_social }}</p>
 
-		<form action="/dashboard" method="POST">
+		<form action="/dashboard" method="POST" id="process-form">
 			<label for="economic">economic</label>
 			<input type="number" name="economic" value=10 />
 			<label for="environmental">environmental</label>
@@ -34,7 +24,10 @@
 			<input type="number" name="process_id" id="process_id" value=10 required>
 			<label for="social">social</label>
 			<input type="number" name="social" value=10>
-			<input type="submit" value="Submit">
+			<input type="submit" value="Submit" id="submit-btn">
 		</form>
+
+		<ul id="process-list"></ul>
+
 	</body>
 </html>
