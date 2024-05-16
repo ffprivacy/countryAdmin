@@ -12,11 +12,11 @@ db = SQLAlchemy(app)
 # Define Process model
 class Process(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    process_id = db.Column(db.Integer, primary_key=False)
+    process_id = db.Column(db.Integer, unique=True, nullable=False)
     economic = db.Column(db.Float)
     environmental = db.Column(db.Float)
     social = db.Column(db.Integer)
-    selected = db.Column(db.Boolean, default=False)  # Add selected attribute
+    selected = db.Column(db.Boolean, default=False)  # Define selected attribute here
 
 # Define User model
 class User(db.Model):
@@ -37,7 +37,7 @@ with app.app_context():
 # Routes
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('dashboard.html')
 
 @app.route('/reset_database', methods=['POST'])
 def reset_database():
@@ -83,8 +83,7 @@ def dashboard():
         environmental = float(request.form['environmental'])
         social = int(request.form['social'])
         process_id = int(request.form['process_id'])
-        new_process = Process(economic=economic, environmental=environmental, social=social)
-        selected = db.Column(db.Boolean, default=False)  # New field for selected status
+        new_process = Process(process_id=process_id, economic=economic, environmental=environmental, social=social, selected=True)  # selected=True
         db.session.add(new_process)
         db.session.commit()
 
@@ -97,6 +96,7 @@ def dashboard():
     total_social = sum(process.social for process in selected_processes)
 
     return render_template('dashboard.html', processes=processes, total_economic=total_economic, total_environmental=total_environmental, total_social=total_social)
+
 
 def main():
     app.run(debug=True, port=5000)

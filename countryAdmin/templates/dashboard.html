@@ -1,17 +1,21 @@
-<a href="dashboard.html" id="" title="dashboard">dashboard</a><html>
+<html>
+	<head>
+	    <title>Dashboard</title>
+    	<script src="{{ url_for('static', filename='dashboard.js') }}" defer></script>
+	</head>
 	<body>
-		dashboard
-		
-	<form action="/reset_database" method="POST">
-	    <button type="submit">Reset Database</button>
-	</form>
+		Dashboard
+
+		<form action="/reset_database" method="POST">
+		    <button type="submit">Reset Database</button>
+		</form>
 	
 		{% for process in processes %}
 					<li>
 	            id={{ process.process_id }} eco={{ process.economic }}, env={{ process.environmental }}, soc={{ process.social }}
 	            <form action="/select_process" method="POST">
-	                <input type="checkbox" name="selected" value="{{ process.id }}" {% if process.selected %}checked{% endif %}>
-	                <input type="submit" value="Select">
+	                <input class="submit-btn" type="checkbox" name="selected" value="{{ process.selected }}" {% if process.selected %}checked{% endif %}>
+									<input type="number" name="id" value="{{ process.id }}" hidden>
 	            </form>
 	        </li>
 		{% endfor %}
