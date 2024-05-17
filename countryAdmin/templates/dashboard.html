@@ -1,7 +1,9 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>Dashboard</title>
-    <script src="/static/dashboard.js" defer=""></script>
+    <script src="/static/dashboard.js" defer></script>
 </head>
 <body>
     <h1>Dashboard</h1>
@@ -10,39 +12,44 @@
         <button type="submit">Reset Database</button>
     </form>
 
-		<hr>
-    <h3>Total Metrics for Selected Governance for a given period(eg a year):</h3>
+    <hr>
+    <h3>Total Metrics for Selected Governance for a given period (e.g., a year):</h3>
     <p>Economic: <abc id="total-economic">0</abc> $</p>
-    <p>Environmental co2eq emissions: <abc id="selected-governance-env-emissions">0</abc> kgCO2eq</p>
-    <p>Total social:<abc id="total-social">0</abc></p>
-		<hr>
-		<h3>Governance goals</h3>
-		<form id="filter-form">
-		    <label for="economic-goals">eco</label>
-		    <input type="number" id="economic-goals" name="economic-goals" value="0" required>
-		    <label for="governance-goals-env-emissions">GES emissions in kgCO2eq</label>
-		    <input type="number" id="governance-goals-env-emissions" name="governance-goals-env-emissions" value="0" required>
-		    <label for="social-goals">social</label>
-		    <input type="number" id="social-goals" name="social-goals" value="0" required>
-		    <button type="button" id="btn-adjust">Adjust gov</button>
-		</form>
-		<hr>
-    <form action="/dashboard" method="POST" id="process-form">
+    <p>Environmental CO2eq emissions: <abc id="selected-governance-env-emissions">0</abc> kgCO2eq</p>
+    <p>Total social: <abc id="total-social">0</abc></p>
+    <hr>
+    <h3>Governance goals</h3>
+    <form id="filter-form">
+        <label for="economic-goals">eco</label>
+        <input type="number" id="economic-goals" name="economic-goals" value="0" required>
+        <label for="governance-goals-env-emissions">GES emissions in kgCO2eq</label>
+        <input type="number" id="governance-goals-env-emissions" name="governance-goals-env-emissions" value="0" required>
+        <label for="social-goals">social</label>
+        <input type="number" id="social-goals" name="social-goals" value="0" required>
+        <button type="button" id="btn-adjust">Adjust gov</button>
+    </form>
+    <hr>
+    <form action="/dashboard" method="POST" id="process-form" enctype="multipart/form-data">
         <label for="economic">economic</label>
         <input type="number" name="economic" value="10"><br />
         <label for="envEmissions">GES emissions in kgCO2eq</label>
         <input type="number" name="envEmissions" value="10"><br />
         <label for="process_id">Process Identifier:</label>
-        <input type="number" name="process_id" id="process_id" value="10" required=""><br />
+        <input type="number" name="process_id" id="process_id" value="10" required><br />
         <label for="title">Title</label>
-        <input type="string" name="title"><br />
+        <input type="text" name="title"><br />
         <label for="social">social</label>
         <input type="number" name="social" value="10"><br />
-				<label for="process-example">Upload a default process</label>
-				<input type="file" name="process-example" multiple><br />
+        <label for="process-example">Upload a default process</label>
+        <input type="file" name="process-example" multiple><br />
         <input type="submit" value="Submit" id="submit-btn">
     </form>
-		
+
+    <hr>
+    <button id="export-btn">Export Processes</button>
+    <input type="file" id="import-file" accept="application/json">
+    <button id="import-btn">Import Processes</button>
+
     <ul id="process-list"></ul>
 </body>
 </html>
