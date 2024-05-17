@@ -251,5 +251,70 @@ document.addEventListener('DOMContentLoaded', function() {
             // Optionally, display an error message to the user
         });
     });
+		
+		document.getElementById('export-btn').addEventListener('click', function() {
+	      fetch('/get_processes')
+	      .then(response => {
+	          if (!response.ok) {
+	              throw new Error('Network response was not ok');
+	          }
+	          return response.json();
+	      })
+	      .then(data => {
+	          const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+	          const url = URL.createObjectURL(blob);
+	          const a = document.createElement('a');
+	          a.href = url;
+	          a.download = 'processes.json';
+	          document.body.appendChild(a);
+	          a.click();
+	          document.body.removeChild(a);
+	          URL.revokeObjectURL(url);
+					})
+	  });
+
+	  // Import button functionality
+	  document.getElementById('import-btn').addEventListener('click', function() {
+	      const importFile = document.getElementById('import-file').files[0];
+	      if (importFile) {
+	          const reader = new FileReader();
+	          reader.onload = function(event) {
+	              const processes = JSON.parse(event.target.result);
+								for(let process of processes) {
+					        // Serialize form data
+									const formData = new FormData();
+                  formData.append('economic', process.economic);
+                  formData.append('envEmissions', process.envEmissions);
+                  formData.append('process_id', process.process_id);
+                  formData.append('title', process.title);
+                  formData.append('social', process.social);
+                  formData.append('selected', process.selected);
+																			
+					        // Send form data asynchronously
+					        fetch("/dashboard", {
+					            method: 'POST',
+					            body: formData
+					        })
+					        .then(response => {
+					            if (!response.ok) {
+					                throw new Error('Network response was not ok');
+					            }
+					             fetchProcesses();
+					            return response.text();
+					        })
+					        .then(data => {
+					            console.log('Process submitted successfully:', data);
+											attachSelectedEvent();
+					            // Optionally, update the page with new data or display a success message
+					        })
+					        .catch(error => {
+					            console.error('There was a problem with the process submission:', error.message);
+					            // Optionally, display an error message to the user
+					        });
+								}
+	          };
+	          reader.readAsText(importFile);
+	      }
+	  });
 
 });

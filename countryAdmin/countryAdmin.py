@@ -91,13 +91,18 @@ def select_process():
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
     if request.method == 'POST':
-        # Process submission logic
+        # Process submission logic        
         economic = float(request.form['economic'])
         envEmissions = float(request.form['envEmissions'])
         social = int(request.form['social'])
         process_id = int(request.form['process_id'])
+        selected = request.form.get('selected')
+        if selected is None:
+            selected = True
+        else:
+            selected = ast.literal_eval(selected.capitalize())
         title = request.form['title']  # Add title from the form
-        new_process = Process(process_id=process_id, economic=economic, envEmissions=envEmissions, social=social, title=title, selected=True)
+        new_process = Process(process_id=process_id, economic=economic, envEmissions=envEmissions, social=social, title=title, selected=selected)
         db.session.add(new_process)
         db.session.commit()
 
