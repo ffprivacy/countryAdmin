@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 		function selectProcesses() {
 			const economicGoal = parseInt(document.getElementById('economic-goals').value, 10);
-			const environmentalGoal = parseInt(document.getElementById('environmental-goals').value, 10);
+			const govGoalEnvEmissions = parseInt(document.getElementById('governance-goals-env-emissions').value, 10);
 			const socialGoal = parseInt(document.getElementById('social-goals').value, 10);
 
         const allProcesses = [...processList.getElementsByTagName('li')].map(li => {
@@ -14,10 +14,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const id = parseInt(form.querySelector('input[name="id"]').value, 10);
             const processId = parseInt(li.textContent.match(/id=(\d+)/)[1], 10);
             const economic = parseInt(li.textContent.match(/eco=(\d+)/)[1], 10);
-            const environmental = parseInt(li.textContent.match(/env=(\d+)/)[1], 10);
+            const envEmissions = parseInt(li.textContent.match(/env=(\d+)/)[1], 10);
             const social = parseInt(li.textContent.match(/soc=(\d+)/)[1], 10);
 
-            return { id, processId, economic, environmental, social, selected: checkbox.checked, form };
+            return { id, processId, economic, envEmissions, social, selected: checkbox.checked, form };
         });
 
         // Unselect all processes
@@ -36,15 +36,15 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         let totalEconomic = 0;
-        let totalEnvironmental = 0;
+        let selectedGovEnvEmissions = 0;
         let totalSocial = 0;
        
 				// Calculate the distance between each process and the goals
-				const calculateDistance = (process, goalEconomic, goalEnvironmental, goalSocial) => {
+				const calculateDistance = (process, goalEconomic, goalEnvEmissions, goalSocial) => {
 				    const distanceEconomic = Math.abs(process.economic - goalEconomic);
-				    const distanceEnvironmental = Math.abs(process.environmental - goalEnvironmental);
+				    const distanceEnvEmissions = Math.abs(process.envEmissions - goalEnvEmissions);
 				    const distanceSocial = Math.abs(process.social - goalSocial);
-				    return distanceEconomic + distanceEnvironmental + distanceSocial;
+				    return distanceEconomic + distanceEnvEmissions + distanceSocial;
 				};
 
 				// Select processes based on goals
@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', function() {
 				    let closestProcess = null;
 				    for (const process of processes) {
 				        if (!selectedProcessIds.has(process.processId)) {
-				            const distance = calculateDistance(process, economicGoal - totalEconomic, environmentalGoal - totalEnvironmental, socialGoal - totalSocial);
+				            const distance = calculateDistance(process, economicGoal - totalEconomic, govGoalEnvEmissions - selectedGovEnvEmissions, socialGoal - totalSocial);
 				            if (distance < minDistance) {
 				                minDistance = distance;
 				                closestProcess = process;
@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', function() {
 				        closestProcess.selected = true;
 				        selectedProcessIds.add(closestProcess.processId);
 				        totalEconomic += closestProcess.economic;
-				        totalEnvironmental += closestProcess.environmental;
+				        selectedGovEnvEmissions += closestProcess.envEmissions;
 				        totalSocial += closestProcess.social;
 				    }
 				});
@@ -102,20 +102,20 @@ document.addEventListener('DOMContentLoaded', function() {
 						// Calculate total metrics for each kind in the selected governance
 		        const selectedProcesses = data.filter(process => process.selected);
 		        const totalEconomic = selectedProcesses.reduce((total, process) => total + process.economic, 0);
-		        const totalEnvironmental = selectedProcesses.reduce((total, process) => total + process.environmental, 0);
+		        const selectedGovEnvEmissions = selectedProcesses.reduce((total, process) => total + process.envEmissions, 0);
 		        const totalSocial = selectedProcesses.reduce((total, process) => total + process.social, 0);
 
 		        // Update total metrics in the HTML
-		        document.getElementById('total-economic').textContent = `Total Economic Impact: ${totalEconomic}`;
-		        document.getElementById('total-environmental').textContent = `Total Environmental Impact: ${totalEnvironmental}`;
-		        document.getElementById('total-social').textContent = `Total Social Impact: ${totalSocial}`;
+		        document.getElementById('total-economic').textContent = `${totalEconomic}`;
+		        document.getElementById('selected-governance-env-emissions').textContent = `${selectedGovEnvEmissions}`;
+		        document.getElementById('total-social').textContent = `${totalSocial}`;
 					
             // Clear previous processes
             processList.innerHTML = '';
             // Update the DOM with fetched processes
             data.forEach(process => {
                 const li = document.createElement('li');
-                li.innerHTML = `id=${process.process_id} eco=${process.economic} env=${process.environmental} soc=${process.social} title=${process.title}`;
+                li.innerHTML = `id=${process.process_id} eco=${process.economic} env=${process.envEmissions} soc=${process.social} title=${process.title}`;
                 const form = document.createElement('form');
                 form.setAttribute('action', '/select_process');
                 form.setAttribute('method', 'POST');

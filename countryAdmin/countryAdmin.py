@@ -15,7 +15,7 @@ class Process(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     process_id = db.Column(db.Integer, unique=False, nullable=False)
     economic = db.Column(db.Float)
-    environmental = db.Column(db.Float)
+    envEmissions = db.Column(db.Float)
     social = db.Column(db.Integer)
     title = db.Column(db.String(100))  # Add title attribute
     selected = db.Column(db.Boolean, default=False)
@@ -93,23 +93,17 @@ def dashboard():
     if request.method == 'POST':
         # Process submission logic
         economic = float(request.form['economic'])
-        environmental = float(request.form['environmental'])
+        envEmissions = float(request.form['envEmissions'])
         social = int(request.form['social'])
         process_id = int(request.form['process_id'])
         title = request.form['title']  # Add title from the form
-        new_process = Process(process_id=process_id, economic=economic, environmental=environmental, social=social, title=title, selected=True)
+        new_process = Process(process_id=process_id, economic=economic, envEmissions=envEmissions, social=social, title=title, selected=True)
         db.session.add(new_process)
         db.session.commit()
 
     processes = Process.query.all()
 
-    # Calculate total metrics for each kind in the selected governance
-    selected_processes = Process.query.filter_by(selected=True).all()
-    total_economic = sum(process.economic for process in selected_processes)
-    total_environmental = sum(process.environmental for process in selected_processes)
-    total_social = sum(process.social for process in selected_processes)
-
-    return render_template('dashboard.html', processes=processes, total_economic=total_economic, total_environmental=total_environmental, total_social=total_social)
+    return render_template('dashboard.html', processes=processes)
 
 # Endpoint to retrieve processes as JSON
 @app.route('/get_processes', methods=['GET'])
@@ -121,7 +115,7 @@ def get_processes():
             'id': process.id,
             'process_id': process.process_id,
             'economic': process.economic,
-            'environmental': process.environmental,
+            'envEmissions': process.envEmissions,
             'social': process.social,
             'selected': process.selected,
             'title': process.title

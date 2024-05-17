@@ -10,16 +10,16 @@
         <button type="submit">Reset Database</button>
     </form>
 
-    <h2>Total Metrics for Selected Governance:</h2>
-    <p id="total-economic">Total Economic Impact: 0</p>
-    <p id="total-environmental">Total Environmental Impact: 0</p>
-    <p id="total-social">Total Social Impact: 0</p>
+    <h2>Total Metrics for Selected Governance for a given period(eg a year):</h2>
+    <p>Economic: <abc id="total-economic">0</abc> $</p>
+    <p>Environmental co2eq emissions: <abc id="selected-governance-env-emissions">0</abc> kgCO2eq</p>
+    <p>Total social:<abc id="total-social">0</abc></p>
 
     <form action="/dashboard" method="POST" id="process-form">
         <label for="economic">economic</label>
         <input type="number" name="economic" value="10">
-        <label for="environmental">environmental</label>
-        <input type="number" name="environmental" value="10">
+        <label for="envEmissions">GES emissions in kgCO2eq</label>
+        <input type="number" name="envEmissions" value="10">
         <label for="process_id">Process Identifier:</label>
         <input type="number" name="process_id" id="process_id" value="10" required="">
         <label for="title">Title</label>
@@ -33,8 +33,8 @@
 		<form id="filter-form">
 		    <label for="economic-goals">eco</label>
 		    <input type="number" id="economic-goals" name="economic-goals" value="0" required>
-		    <label for="environmental-goals">env</label>
-		    <input type="number" id="environmental-goals" name="environmental-goals" value="0" required>
+		    <label for="governance-goals-env-emissions">GES emissions in kgCO2eq</label>
+		    <input type="number" id="governance-goals-env-emissions" name="governance-goals-env-emissions" value="0" required>
 		    <label for="social-goals">social</label>
 		    <input type="number" id="social-goals" name="social-goals" value="0" required>
 		    <button type="button" id="btn-adjust">Adjust gov</button>
