@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Update the DOM with fetched processes
             data.forEach(process => {
                 const li = document.createElement('li');
-                li.innerHTML = `id=${process.process_id} eco=${process.economic}, env=${process.environmental}, soc=${process.social}`;
+                li.innerHTML = `id=${process.process_id} eco=${process.economic} env=${process.environmental} soc=${process.social} title=${process.title}`;
                 const form = document.createElement('form');
                 form.setAttribute('action', '/select_process');
                 form.setAttribute('method', 'POST');

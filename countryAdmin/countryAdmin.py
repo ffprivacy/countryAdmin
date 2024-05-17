@@ -13,10 +13,11 @@ db = SQLAlchemy(app)
 # Define Process model
 class Process(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    process_id = db.Column(db.Integer, unique=True, nullable=False)
+    process_id = db.Column(db.Integer, unique=False, nullable=False)
     economic = db.Column(db.Float)
     environmental = db.Column(db.Float)
     social = db.Column(db.Integer)
+    title = db.Column(db.String(100))  # Add title attribute
     selected = db.Column(db.Boolean, default=False)
 
 # Define User model
@@ -95,7 +96,8 @@ def dashboard():
         environmental = float(request.form['environmental'])
         social = int(request.form['social'])
         process_id = int(request.form['process_id'])
-        new_process = Process(process_id=process_id, economic=economic, environmental=environmental, social=social, selected=True)
+        title = request.form['title']  # Add title from the form
+        new_process = Process(process_id=process_id, economic=economic, environmental=environmental, social=social, title=title, selected=True)
         db.session.add(new_process)
         db.session.commit()
 
@@ -121,7 +123,8 @@ def get_processes():
             'economic': process.economic,
             'environmental': process.environmental,
             'social': process.social,
-            'selected': process.selected
+            'selected': process.selected,
+            'title': process.title
         }
         process_list.append(process_data)
     return jsonify(process_list)
