@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
+import ast
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -68,10 +69,21 @@ def login():
 
 @app.route('/select_process', methods=['POST'])
 def select_process():
-    id = request.form.get('id')
-    process = Process.query.get(id)
-    if process:
-        process.selected = not process.selected
+    ids = []
+    states = []
+    id_single = request.form.get('id')
+    if id_single:
+        ids.append(id_single)
+        states.append(request.form.get('selected'))
+    else:      
+        ids = request.form.getlist('id[]')
+        states = request.form.getlist('selected[]')
+    states = [ast.literal_eval(value.capitalize()) for value in states]
+        
+    processes = Process.query.filter(Process.id.in_(ids)).all()
+    if processes and len(processes) == len(states):
+        for process, state in zip(processes, states):
+            process.selected = state
         db.session.commit()
     return redirect(url_for('dashboard'))
 

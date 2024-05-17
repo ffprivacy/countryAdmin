@@ -26,7 +26,18 @@
         <input type="number" name="social" value="10">
         <input type="submit" value="Submit" id="submit-btn">
     </form>
-
+		
+		<h3>Governance goals</h3>
+		<form id="filter-form">
+		    <label for="economic-goals">eco</label>
+		    <input type="number" id="economic-goals" name="economic-goals" value="0" required>
+		    <label for="environmental-goals">env</label>
+		    <input type="number" id="environmental-goals" name="environmental-goals" value="0" required>
+		    <label for="social-goals">social</label>
+		    <input type="number" id="social-goals" name="social-goals" value="0" required>
+		    <button type="button" id="btn-adjust">Adjust gov</button>
+		</form>
+		
     <ul id="process-list"></ul>
 </body>
 </html>

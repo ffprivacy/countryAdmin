@@ -3,6 +3,92 @@ document.addEventListener('DOMContentLoaded', function() {
 	
 		const processList = document.getElementById('process-list');
 
+		function selectProcesses() {
+			const economicGoal = parseInt(document.getElementById('economic-goals').value, 10);
+			const environmentalGoal = parseInt(document.getElementById('environmental-goals').value, 10);
+			const socialGoal = parseInt(document.getElementById('social-goals').value, 10);
+
+        const allProcesses = [...processList.getElementsByTagName('li')].map(li => {
+            const form = li.querySelector('form');
+            const checkbox = form.querySelector('input[name="selected"]');
+            const id = parseInt(form.querySelector('input[name="id"]').value, 10);
+            const processId = parseInt(li.textContent.match(/id=(\d+)/)[1], 10);
+            const economic = parseInt(li.textContent.match(/eco=(\d+)/)[1], 10);
+            const environmental = parseInt(li.textContent.match(/env=(\d+)/)[1], 10);
+            const social = parseInt(li.textContent.match(/soc=(\d+)/)[1], 10);
+
+            return { id, processId, economic, environmental, social, selected: checkbox.checked, form };
+        });
+
+        // Unselect all processes
+        allProcesses.forEach(process => {
+            process.selected = false;
+            process.form.querySelector('input[name="selected"]').checked = false;
+        });
+
+        // Group processes by process_id
+        const processMap = new Map();
+        allProcesses.forEach(process => {
+            if (!processMap.has(process.processId)) {
+                processMap.set(process.processId, []);
+            }
+            processMap.get(process.processId).push(process);
+        });
+
+        let totalEconomic = 0;
+        let totalEnvironmental = 0;
+        let totalSocial = 0;
+       
+				// Calculate the distance between each process and the goals
+				const calculateDistance = (process, goalEconomic, goalEnvironmental, goalSocial) => {
+				    const distanceEconomic = Math.abs(process.economic - goalEconomic);
+				    const distanceEnvironmental = Math.abs(process.environmental - goalEnvironmental);
+				    const distanceSocial = Math.abs(process.social - goalSocial);
+				    return distanceEconomic + distanceEnvironmental + distanceSocial;
+				};
+
+				// Select processes based on goals
+				const selectedProcessIds = new Set();
+				processMap.forEach(processes => {
+				    let minDistance = Infinity;
+				    let closestProcess = null;
+				    for (const process of processes) {
+				        if (!selectedProcessIds.has(process.processId)) {
+				            const distance = calculateDistance(process, economicGoal - totalEconomic, environmentalGoal - totalEnvironmental, socialGoal - totalSocial);
+				            if (distance < minDistance) {
+				                minDistance = distance;
+				                closestProcess = process;
+				            }
+				        }
+				    }
+				    if (closestProcess) {
+				        closestProcess.selected = true;
+				        selectedProcessIds.add(closestProcess.processId);
+				        totalEconomic += closestProcess.economic;
+				        totalEnvironmental += closestProcess.environmental;
+				        totalSocial += closestProcess.social;
+				    }
+				});
+				
+				const formData = new FormData();
+				allProcesses.forEach(process => {
+			    formData.append('id[]', process.id);
+			    formData.append('selected[]', process.selected);
+				});
+
+				var p = fetch('/select_process', {
+                method: 'POST',
+                body: formData
+            })
+        p
+            .then(() => fetchProcesses())
+            .catch(function(e){
+            	console.warn(e);
+            });
+    }
+		
+		document.getElementById("btn-adjust").addEventListener("click",selectProcesses)
+			
     // Function to fetch processes asynchronously
     function fetchProcesses() {
         fetch('/get_processes')
@@ -35,11 +121,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 form.setAttribute('method', 'POST');
                 const checkbox = document.createElement('input');
                 checkbox.setAttribute('type', 'checkbox');
-                checkbox.setAttribute('name', 'selected');
                 checkbox.setAttribute('value', process.selected);
                 if (process.selected) {
                     checkbox.setAttribute('checked', '');
                 }
+                const checkboxS = document.createElement('input');
+                checkboxS.setAttribute('type', 'number');
+                checkboxS.setAttribute('name', 'selected');
+                checkboxS.setAttribute('hidden', '');
+
                 const idInput = document.createElement('input');
                 idInput.setAttribute('type', 'number');
                 idInput.setAttribute('name', 'id');
@@ -47,10 +137,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 idInput.setAttribute('hidden', '');
                 form.appendChild(checkbox);
                 form.appendChild(idInput);
+								form.appendChild(checkboxS);
                 li.appendChild(form);
                 processList.appendChild(li);
 								
-								checkbox.addEventListener('click',function(e){
+								checkbox.addEventListener('click',function(e){									
+									checkboxS.value = checkbox.checked ? 1 : 0;
 									form.submit();
 								});
             });
