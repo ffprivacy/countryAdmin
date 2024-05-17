@@ -10,11 +10,23 @@
         <button type="submit">Reset Database</button>
     </form>
 
-    <h2>Total Metrics for Selected Governance for a given period(eg a year):</h2>
+		<hr>
+    <h3>Total Metrics for Selected Governance for a given period(eg a year):</h3>
     <p>Economic: <abc id="total-economic">0</abc> $</p>
     <p>Environmental co2eq emissions: <abc id="selected-governance-env-emissions">0</abc> kgCO2eq</p>
     <p>Total social:<abc id="total-social">0</abc></p>
-
+		<hr>
+		<h3>Governance goals</h3>
+		<form id="filter-form">
+		    <label for="economic-goals">eco</label>
+		    <input type="number" id="economic-goals" name="economic-goals" value="0" required>
+		    <label for="governance-goals-env-emissions">GES emissions in kgCO2eq</label>
+		    <input type="number" id="governance-goals-env-emissions" name="governance-goals-env-emissions" value="0" required>
+		    <label for="social-goals">social</label>
+		    <input type="number" id="social-goals" name="social-goals" value="0" required>
+		    <button type="button" id="btn-adjust">Adjust gov</button>
+		</form>
+		<hr>
     <form action="/dashboard" method="POST" id="process-form">
         <label for="economic">economic</label>
         <input type="number" name="economic" value="10">
@@ -28,17 +40,6 @@
         <input type="number" name="social" value="10">
         <input type="submit" value="Submit" id="submit-btn">
     </form>
-		
-		<h3>Governance goals</h3>
-		<form id="filter-form">
-		    <label for="economic-goals">eco</label>
-		    <input type="number" id="economic-goals" name="economic-goals" value="0" required>
-		    <label for="governance-goals-env-emissions">GES emissions in kgCO2eq</label>
-		    <input type="number" id="governance-goals-env-emissions" name="governance-goals-env-emissions" value="0" required>
-		    <label for="social-goals">social</label>
-		    <input type="number" id="social-goals" name="social-goals" value="0" required>
-		    <button type="button" id="btn-adjust">Adjust gov</button>
-		</form>
 		
     <ul id="process-list"></ul>
 </body>
