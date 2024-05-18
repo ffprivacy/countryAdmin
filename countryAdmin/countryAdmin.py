@@ -158,9 +158,11 @@ def get_processes():
         process_data = {
             'id': process.id,
             'process_id': process.process_id,
-            'economic': process.economic,
-            'envEmissions': process.envEmissions,
-            'social': process.social,
+            'metrics': {
+                'economic': process.economic,
+                'envEmissions': process.envEmissions,
+                'social': process.social,
+            },
             'selected': process.selected,
             'title': process.title,
             'amount': process.amount,
