@@ -49,6 +49,21 @@ def reset_database():
     db.session.commit()
     return redirect(url_for('dashboard'))
 
+@app.route('/update_process_amount', methods=['POST'])
+def update_process_amount():
+    data = request.json
+    id = data.get('id')
+    new_amount = data.get('amount')
+
+    process = Process.query.filter_by(id=id).first()
+    if not process:
+        return jsonify({'error': 'Process not found'}), 404
+
+    process.amount = int(new_amount)
+    db.session.commit()
+
+    return jsonify({'id': id, 'amount': process.amount})
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':

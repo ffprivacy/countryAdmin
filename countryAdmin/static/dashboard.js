@@ -35,6 +35,26 @@ document.addEventListener('DOMContentLoaded', function() {
             processMap.get(process.processId).push(process);
         });
 
+		/**
+		 *  Procédure pour choisir les process à utiliser parmis les autres.
+		 * 
+		 *  Remplir les objectifs en emissions en faisant en sorte que la charge de travail (on parle en h) soit répartie.
+		 *  Tout en tenant compte des différences de capacité des travailleurs (formation, compétences, nature).
+		 *  Les objectifs en emissions peuvent être une contrainte si elles amènent à plus de travail de la part des travailleurs et c'est ce plus qu'il faut répartir,
+		 *   pour rester socialement juste.
+		 *  Mais dans certains cas la modification est transparente (thermique -> electrique) (decarbonation de l'electricité) (des ampoules qui consomment moins)
+		 *  Résoudre toutes les modifications transparentes pour l'utilisateur et si le producteur n'obtiens pas trop de contraintes (reste viable economiquement et socialement).
+		 *  Un exemple typique de modidification non transparente et couteuse aux utilisateurs, le composte (un vrai), c'est à dire une modification du process "Jeter un déchet vert".
+		 *   un autre exemple de process "Se débarrasser d'un inutile". Il y a le tri des déchets, une modification du process coûteuse aux utilisateurs. Il y a jeter dans la nature.
+		 *    pour ce dernier une amélioration du process sans impacter les utilisateurs, trier mécaniquement grace à l'ia les déchets peut importe ce qui arrive.
+		 * 
+		 *  Remplir les objectifs en économie n'a pas forcément besoin d'être équilibré (service public en négatif, investissement en positif)
+		 *  On peut adopter contraintes min sur certains points critiques de l'économie, mais le social baisse.
+		 *  Pour que le social tienne au nom de la cohésion sociale, il n'en faut pas beaucoup, sinon la metrique sociale baisse de trop et il faut
+		 *  redistribution en fonction de la charge de travail.
+		 *  Du fait du jeu, il y a de la rareté des biens (ne reflète pas la quantité de travail donné), c'est un biais humain.
+		 *  
+		 */
         let totalEconomic = 0;
         let selectedGovEnvEmissions = 0;
         let totalSocial = 0;
@@ -145,6 +165,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 form.appendChild(idInput);
 				form.appendChild(checkboxS);
                 li.appendChild(form);
+
+				const amountInput = document.createElement('input');
+				amountInput.setAttribute('type','number');
+				amountInput.value = process.amount;
+				amountInput.addEventListener('change', () => {
+                    const newAmount = amountInput.value;
+                    fetch(`/update_process_amount`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            id: process.id,
+                            amount: newAmount
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(updatedProcess => {
+                        console.log(`Process ${updatedProcess.id} amount updated to ${updatedProcess.amount}`);
+						fetchProcesses();
+                    })
+                    .catch(error => console.error('Error updating process amount:', error));
+                });
+				li.appendChild(amountInput);
                 processList.appendChild(li);
 								
 				checkbox.addEventListener('click',function(e){									
