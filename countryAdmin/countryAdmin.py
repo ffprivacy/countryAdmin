@@ -10,6 +10,13 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///processes.db'
 db = SQLAlchemy(app)
 
+# Define Composition model
+class Composition(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    composed_process_id = db.Column(db.Integer, db.ForeignKey('process.id'), nullable=False)
+    component_process_id = db.Column(db.Integer, nullable=False)
+    amount = db.Column(db.Integer, nullable=False)
+   
 # Define Process model
 class Process(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -20,6 +27,7 @@ class Process(db.Model):
     title = db.Column(db.String(100))  # Add title attribute
     selected = db.Column(db.Boolean, default=False)
     amount = db.Column(db.Integer)
+    composition = db.relationship('Composition', backref='process', lazy=True)
 
 # Define User model
 class User(db.Model):
@@ -113,6 +121,7 @@ def dashboard():
         social = int(request.form['social'])
         process_id = int(request.form['process_id'])
         selected = request.form.get('selected')
+
         if selected is None:
             selected = True
         else:
@@ -122,6 +131,16 @@ def dashboard():
         new_process = Process(process_id=process_id, economic=economic, envEmissions=envEmissions, social=social, title=title, selected=selected, amount=amount)
         db.session.add(new_process)
         db.session.commit()
+
+        composition_data = ast.literal_eval(request.form.get('composition'))
+        for item in composition_data:
+            comp_id = item['id']
+            comp_amount = item['amount']
+            new_composition = Composition(component_process_id=comp_id, composed_process_id=new_process.id, amount=comp_amount)
+            db.session.add(new_composition)
+        
+        db.session.commit()
+
 
     processes = Process.query.all()
 
@@ -133,6 +152,8 @@ def get_processes():
     processes = Process.query.all()
     process_list = []
     for process in processes:
+        composition = Composition.query.filter_by(composed_process_id=process.id).all()
+        composition_data = [{'id': comp.component_process_id, 'amount': comp.amount} for comp in composition]
         process_data = {
             'id': process.id,
             'process_id': process.process_id,
@@ -141,7 +162,8 @@ def get_processes():
             'social': process.social,
             'selected': process.selected,
             'title': process.title,
-            'amount': process.amount
+            'amount': process.amount,
+            'composition': composition_data
         }
         process_list.append(process_data)
     return jsonify(process_list)

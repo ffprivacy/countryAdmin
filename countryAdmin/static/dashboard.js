@@ -1,12 +1,51 @@
 // dashboard.js
 document.addEventListener('DOMContentLoaded', function() {
 	
-		const processList = document.getElementById('process-list');
+	const compositionContainer = document.getElementById('composition-container');
+    const addCompositionBtn = document.getElementById('add-composition-btn');
 
-		function selectProcesses() {
-			const economicGoal = parseInt(document.getElementById('economic-goals').value, 10);
-			const govGoalEnvEmissions = parseInt(document.getElementById('governance-goals-env-emissions').value, 10);
-			const socialGoal = parseInt(document.getElementById('social-goals').value, 10);
+    addCompositionBtn.addEventListener('click', () => {
+        const compositionDiv = document.createElement('div');
+		compositionDiv.setAttribute('class', 'composition-process-group');
+        
+        const processIdLabel = document.createElement('label');
+        processIdLabel.textContent = 'Process ID:';
+        compositionDiv.appendChild(processIdLabel);
+
+        const processIdInput = document.createElement('input');
+        processIdInput.setAttribute('type', 'number');
+        processIdInput.setAttribute('name', 'composition-process-id');
+        compositionDiv.appendChild(processIdInput);
+
+        const processAmountLabel = document.createElement('label');
+        processAmountLabel.textContent = ' Amount:';
+        compositionDiv.appendChild(processAmountLabel);
+
+        const processAmountInput = document.createElement('input');
+        processAmountInput.setAttribute('type', 'number');
+        processAmountInput.setAttribute('name', 'composition-process-amount');
+        compositionDiv.appendChild(processAmountInput);
+
+        compositionContainer.appendChild(compositionDiv);
+    });
+
+	function getCompositionData() {
+		const compositionContainer = document.getElementById('composition-container');
+		const compositionDivs = compositionContainer.querySelectorAll('div');
+		const compositionArray = Array.from(compositionDivs).map(div => {
+			const processId = div.querySelector('input[name="composition-process-id"]').value;
+			const processAmount = div.querySelector('input[name="composition-process-amount"]').value;
+			return { id: parseInt(processId, 10), amount: parseInt(processAmount, 10) };
+		});
+		return compositionArray;
+	}
+	
+	const processList = document.getElementById('process-list');
+
+	function selectProcesses() {
+		const economicGoal = parseInt(document.getElementById('economic-goals').value, 10);
+		const govGoalEnvEmissions = parseInt(document.getElementById('governance-goals-env-emissions').value, 10);
+		const socialGoal = parseInt(document.getElementById('social-goals').value, 10);
 
         const allProcesses = [...processList.getElementsByTagName('li')].map(li => {
             const form = li.querySelector('form');
@@ -17,7 +56,8 @@ document.addEventListener('DOMContentLoaded', function() {
 			const envEmissions = parseInt(li.getAttribute("env-emissions"));
 			const social = parseInt(li.getAttribute("social"));
 			const amount = parseInt(li.getAttribute("process-amount"));
-            return { id, processId, economic, envEmissions, social, selected: checkbox.checked, amount, form };
+			const composition = JSON.stringify(getCompositionData());
+            return { id, processId, economic, envEmissions, social, selected: checkbox.checked, amount, composition, form };
         });
 
         // Unselect all processes
@@ -58,7 +98,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let totalEconomic = 0;
         let selectedGovEnvEmissions = 0;
         let totalSocial = 0;
-       
+
 		// Calculate the distance between each process and the goals
 		const calculateDistance = (process, goalEconomic, goalEnvEmissions, goalSocial) => {
 			const distanceEconomic = Math.abs(process.amount * process.economic - goalEconomic);
@@ -107,7 +147,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
 		
-		document.getElementById("btn-adjust").addEventListener("click",selectProcesses)
+	document.getElementById("btn-adjust").addEventListener("click",selectProcesses)
 			
     // Function to fetch processes asynchronously
     function fetchProcesses() {
@@ -119,7 +159,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return response.json();
         })
         .then(data => {
-						// Calculate total metrics for each kind in the selected governance
+				// Calculate total metrics for each kind in the selected governance
 		        const selectedProcesses = data.filter(process => process.selected);
 		        const totalEconomic = selectedProcesses.reduce((total, process) => total + process.economic * process.amount, 0);
 		        const selectedGovEnvEmissions = selectedProcesses.reduce((total, process) => total + process.envEmissions * process.amount, 0);
@@ -141,7 +181,9 @@ document.addEventListener('DOMContentLoaded', function() {
 				li.setAttribute("social",process.social);
 				li.setAttribute("title",process.title);
 				li.setAttribute("process-amount",process.amount);
-                li.innerHTML = `${process.process_id}: ${process.title} ${process.economic}$ ${process.envEmissions}kgCO2eq ${process.social} social X ${process.amount}`;
+				const compoStr = JSON.stringify(process.composition);
+				li.setAttribute("process-composition",compoStr);
+                li.innerHTML = `${process.process_id}: ${process.title} ${process.economic}$ ${process.envEmissions}kgCO2eq ${process.social} social X ${process.amount} composed of ${compoStr}`;
                 const form = document.createElement('form');
                 form.setAttribute('action', '/select_process');
                 form.setAttribute('method', 'POST');
@@ -205,39 +247,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Fetch processes when the page loads
     fetchProcesses();
-			
-    // Submit button click event listener
-    const submitBtns = document.querySelectorAll('.submit-btn');
-    submitBtns.forEach(btn => {
-        btn.addEventListener('click', function() {
-            // Get the corresponding form
-            const form = this.closest('form');
-            if (form) {
-                // Get form data
-                const formData = new FormData(form);
 
-                // Send form data asynchronously
-                fetch(form.action, {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => {
-									if (!response.ok) {
-			                throw new Error('Network response was not ok');
-			            }
-                })
-                .then(data => {
-                    console.log(data);
-                    // Optionally handle response data
-                })
-                .catch(error => {
-                    console.error('There was a problem with the fetch operation:', error);
-                });
-            }
-        });
-    });
-
-		function attachSelectedEvent() {
+	function attachSelectedEvent() {
 	    // Select form submission event listener
 	    const selectForms = document.querySelectorAll('.select-form');
 	    selectForms.forEach(form => {
@@ -266,18 +277,28 @@ document.addEventListener('DOMContentLoaded', function() {
 	            });
 	        });
 	    });
-		}
+	}
 		
-		attachSelectedEvent();
+	attachSelectedEvent();
 		
     const submitBtn = document.getElementById('submit-btn');
     const processForm = document.getElementById('process-form');
 
     submitBtn.addEventListener('click', function(event) {
-	    	event.preventDefault();
+		event.preventDefault();
 			
         // Serialize form data
         const formData = new FormData(processForm);
+
+		let compositionData = [];
+		document.querySelectorAll('.composition-process-group').forEach(group => {
+			compositionData.push({ 
+				id: parseInt(group.querySelector('input[name="composition-process-id"]').value), 
+				amount: parseInt(group.querySelector('input[name="composition-process-amount"]').value)
+			});
+		});
+		const compositionJSON = JSON.stringify(compositionData);
+		formData.append('composition', compositionJSON);
 
         // Send form data asynchronously
         fetch(processForm.action, {
@@ -340,6 +361,7 @@ document.addEventListener('DOMContentLoaded', function() {
 					formData.append('social', process.social);
 					formData.append('selected', process.selected);
 					formData.append('amount', process.amount);
+					formData.append('composition', JSON.stringify(process.composition));
 																			
 					// Send form data asynchronously
 					fetch("/dashboard", {
