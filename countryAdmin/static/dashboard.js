@@ -183,7 +183,7 @@ document.addEventListener('DOMContentLoaded', function() {
 				li.setAttribute("process-amount",process.amount);
 				const compoStr = JSON.stringify(process.composition);
 				li.setAttribute("process-composition",compoStr);
-                li.innerHTML = `${process.process_id}: ${process.title} ${process.economic}$ ${process.envEmissions}kgCO2eq ${process.social} social X ${process.amount} composed of ${compoStr}`;
+                li.innerHTML = `${process.process_id}(id=${process.id}): ${process.title} ${process.economic}$ ${process.envEmissions}kgCO2eq ${process.social} social X ${process.amount} composed of ${compoStr}`;
                 const form = document.createElement('form');
                 form.setAttribute('action', '/select_process');
                 form.setAttribute('method', 'POST');

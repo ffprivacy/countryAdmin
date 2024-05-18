@@ -54,6 +54,7 @@ def index():
 def reset_database():
     # Delete all records in the Process table
     db.session.query(Process).delete()
+    db.session.query(Composition).delete()
     db.session.commit()
     return redirect(url_for('dashboard'))
 
