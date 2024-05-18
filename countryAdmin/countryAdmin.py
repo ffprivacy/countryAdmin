@@ -19,6 +19,7 @@ class Process(db.Model):
     social = db.Column(db.Integer)
     title = db.Column(db.String(100))  # Add title attribute
     selected = db.Column(db.Boolean, default=False)
+    amount = db.Column(db.Integer)
 
 # Define User model
 class User(db.Model):
@@ -101,8 +102,9 @@ def dashboard():
             selected = True
         else:
             selected = ast.literal_eval(selected.capitalize())
+        amount = request.form.get('process-amount')
         title = request.form['title']  # Add title from the form
-        new_process = Process(process_id=process_id, economic=economic, envEmissions=envEmissions, social=social, title=title, selected=selected)
+        new_process = Process(process_id=process_id, economic=economic, envEmissions=envEmissions, social=social, title=title, selected=selected, amount=amount)
         db.session.add(new_process)
         db.session.commit()
 
@@ -123,7 +125,8 @@ def get_processes():
             'envEmissions': process.envEmissions,
             'social': process.social,
             'selected': process.selected,
-            'title': process.title
+            'title': process.title,
+            'amount': process.amount
         }
         process_list.append(process_data)
     return jsonify(process_list)

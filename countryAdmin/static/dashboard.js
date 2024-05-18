@@ -16,7 +16,8 @@ document.addEventListener('DOMContentLoaded', function() {
 			const economic = parseInt(li.getAttribute("economic"));
 			const envEmissions = parseInt(li.getAttribute("env-emissions"));
 			const social = parseInt(li.getAttribute("social"));
-            return { id, processId, economic, envEmissions, social, selected: checkbox.checked, form };
+			const amount = parseInt(li.getAttribute("process-amount"));
+            return { id, processId, economic, envEmissions, social, selected: checkbox.checked, amount, form };
         });
 
         // Unselect all processes
@@ -38,47 +39,47 @@ document.addEventListener('DOMContentLoaded', function() {
         let selectedGovEnvEmissions = 0;
         let totalSocial = 0;
        
-				// Calculate the distance between each process and the goals
-				const calculateDistance = (process, goalEconomic, goalEnvEmissions, goalSocial) => {
-				    const distanceEconomic = Math.abs(process.economic - goalEconomic);
-				    const distanceEnvEmissions = Math.abs(process.envEmissions - goalEnvEmissions);
-				    const distanceSocial = Math.abs(process.social - goalSocial);
-				    return distanceEconomic + distanceEnvEmissions + distanceSocial;
-				};
+		// Calculate the distance between each process and the goals
+		const calculateDistance = (process, goalEconomic, goalEnvEmissions, goalSocial) => {
+			const distanceEconomic = Math.abs(process.amount * process.economic - goalEconomic);
+			const distanceEnvEmissions = Math.abs(process.amount * process.envEmissions - goalEnvEmissions);
+			const distanceSocial = Math.abs(process.amount * process.social - goalSocial);
+			return distanceEconomic + distanceEnvEmissions + distanceSocial;
+		};
 
-				// Select processes based on goals
-				const selectedProcessIds = new Set();
-				processMap.forEach(processes => {
-				    let minDistance = Infinity;
-				    let closestProcess = null;
-				    for (const process of processes) {
-				        if (!selectedProcessIds.has(process.processId)) {
-				            const distance = calculateDistance(process, economicGoal - totalEconomic, govGoalEnvEmissions - selectedGovEnvEmissions, socialGoal - totalSocial);
-				            if (distance < minDistance) {
-				                minDistance = distance;
-				                closestProcess = process;
-				            }
-				        }
-				    }
-				    if (closestProcess) {
-				        closestProcess.selected = true;
-				        selectedProcessIds.add(closestProcess.processId);
-				        totalEconomic += closestProcess.economic;
-				        selectedGovEnvEmissions += closestProcess.envEmissions;
-				        totalSocial += closestProcess.social;
-				    }
-				});
-				
-				const formData = new FormData();
-				allProcesses.forEach(process => {
-			    formData.append('id[]', process.id);
-			    formData.append('selected[]', process.selected);
-				});
+		// Select processes based on goals
+		const selectedProcessIds = new Set();
+		processMap.forEach(processes => {
+			let minDistance = Infinity;
+			let closestProcess = null;
+			for (const process of processes) {
+				if (!selectedProcessIds.has(process.processId)) {
+					const distance = calculateDistance(process, economicGoal - totalEconomic, govGoalEnvEmissions - selectedGovEnvEmissions, socialGoal - totalSocial);
+					if (distance < minDistance) {
+						minDistance = distance;
+						closestProcess = process;
+					}
+				}
+			}
+			if (closestProcess) {
+				closestProcess.selected = true;
+				selectedProcessIds.add(closestProcess.processId);
+				totalEconomic += closestProcess.economic * closestProcess.amount;
+				selectedGovEnvEmissions += closestProcess.envEmissions * closestProcess.amount;
+				totalSocial += closestProcess.social * closestProcess.amount;
+			}
+		});
+		
+		const formData = new FormData();
+		allProcesses.forEach(process => {
+			formData.append('id[]', process.id);
+			formData.append('selected[]', process.selected);
+		});
 
-				var p = fetch('/select_process', {
-                method: 'POST',
-                body: formData
-            })
+		var p = fetch('/select_process', {
+			method: 'POST',
+			body: formData
+		})
         p
             .then(() => fetchProcesses())
             .catch(function(e){
@@ -100,9 +101,9 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
 						// Calculate total metrics for each kind in the selected governance
 		        const selectedProcesses = data.filter(process => process.selected);
-		        const totalEconomic = selectedProcesses.reduce((total, process) => total + process.economic, 0);
-		        const selectedGovEnvEmissions = selectedProcesses.reduce((total, process) => total + process.envEmissions, 0);
-		        const totalSocial = selectedProcesses.reduce((total, process) => total + process.social, 0);
+		        const totalEconomic = selectedProcesses.reduce((total, process) => total + process.economic * process.amount, 0);
+		        const selectedGovEnvEmissions = selectedProcesses.reduce((total, process) => total + process.envEmissions * process.amount, 0);
+		        const totalSocial = selectedProcesses.reduce((total, process) => total + process.social * process.amount, 0);
 
 		        // Update total metrics in the HTML
 		        document.getElementById('total-economic').textContent = `${totalEconomic}`;
@@ -119,7 +120,8 @@ document.addEventListener('DOMContentLoaded', function() {
 				li.setAttribute("env-emissions",process.envEmissions);
 				li.setAttribute("social",process.social);
 				li.setAttribute("title",process.title);
-                li.innerHTML = `${process.process_id}: ${process.title} ${process.economic}$ ${process.envEmissions}kgCO2eq ${process.social} social `;
+				li.setAttribute("process-amount",process.amount);
+                li.innerHTML = `${process.process_id}: ${process.title} ${process.economic}$ ${process.envEmissions}kgCO2eq ${process.social} social X ${process.amount}`;
                 const form = document.createElement('form');
                 form.setAttribute('action', '/select_process');
                 form.setAttribute('method', 'POST');
@@ -141,14 +143,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 idInput.setAttribute('hidden', '');
                 form.appendChild(checkbox);
                 form.appendChild(idInput);
-								form.appendChild(checkboxS);
+				form.appendChild(checkboxS);
                 li.appendChild(form);
                 processList.appendChild(li);
 								
-								checkbox.addEventListener('click',function(e){									
-									checkboxS.value = checkbox.checked ? 1 : 0;
-									form.submit();
-								});
+				checkbox.addEventListener('click',function(e){									
+					checkboxS.value = checkbox.checked ? 1 : 0;
+					form.submit();
+				});
             });
         })
         .catch(error => {
@@ -284,38 +286,39 @@ document.addEventListener('DOMContentLoaded', function() {
 	          const reader = new FileReader();
 	          reader.onload = function(event) {
 	              const processes = JSON.parse(event.target.result);
-								for(let process of processes) {
-					        // Serialize form data
-									const formData = new FormData();
-                  formData.append('economic', process.economic);
-                  formData.append('envEmissions', process.envEmissions);
-                  formData.append('process_id', process.process_id);
-                  formData.append('title', process.title);
-                  formData.append('social', process.social);
-                  formData.append('selected', process.selected);
+					for(let process of processes) {
+					// Serialize form data
+					const formData = new FormData();
+					formData.append('economic', process.economic);
+					formData.append('envEmissions', process.envEmissions);
+					formData.append('process_id', process.process_id);
+					formData.append('title', process.title);
+					formData.append('social', process.social);
+					formData.append('selected', process.selected);
+					formData.append('amount', process.amount);
 																			
-					        // Send form data asynchronously
-					        fetch("/dashboard", {
-					            method: 'POST',
-					            body: formData
-					        })
-					        .then(response => {
-					            if (!response.ok) {
-					                throw new Error('Network response was not ok');
-					            }
-					             fetchProcesses();
-					            return response.text();
-					        })
-					        .then(data => {
-					            console.log('Process submitted successfully:', data);
-											attachSelectedEvent();
-					            // Optionally, update the page with new data or display a success message
-					        })
-					        .catch(error => {
-					            console.error('There was a problem with the process submission:', error.message);
-					            // Optionally, display an error message to the user
-					        });
-								}
+					// Send form data asynchronously
+					fetch("/dashboard", {
+						method: 'POST',
+						body: formData
+					})
+					.then(response => {
+						if (!response.ok) {
+							throw new Error('Network response was not ok');
+						}
+							fetchProcesses();
+						return response.text();
+					})
+					.then(data => {
+						console.log('Process submitted successfully:', data);
+									attachSelectedEvent();
+						// Optionally, update the page with new data or display a success message
+					})
+					.catch(error => {
+						console.error('There was a problem with the process submission:', error.message);
+						// Optionally, display an error message to the user
+					});
+				}
 	          };
 	          reader.readAsText(importFile);
 	      }
