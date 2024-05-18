@@ -122,6 +122,9 @@ def dashboard():
         social = int(request.form['social'])
         process_id = int(request.form['process_id'])
         selected = request.form.get('selected')
+        id = request.form.get('id')
+        if id is not None:
+            id = int(id)
 
         if selected is None:
             selected = True
@@ -129,7 +132,7 @@ def dashboard():
             selected = ast.literal_eval(selected.capitalize())
         amount = request.form.get('process-amount')
         title = request.form['title']  # Add title from the form
-        new_process = Process(process_id=process_id, economic=economic, envEmissions=envEmissions, social=social, title=title, selected=selected, amount=amount)
+        new_process = Process(id=id,process_id=process_id, economic=economic, envEmissions=envEmissions, social=social, title=title, selected=selected, amount=amount)
         db.session.add(new_process)
         db.session.commit()
 

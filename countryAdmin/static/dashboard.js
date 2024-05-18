@@ -373,13 +373,14 @@ document.addEventListener('DOMContentLoaded', function() {
 					for(let process of processes) {
 						// Serialize form data
 						const formData = new FormData();
+						formData.append('id',process.id);
 						formData.append('economic', process.metrics.economic);
 						formData.append('envEmissions', process.metrics.envEmissions);
 						formData.append('process_id', process.process_id);
 						formData.append('title', process.title);
 						formData.append('social', process.metrics.social);
 						formData.append('selected', process.selected);
-						formData.append('amount', process.amount);
+						formData.append('process-amount', process.amount);
 						formData.append('composition', JSON.stringify(process.composition));
 																				
 						// Send form data asynchronously
