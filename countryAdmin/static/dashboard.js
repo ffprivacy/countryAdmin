@@ -40,9 +40,17 @@ document.addEventListener('DOMContentLoaded', function() {
 		return compositionArray;
 	}
 
-	function processRetrieveMetric(process,metric) {
-		console.warn(process,metric);
-		return process.amount * process.metrics[metric];
+	// recursively compute the metric of a process
+	function processRetrieveMetric(allProcesses,process,metric) {
+		let total = 0;
+		function getProcessById(processes, id) {
+			return processes.find(process => process.id === id);
+		}
+		for(let compo of process.composition) {
+			let compoProcess = getProcessById(allProcesses,compo.id);
+			total += processRetrieveMetric(allProcesses,compoProcess,metric) * compo.amount;
+		}
+		return total + process.amount * process.metrics[metric];
 	}
 	
 	const processList = document.getElementById('process-list');
@@ -107,10 +115,10 @@ document.addEventListener('DOMContentLoaded', function() {
         let totalSocial = 0;
 
 		// Calculate the distance between each process and the goals
-		const calculateDistance = (process, goalEconomic, goalEnvEmissions, goalSocial) => {
-			const distanceEconomic = Math.abs(process.amount * processRetrieveMetric(process,"economic") - goalEconomic);
-			const distanceEnvEmissions = Math.abs(process.amount * processRetrieveMetric(process,"envEmissions") - goalEnvEmissions);
-			const distanceSocial = Math.abs(process.amount * processRetrieveMetric(process,"social") - goalSocial);
+		const calculateDistance = (allProcesses,process, goalEconomic, goalEnvEmissions, goalSocial) => {
+			const distanceEconomic = Math.abs(process.amount * processRetrieveMetric(allProcesses,process,"economic") - goalEconomic);
+			const distanceEnvEmissions = Math.abs(process.amount * processRetrieveMetric(allProcesses,process,"envEmissions") - goalEnvEmissions);
+			const distanceSocial = Math.abs(process.amount * processRetrieveMetric(allProcesses,process,"social") - goalSocial);
 			return distanceEconomic + distanceEnvEmissions + distanceSocial;
 		};
 
@@ -121,7 +129,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			let closestProcess = null;
 			for (const process of processes) {
 				if (!selectedProcessIds.has(process.processId)) {
-					const distance = calculateDistance(process, economicGoal - totalEconomic, govGoalEnvEmissions - selectedGovEnvEmissions, socialGoal - totalSocial);
+					const distance = calculateDistance(allProcesses,process, economicGoal - totalEconomic, govGoalEnvEmissions - selectedGovEnvEmissions, socialGoal - totalSocial);
 					if (distance < minDistance) {
 						minDistance = distance;
 						closestProcess = process;
@@ -131,9 +139,9 @@ document.addEventListener('DOMContentLoaded', function() {
 			if (closestProcess) {
 				closestProcess.selected = true;
 				selectedProcessIds.add(closestProcess.processId);
-				totalEconomic += closestprocessRetrieveMetric(process,"economic") * closestProcess.amount;
-				selectedGovEnvEmissions += closestprocessRetrieveMetric(process,"envEmissions") * closestProcess.amount;
-				totalSocial += closestprocessRetrieveMetric(process,"social") * closestProcess.amount;
+				totalEconomic += closestprocessRetrieveMetric(allProcesses,process,"economic") * closestProcess.amount;
+				selectedGovEnvEmissions += closestprocessRetrieveMetric(allProcesses,process,"envEmissions") * closestProcess.amount;
+				totalSocial += closestprocessRetrieveMetric(allProcesses,process,"social") * closestProcess.amount;
 			}
 		});
 		
@@ -168,9 +176,9 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
 			// Calculate total metrics for each kind in the selected governance
 			const selectedProcesses = data.filter(process => process.selected);
-			const totalEconomic = selectedProcesses.reduce((total, process) => total + processRetrieveMetric(process,"economic") * process.amount, 0);
-			const selectedGovEnvEmissions = selectedProcesses.reduce((total, process) => total + processRetrieveMetric(process,"envEmissions") * process.amount, 0);
-			const totalSocial = selectedProcesses.reduce((total, process) => total + processRetrieveMetric(process,"social") * process.amount, 0);
+			const totalEconomic = selectedProcesses.reduce((total, process) => total + processRetrieveMetric(data,process,"economic") * process.amount, 0);
+			const selectedGovEnvEmissions = selectedProcesses.reduce((total, process) => total + processRetrieveMetric(data,process,"envEmissions") * process.amount, 0);
+			const totalSocial = selectedProcesses.reduce((total, process) => total + processRetrieveMetric(data,process,"social") * process.amount, 0);
 
 			// Update total metrics in the HTML
 			document.getElementById('total-economic').textContent = `${totalEconomic}`;
