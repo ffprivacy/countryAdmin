@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', function() {
 				total += processRetrieveMetric(allProcesses,compoProcess,metric) * compo.amount;
 			}
 		}
-		return total + process.amount * process.metrics[metric];
+		return total + process.metrics[metric];
 	}
 	
 	const processList = document.getElementById('process-list');
