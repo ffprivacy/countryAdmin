@@ -11,12 +11,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const allProcesses = [...processList.getElementsByTagName('li')].map(li => {
             const form = li.querySelector('form');
             const checkbox = form.querySelector('input[name="selected"]');
-            const id = parseInt(form.querySelector('input[name="id"]').value, 10);
-            const processId = parseInt(li.textContent.match(/id=(\d+)/)[1], 10);
-            const economic = parseInt(li.textContent.match(/eco=(\d+)/)[1], 10);
-            const envEmissions = parseInt(li.textContent.match(/env=(\d+)/)[1], 10);
-            const social = parseInt(li.textContent.match(/soc=(\d+)/)[1], 10);
-
+            const id = parseInt(form.querySelector('input[name="id"]').value);
+			const processId = parseInt(li.getAttribute("process-id"));
+			const economic = parseInt(li.getAttribute("economic"));
+			const envEmissions = parseInt(li.getAttribute("env-emissions"));
+			const social = parseInt(li.getAttribute("social"));
             return { id, processId, economic, envEmissions, social, selected: checkbox.checked, form };
         });
 
@@ -115,7 +114,12 @@ document.addEventListener('DOMContentLoaded', function() {
             // Update the DOM with fetched processes
             data.forEach(process => {
                 const li = document.createElement('li');
-                li.innerHTML = `id=${process.process_id} eco=${process.economic} env=${process.envEmissions} soc=${process.social} title=${process.title}`;
+				li.setAttribute("process-id",process.process_id);
+				li.setAttribute("economic",process.economic);
+				li.setAttribute("env-emissions",process.envEmissions);
+				li.setAttribute("social",process.social);
+				li.setAttribute("title",process.title);
+                li.innerHTML = `${process.process_id}: ${process.title} ${process.economic}$ ${process.envEmissions}kgCO2eq ${process.social} social `;
                 const form = document.createElement('form');
                 form.setAttribute('action', '/select_process');
                 form.setAttribute('method', 'POST');
