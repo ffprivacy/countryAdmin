@@ -1,0 +1,112 @@
+[
+  {
+    "amount": 8,
+    "composition": [],
+    "id": 1,
+    "metrics": {
+      "economic": 10,
+      "envEmissions": 10,
+      "social": 10
+    },
+    "process_id": 10,
+    "selected": true,
+    "title": ""
+  },
+  {
+    "amount": 1,
+    "composition": [
+      {
+        "amount": 2,
+        "id": 1
+      }
+    ],
+    "id": 2,
+    "metrics": {
+      "economic": 10,
+      "envEmissions": 10,
+      "social": 10
+    },
+    "process_id": 10,
+    "selected": true,
+    "title": ""
+  },
+  {
+    "amount": 1,
+    "composition": [
+      {
+        "amount": 1,
+        "id": 2
+      },
+      {
+        "amount": 2,
+        "id": 1
+      }
+    ],
+    "id": 3,
+    "metrics": {
+      "economic": 10,
+      "envEmissions": 10,
+      "social": 10
+    },
+    "process_id": 10,
+    "selected": false,
+    "title": ""
+  },
+  {
+    "amount": 1,
+    "composition": [],
+    "id": 4,
+    "metrics": {
+      "economic": 10,
+      "envEmissions": 10,
+      "social": 10
+    },
+    "process_id": 9,
+    "selected": true,
+    "title": ""
+  },
+  {
+    "amount": 1,
+    "composition": [],
+    "id": 5,
+    "metrics": {
+      "economic": 10,
+      "envEmissions": 10,
+      "social": 10
+    },
+    "process_id": 9,
+    "selected": false,
+    "title": ""
+  },
+  {
+    "amount": 1,
+    "composition": [],
+    "id": 6,
+    "metrics": {
+      "economic": 10,
+      "envEmissions": 20,
+      "social": 10
+    },
+    "process_id": 9,
+    "selected": false,
+    "title": ""
+  },
+  {
+    "amount": 1,
+    "composition": [
+      {
+        "amount": 1,
+        "id": 6
+      }
+    ],
+    "id": 7,
+    "metrics": {
+      "economic": 10,
+      "envEmissions": 10,
+      "social": 10
+    },
+    "process_id": 10,
+    "selected": true,
+    "title": ""
+  }
+]
