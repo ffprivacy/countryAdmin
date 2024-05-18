@@ -48,7 +48,11 @@ document.addEventListener('DOMContentLoaded', function() {
 		}
 		for(let compo of process.composition) {
 			let compoProcess = getProcessById(allProcesses,compo.id);
-			total += processRetrieveMetric(allProcesses,compoProcess,metric) * compo.amount;
+			if( compoProcess === undefined ) {
+				throw "Error undefined";
+			} else {
+				total += processRetrieveMetric(allProcesses,compoProcess,metric) * compo.amount;
+			}
 		}
 		return total + process.amount * process.metrics[metric];
 	}
@@ -71,7 +75,7 @@ document.addEventListener('DOMContentLoaded', function() {
 				social: parseInt(li.getAttribute("social")),
 			};
 			const amount = parseInt(li.getAttribute("process-amount"));
-			const composition = JSON.stringify(getCompositionData());
+			const composition = getCompositionData();
             return { id, processId, metrics, selected: checkbox.checked, amount, composition, form };
 		});
 
@@ -115,7 +119,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let totalSocial = 0;
 
 		// Calculate the distance between each process and the goals
-		const calculateDistance = (allProcesses,process, goalEconomic, goalEnvEmissions, goalSocial) => {
+		const calculateDistance = (allProcesses, process, goalEconomic, goalEnvEmissions, goalSocial) => {
 			const distanceEconomic = Math.abs(process.amount * processRetrieveMetric(allProcesses,process,"economic") - goalEconomic);
 			const distanceEnvEmissions = Math.abs(process.amount * processRetrieveMetric(allProcesses,process,"envEmissions") - goalEnvEmissions);
 			const distanceSocial = Math.abs(process.amount * processRetrieveMetric(allProcesses,process,"social") - goalSocial);
@@ -139,9 +143,9 @@ document.addEventListener('DOMContentLoaded', function() {
 			if (closestProcess) {
 				closestProcess.selected = true;
 				selectedProcessIds.add(closestProcess.processId);
-				totalEconomic += closestprocessRetrieveMetric(allProcesses,process,"economic") * closestProcess.amount;
-				selectedGovEnvEmissions += closestprocessRetrieveMetric(allProcesses,process,"envEmissions") * closestProcess.amount;
-				totalSocial += closestprocessRetrieveMetric(allProcesses,process,"social") * closestProcess.amount;
+				totalEconomic += processRetrieveMetric(allProcesses,closestProcess,"economic") * closestProcess.amount;
+				selectedGovEnvEmissions += processRetrieveMetric(allProcesses,closestProcess,"envEmissions") * closestProcess.amount;
+				totalSocial += processRetrieveMetric(allProcesses,closestProcess,"social") * closestProcess.amount;
 			}
 		});
 		
