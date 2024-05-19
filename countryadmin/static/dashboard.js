@@ -47,8 +47,12 @@ document.addEventListener('DOMContentLoaded', function() {
 	});
 
 	document.getElementById('follow-federation-btn').addEventListener('click', () => {
-		const newFederationHostname = document.getElementById('new-federation-hostname-follow').value;
-		fetch('http://' + newFederationHostname + '/identify')
+		let newFederationUrl = document.getElementById('new-federation-hostname-follow').value.trim();
+		
+		if (!newFederationUrl.includes('://')) {
+			newFederationUrl = 'http://' + newFederationUrl;
+		}		
+		fetch(newFederationUrl + '/identify')
 		.then(response => response.json())
 		.then(data => {
 			fetch('/follow_federation', {
@@ -56,7 +60,7 @@ document.addEventListener('DOMContentLoaded', function() {
 				headers: {
 					'Content-Type': 'application/json'
 				},
-				body: JSON.stringify({ federation_name: data.name, hostname: newFederationHostname })
+				body: JSON.stringify({ federation_name: data.name, hostname: newFederationUrl })
 			}).then(() => {
 				fetchFederationData();
 				fetchProcesses();
@@ -242,7 +246,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			.then(async function(data) {
 				await fetchProcessesRecurse('/get_processes');
 				data.followed_federations.forEach(async function(fed) {
-					await fetchProcessesRecurse('http://' + fed.hostname + '/get_processes', fed.name);
+					await fetchProcessesRecurse(fed.hostname + '/get_processes', fed.name);
 				});
 			});
 	}
