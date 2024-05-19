@@ -1,0 +1,55 @@
+name: Build and Release Python Wheel with Poetry
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+      with:
+        submodules: 'recursive'
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.11  # or the version you need
+
+    - name: Install Poetry
+      run: pip install poetry
+
+    - name: Install dependencies
+      run: poetry install
+
+    - name: Build wheel
+      run: poetry build
+
+    - name: Find package
+      id: find_pkg
+      run: |
+        package_file=$(ls dist/*.whl)
+        echo "package_file=${package_file}" >> $GITHUB_ENV
+        echo "tag_name=$(echo $GITHUB_REF | sed 's|refs/tags/||')" >> $GITHUB_ENV
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: python_wheel
+        path: ${{ env.package_file }}
+        retention-days: 1
+
+    - name: Move to release
+      id: upload-artifact
+      uses: softprops/action-gh-release@v1
+      with:
+        files: ${{ env.package_file }}
+        tag_name: ${{ env.tag_name }}
+        name: Release ${{ env.tag_name }}
+        token: ${{ secrets.GITHUB_TOKEN }}
+        draft: false
+        prerelease: false
