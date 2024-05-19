@@ -10,6 +10,67 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///processes.db'
 db = SQLAlchemy(app)
 
+class Federation(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False)
+    followed_federations = db.Column(db.PickleType, default=[])
+
+# Function to initialize the database with a default federation
+@app.before_first_request
+def create_default_federation():
+    if not Federation.query.first():
+        default_federation = Federation(name="village")
+        db.session.add(default_federation)
+        db.session.commit()
+
+# Endpoint to identify federation
+@app.route('/identify', methods=['GET'])
+def identify_federation():
+    federation = Federation.query.first()
+    if federation:
+        return jsonify({
+            'name': federation.name,
+            'followed_federations': federation.followed_federations
+        })
+    else:
+        return jsonify({'message': 'No federation found'}), 404
+
+# Endpoint to follow a federation
+@app.route('/follow_federation', methods=['POST'])
+def follow_federation():
+    data = request.json
+    federation_name = data.get('federation_name')
+    federation = Federation.query.first()
+    if federation and federation_name not in federation.followed_federations:
+        federation.followed_federations.append(federation_name)
+        db.session.commit()
+        return jsonify({'message': 'Federation followed successfully'}), 200
+    return jsonify({'message': 'Federation not found or already followed'}), 404
+
+# Endpoint to unfollow a federation
+@app.route('/unfollow_federation', methods=['POST'])
+def unfollow_federation():
+    data = request.json
+    federation_name = data.get('federation_name')
+    federation = Federation.query.first()
+    if federation and federation_name in federation.followed_federations:
+        federation.followed_federations.remove(federation_name)
+        db.session.commit()
+        return jsonify({'message': 'Federation unfollowed successfully'}), 200
+    return jsonify({'message': 'Federation not found or not followed'}), 404
+
+# Endpoint to change federation name
+@app.route('/change_federation_name', methods=['POST'])
+def change_federation_name():
+    data = request.json
+    new_name = data.get('new_name')
+    federation = Federation.query.first()
+    if federation:
+        federation.name = new_name
+        db.session.commit()
+        return jsonify({'message': 'Federation name changed successfully'}), 200
+    return jsonify({'message': 'Federation not found'}), 404
+
 # Define Composition model
 class Composition(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -55,6 +116,7 @@ def reset_database():
     # Delete all records in the Process table
     db.session.query(Process).delete()
     db.session.query(Composition).delete()
+    db.session.query(Federation).delete()
     db.session.commit()
     return redirect(url_for('dashboard'))
 
