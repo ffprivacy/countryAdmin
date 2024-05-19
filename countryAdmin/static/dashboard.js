@@ -225,8 +225,20 @@ document.addEventListener('DOMContentLoaded', function() {
 	document.getElementById("btn-adjust").addEventListener("click",selectProcesses)
 			
     // Function to fetch processes asynchronously
-    function fetchProcesses() {
-        fetch('/get_processes')
+    async function fetchProcesses() {
+		// Clear previous processes
+		processList.innerHTML = '';
+		return fetch('/identify')
+			.then(response => response.json())
+			.then(async function(data) {
+				await fetchProcessesRecurse('/get_processes');
+				data.followed_federations.forEach(async function(fed) {
+					await fetchProcessesRecurse('http://' + fed.hostname + '/get_processes');
+				});
+			});
+	}
+	function fetchProcessesRecurse(url) {
+        return fetch(url)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -235,6 +247,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(data => {
 			// Calculate total metrics for each kind in the selected governance
+			/*
 			const selectedProcesses = data.filter(process => process.selected);
 			const totalEconomic = selectedProcesses.reduce((total, process) => total + processRetrieveMetric(data,process,"economic") * process.amount, 0);
 			const selectedGovEnvEmissions = selectedProcesses.reduce((total, process) => total + processRetrieveMetric(data,process,"envEmissions") * process.amount, 0);
@@ -244,9 +257,8 @@ document.addEventListener('DOMContentLoaded', function() {
 			document.getElementById('total-economic').textContent = `${totalEconomic}`;
 			document.getElementById('selected-governance-env-emissions').textContent = `${selectedGovEnvEmissions}`;
 			document.getElementById('total-social').textContent = `${totalSocial}`;
-					
-            // Clear previous processes
-            processList.innerHTML = '';
+			*/
+
             // Update the DOM with fetched processes
             data.forEach(process => {
                 const li = document.createElement('li');

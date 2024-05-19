@@ -240,7 +240,18 @@ def get_processes():
     return jsonify(process_list)
 
 def main():
-    app.run(debug=True, port=5000)
+    port = 5000
+    while True:
+        try:
+            app.run(debug=True, port=port)
+            break
+        except OSError:
+            port += 1
+        except Exception:
+            break
+        finally:
+            port += 1
+            continue
 
 if __name__ == "__main__":
     main()
