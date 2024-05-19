@@ -29,7 +29,10 @@ document.addEventListener('DOMContentLoaded', function() {
 				'Content-Type': 'application/json'
 			},
 			body: JSON.stringify({ federation_name: federationName })
-		}).then(() => fetchFederationData());
+		}).then(() => {
+			fetchFederationData();
+			fetchProcesses();
+		});
 	}
 
 	document.getElementById('change-federation-name-btn').addEventListener('click', () => {
@@ -44,15 +47,21 @@ document.addEventListener('DOMContentLoaded', function() {
 	});
 
 	document.getElementById('follow-federation-btn').addEventListener('click', () => {
-		const newFederationName = document.getElementById('new-federation-name-follow').value;
 		const newFederationHostname = document.getElementById('new-federation-hostname-follow').value;
-		fetch('/follow_federation', {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({ federation_name: newFederationName, hostname: newFederationHostname })
-		}).then(() => fetchFederationData());
+		fetch('http://' + newFederationHostname + '/identify')
+		.then(response => response.json())
+		.then(data => {
+			fetch('/follow_federation', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ federation_name: data.name, hostname: newFederationHostname })
+			}).then(() => {
+				fetchFederationData();
+				fetchProcesses();
+			});
+		})
 	});
 
 	fetchFederationData();
