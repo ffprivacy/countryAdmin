@@ -233,11 +233,11 @@ document.addEventListener('DOMContentLoaded', function() {
 			.then(async function(data) {
 				await fetchProcessesRecurse('/get_processes');
 				data.followed_federations.forEach(async function(fed) {
-					await fetchProcessesRecurse('http://' + fed.hostname + '/get_processes');
+					await fetchProcessesRecurse('http://' + fed.hostname + '/get_processes', fed.name);
 				});
 			});
 	}
-	function fetchProcessesRecurse(url) {
+	function fetchProcessesRecurse(url,followedFed=null) {
         return fetch(url)
         .then(response => {
             if (!response.ok) {
@@ -274,7 +274,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const form = document.createElement('form');
                 form.setAttribute('action', '/select_process');
                 form.setAttribute('method', 'POST');
-                const checkbox = document.createElement('input');
+				const checkbox = document.createElement('input');
                 checkbox.setAttribute('type', 'checkbox');
                 checkbox.setAttribute('value', process.selected);
                 if (process.selected) {
@@ -291,6 +291,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 idInput.setAttribute('value', process.id);
                 idInput.setAttribute('hidden', '');
                 form.appendChild(checkbox);
+				if ( followedFed ) {
+					checkbox.setAttribute('disabled',true);
+					const followedFedName = document.createElement('b');
+					followedFedName.innerText = 'Ruled by ' + followedFed;
+					form.appendChild(followedFedName);
+				}
                 form.appendChild(idInput);
 				form.appendChild(checkboxS);
                 li.appendChild(form);
