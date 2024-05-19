@@ -1,6 +1,62 @@
 // dashboard.js
 document.addEventListener('DOMContentLoaded', function() {
-	
+
+	const federationNameElement = document.getElementById('federation-name');
+	const followedFederationList = document.getElementById('followed-federation-list');
+
+	function fetchFederationData() {
+		fetch('/identify')
+			.then(response => response.json())
+			.then(data => {
+				federationNameElement.textContent = data.name;
+				followedFederationList.innerHTML = '';
+				data.followed_federations.forEach(fed => {
+					const li = document.createElement('li');
+					li.textContent = `${fed.name} (${fed.hostname})`;
+					const unfollowButton = document.createElement('button');
+					unfollowButton.textContent = 'Unfollow';
+					unfollowButton.addEventListener('click', () => unfollowFederation(fed.name));
+					li.appendChild(unfollowButton);
+					followedFederationList.appendChild(li);
+				});
+			});
+	}
+
+	function unfollowFederation(federationName) {
+		fetch('/unfollow_federation', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({ federation_name: federationName })
+		}).then(() => fetchFederationData());
+	}
+
+	document.getElementById('change-federation-name-btn').addEventListener('click', () => {
+		const newFederationName = document.getElementById('new-federation-name').value;
+		fetch('/change_federation_name', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({ new_name: newFederationName })
+		}).then(() => fetchFederationData());
+	});
+
+	document.getElementById('follow-federation-btn').addEventListener('click', () => {
+		const newFederationName = document.getElementById('new-federation-name-follow').value;
+		const newFederationHostname = document.getElementById('new-federation-hostname-follow').value;
+		fetch('/follow_federation', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({ federation_name: newFederationName, hostname: newFederationHostname })
+		}).then(() => fetchFederationData());
+	});
+
+	fetchFederationData();
+
 	const compositionContainer = document.getElementById('composition-container');
     const addCompositionBtn = document.getElementById('add-composition-btn');
 

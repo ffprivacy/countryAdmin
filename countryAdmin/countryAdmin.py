@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
-import ast
+import ast, copy
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -12,64 +12,67 @@ db = SQLAlchemy(app)
 
 class Federation(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), unique=True, nullable=False)
+    name = db.Column(db.String(100), nullable=False, unique=True)
     followed_federations = db.Column(db.PickleType, default=[])
 
-# Function to initialize the database with a default federation
-@app.before_first_request
-def create_default_federation():
+# Ensure the database and tables are created before the first request
+with app.app_context():
+    db.create_all()
     if not Federation.query.first():
-        default_federation = Federation(name="village")
+        default_federation = Federation(name="village", followed_federations=[])
         db.session.add(default_federation)
         db.session.commit()
 
-# Endpoint to identify federation
 @app.route('/identify', methods=['GET'])
-def identify_federation():
+def identify():
     federation = Federation.query.first()
     if federation:
-        return jsonify({
-            'name': federation.name,
-            'followed_federations': federation.followed_federations
-        })
-    else:
-        return jsonify({'message': 'No federation found'}), 404
+        return jsonify(name=federation.name, followed_federations=federation.followed_federations)
+    return jsonify(name=None, followed_federations=[])
 
-# Endpoint to follow a federation
 @app.route('/follow_federation', methods=['POST'])
 def follow_federation():
     data = request.json
     federation_name = data.get('federation_name')
-    federation = Federation.query.first()
-    if federation and federation_name not in federation.followed_federations:
-        federation.followed_federations.append(federation_name)
-        db.session.commit()
-        return jsonify({'message': 'Federation followed successfully'}), 200
-    return jsonify({'message': 'Federation not found or already followed'}), 404
+    hostname = data.get('hostname')
+    if federation_name and hostname:
+        try:
+            federation = Federation.query.filter_by().first()
+            if federation:
+                followed_federations = copy.deepcopy(federation.followed_federations) or []
+                if not any(fed['name'] == federation_name for fed in followed_federations):
+                    followed_federations.append({'name': federation_name, 'hostname': hostname})
+                    federation.followed_federations = followed_federations
+                    db.session.commit()
+                    return jsonify(success=True)
+                else:
+                    return jsonify(success=False, error="Federation already followed"), 400
+            else:
+                return jsonify(success=False, error="No federation in base"), 404
+        except Exception as e:
+            return jsonify(success=False, error=str(e)), 500
+    else:
+        return jsonify(success=False, error="Federation name and hostname are required"), 400
 
-# Endpoint to unfollow a federation
 @app.route('/unfollow_federation', methods=['POST'])
 def unfollow_federation():
     data = request.json
     federation_name = data.get('federation_name')
     federation = Federation.query.first()
-    if federation and federation_name in federation.followed_federations:
-        federation.followed_federations.remove(federation_name)
+    if federation_name and federation:
+        federation.followed_federations = [fed for fed in federation.followed_federations if fed['name'] != federation_name]
         db.session.commit()
-        return jsonify({'message': 'Federation unfollowed successfully'}), 200
-    return jsonify({'message': 'Federation not found or not followed'}), 404
+    return jsonify(success=True)
 
-# Endpoint to change federation name
 @app.route('/change_federation_name', methods=['POST'])
 def change_federation_name():
     data = request.json
     new_name = data.get('new_name')
     federation = Federation.query.first()
-    if federation:
+    if new_name and federation:
         federation.name = new_name
         db.session.commit()
-        return jsonify({'message': 'Federation name changed successfully'}), 200
-    return jsonify({'message': 'Federation not found'}), 404
+    return jsonify(success=True)
 
 # Define Composition model
 class Composition(db.Model):
