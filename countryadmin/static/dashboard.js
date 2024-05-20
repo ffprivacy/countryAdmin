@@ -1,75 +1,6 @@
 // dashboard.js
 document.addEventListener('DOMContentLoaded', function() {
 
-	const federationNameElement = document.getElementById('federation-name');
-	const followedFederationList = document.getElementById('followed-federation-list');
-
-	function fetchFederationData() {
-		fetch('/identify')
-			.then(response => response.json())
-			.then(data => {
-				federationNameElement.textContent = data.name;
-				followedFederationList.innerHTML = '';
-				data.followed_federations.forEach(fed => {
-					const li = document.createElement('li');
-					li.textContent = `${fed.name} (${fed.hostname})`;
-					const unfollowButton = document.createElement('button');
-					unfollowButton.textContent = 'Unfollow';
-					unfollowButton.addEventListener('click', () => unfollowFederation(fed.name));
-					li.appendChild(unfollowButton);
-					followedFederationList.appendChild(li);
-				});
-			});
-	}
-
-	function unfollowFederation(federationName) {
-		fetch('/unfollow_federation', {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({ federation_name: federationName })
-		}).then(() => {
-			fetchFederationData();
-			fetchProcesses();
-		});
-	}
-
-	document.getElementById('change-federation-name-btn').addEventListener('click', () => {
-		const newFederationName = document.getElementById('new-federation-name').value;
-		fetch('/change_federation_name', {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({ new_name: newFederationName })
-		}).then(() => fetchFederationData());
-	});
-
-	document.getElementById('follow-federation-btn').addEventListener('click', () => {
-		let newFederationUrl = document.getElementById('new-federation-hostname-follow').value.trim();
-		
-		if (!newFederationUrl.includes('://')) {
-			newFederationUrl = 'http://' + newFederationUrl;
-		}		
-		fetch(newFederationUrl + '/identify')
-		.then(response => response.json())
-		.then(data => {
-			fetch('/follow_federation', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({ federation_name: data.name, hostname: newFederationUrl })
-			}).then(() => {
-				fetchFederationData();
-				fetchProcesses();
-			});
-		})
-	});
-
-	fetchFederationData();
-
 	const compositionContainer = document.getElementById('composition-container');
     const addCompositionBtn = document.getElementById('add-composition-btn');
 
@@ -240,18 +171,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function to fetch processes asynchronously
     async function fetchProcesses() {
 		// Clear previous processes
-		processList.innerHTML = '';
-		return fetch('/identify')
-			.then(response => response.json())
-			.then(async function(data) {
-				await fetchProcessesRecurse('/get_processes');
-				data.followed_federations.forEach(async function(fed) {
-					await fetchProcessesRecurse(fed.hostname + '/get_processes', fed.name);
-				});
-			});
-	}
-	function fetchProcessesRecurse(url,followedFed=null) {
-        return fetch(url)
+		return fetch('/get_processes')
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -259,8 +179,8 @@ document.addEventListener('DOMContentLoaded', function() {
             return response.json();
         })
         .then(data => {
+			processList.innerHTML = '';
 			// Calculate total metrics for each kind in the selected governance
-			/*
 			const selectedProcesses = data.filter(process => process.selected);
 			const totalEconomic = selectedProcesses.reduce((total, process) => total + processRetrieveMetric(data,process,"economic") * process.amount, 0);
 			const selectedGovEnvEmissions = selectedProcesses.reduce((total, process) => total + processRetrieveMetric(data,process,"envEmissions") * process.amount, 0);
@@ -270,7 +190,6 @@ document.addEventListener('DOMContentLoaded', function() {
 			document.getElementById('total-economic').textContent = `${totalEconomic}`;
 			document.getElementById('selected-governance-env-emissions').textContent = `${selectedGovEnvEmissions}`;
 			document.getElementById('total-social').textContent = `${totalSocial}`;
-			*/
 
             // Update the DOM with fetched processes
             data.forEach(process => {
@@ -304,12 +223,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 idInput.setAttribute('value', process.id);
                 idInput.setAttribute('hidden', '');
                 form.appendChild(checkbox);
-				if ( followedFed ) {
-					checkbox.setAttribute('disabled',true);
-					const followedFedName = document.createElement('b');
-					followedFedName.innerText = 'Ruled by ' + followedFed;
-					form.appendChild(followedFedName);
-				}
                 form.appendChild(idInput);
 				form.appendChild(checkboxS);
                 li.appendChild(form);
@@ -349,7 +262,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('There was a problem fetching processes:', error.message);
             // Optionally, display an error message to the user
         });
-    }
+	}
 
     // Fetch processes when the page loads
     fetchProcesses();
