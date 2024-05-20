@@ -1,3 +1,5 @@
+Manage a country or a group of people with more horizontal decision.
+It assume a predation based world.
 ### Install
 #### From source
 ```bash

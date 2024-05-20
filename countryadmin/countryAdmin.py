@@ -10,70 +10,6 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///processes.db'
 db = SQLAlchemy(app)
 
-class Federation(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False, unique=True)
-    followed_federations = db.Column(db.PickleType, default=[])
-
-# Ensure the database and tables are created before the first request
-with app.app_context():
-    db.create_all()
-    if not Federation.query.first():
-        default_federation = Federation(name="village", followed_federations=[])
-        db.session.add(default_federation)
-        db.session.commit()
-
-@app.route('/identify', methods=['GET'])
-def identify():
-    federation = Federation.query.first()
-    if federation:
-        return jsonify(name=federation.name, followed_federations=federation.followed_federations)
-    return jsonify(name=None, followed_federations=[])
-
-@app.route('/follow_federation', methods=['POST'])
-def follow_federation():
-    data = request.json
-    federation_name = data.get('federation_name')
-    hostname = data.get('hostname')
-    if federation_name and hostname:
-        try:
-            federation = Federation.query.filter_by().first()
-            if federation:
-                followed_federations = copy.deepcopy(federation.followed_federations) or []
-                if not any(fed['name'] == federation_name for fed in followed_federations):
-                    followed_federations.append({'name': federation_name, 'hostname': hostname})
-                    federation.followed_federations = followed_federations
-                    db.session.commit()
-                    return jsonify(success=True)
-                else:
-                    return jsonify(success=False, error="Federation already followed"), 400
-            else:
-                return jsonify(success=False, error="No federation in base"), 404
-        except Exception as e:
-            return jsonify(success=False, error=str(e)), 500
-    else:
-        return jsonify(success=False, error="Federation name and hostname are required"), 400
-
-@app.route('/unfollow_federation', methods=['POST'])
-def unfollow_federation():
-    data = request.json
-    federation_name = data.get('federation_name')
-    federation = Federation.query.first()
-    if federation_name and federation:
-        federation.followed_federations = [fed for fed in federation.followed_federations if fed['name'] != federation_name]
-        db.session.commit()
-    return jsonify(success=True)
-
-@app.route('/change_federation_name', methods=['POST'])
-def change_federation_name():
-    data = request.json
-    new_name = data.get('new_name')
-    federation = Federation.query.first()
-    if new_name and federation:
-        federation.name = new_name
-        db.session.commit()
-    return jsonify(success=True)
-
 # Define Composition model
 class Composition(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -119,7 +55,6 @@ def reset_database():
     # Delete all records in the Process table
     db.session.query(Process).delete()
     db.session.query(Composition).delete()
-    db.session.query(Federation).delete()
     db.session.commit()
     return redirect(url_for('dashboard'))
 
