@@ -1,112 +1,142 @@
 [
   {
-    "amount": 8,
+    "amount": 1,
     "composition": [],
     "id": 1,
     "metrics": {
-      "economic": 10,
-      "envEmissions": 10,
-      "social": 10
+      "economic": 60000,
+      "envEmissions": 100,
+      "social": 5
     },
-    "process_id": 10,
+    "process_id": 201,
+    "group_id": "electric_manufacturing",
     "selected": true,
-    "title": ""
+    "title": "Manufacturing the electric car"
   },
   {
     "amount": 1,
-    "composition": [
-      {
-        "amount": 2,
-        "id": 1
-      }
-    ],
+    "composition": [],
     "id": 2,
     "metrics": {
-      "economic": 10,
-      "envEmissions": 10,
-      "social": 10
+      "economic": 35000,
+      "envEmissions": 80,
+      "social": 4
     },
-    "process_id": 10,
+    "process_id": 202,
+    "group_id": "electric_assembly",
     "selected": true,
-    "title": ""
+    "title": "Assembling the electric car"
   },
   {
     "amount": 1,
-    "composition": [
-      {
-        "amount": 1,
-        "id": 2
-      },
-      {
-        "amount": 2,
-        "id": 1
-      }
-    ],
+    "composition": [],
     "id": 3,
     "metrics": {
-      "economic": 10,
-      "envEmissions": 10,
-      "social": 10
+      "economic": 25000,
+      "envEmissions": 60,
+      "social": 3
     },
-    "process_id": 10,
+    "process_id": 203,
+    "group_id": "electric_painting",
     "selected": false,
-    "title": ""
+    "title": "Painting the electric car"
   },
   {
     "amount": 1,
     "composition": [],
     "id": 4,
     "metrics": {
-      "economic": 10,
-      "envEmissions": 10,
-      "social": 10
+      "economic": 15000,
+      "envEmissions": 40,
+      "social": 2
     },
-    "process_id": 9,
+    "process_id": 204,
+    "group_id": "electric_quality_control",
     "selected": true,
-    "title": ""
+    "title": "Quality control of the electric car"
   },
   {
     "amount": 1,
     "composition": [],
     "id": 5,
     "metrics": {
-      "economic": 10,
-      "envEmissions": 10,
-      "social": 10
+      "economic": 20000,
+      "envEmissions": 50,
+      "social": 3
     },
-    "process_id": 9,
+    "process_id": 205,
+    "group_id": "electric_logistics",
     "selected": false,
-    "title": ""
+    "title": "Logistics and shipping the electric car"
   },
   {
     "amount": 1,
     "composition": [],
     "id": 6,
     "metrics": {
-      "economic": 10,
-      "envEmissions": 20,
-      "social": 10
+      "economic": 50000,
+      "envEmissions": 300,
+      "social": 5
     },
-    "process_id": 9,
-    "selected": false,
-    "title": ""
+    "process_id": 301,
+    "group_id": "thermal_manufacturing",
+    "selected": true,
+    "title": "Manufacturing the thermal car"
   },
   {
     "amount": 1,
-    "composition": [
-      {
-        "amount": 1,
-        "id": 6
-      }
-    ],
+    "composition": [],
     "id": 7,
     "metrics": {
-      "economic": 10,
-      "envEmissions": 10,
-      "social": 10
+      "economic": 30000,
+      "envEmissions": 250,
+      "social": 4
     },
-    "process_id": 10,
+    "process_id": 302,
+    "group_id": "thermal_assembly",
     "selected": true,
-    "title": ""
+    "title": "Assembling the thermal car"
+  },
+  {
+    "amount": 1,
+    "composition": [],
+    "id": 8,
+    "metrics": {
+      "economic": 20000,
+      "envEmissions": 200,
+      "social": 3
+    },
+    "process_id": 303,
+    "group_id": "thermal_painting",
+    "selected": false,
+    "title": "Painting the thermal car"
+  },
+  {
+    "amount": 1,
+    "composition": [],
+    "id": 9,
+    "metrics": {
+      "economic": 10000,
+      "envEmissions": 100,
+      "social": 2
+    },
+    "process_id": 304,
+    "group_id": "thermal_quality_control",
+    "selected": true,
+    "title": "Quality control of the thermal car"
+  },
+  {
+    "amount": 1,
+    "composition": [],
+    "id": 10,
+    "metrics": {
+      "economic": 15000,
+      "envEmissions": 150,
+      "social": 3
+    },
+    "process_id": 305,
+    "group_id": "thermal_logistics",
+    "selected": false,
+    "title": "Logistics and shipping the thermal car"
   }
 ]

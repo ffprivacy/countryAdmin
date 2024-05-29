@@ -2,6 +2,8 @@ from flask import Flask, render_template, request, redirect, url_for, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 import ast, copy
+from sqlalchemy.orm import relationship
+from sqlalchemy.ext.associationproxy import association_proxy
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -17,6 +19,15 @@ class Composition(db.Model):
     component_process_id = db.Column(db.Integer, nullable=False)
     amount = db.Column(db.Integer, nullable=False)
    
+class ProcessTag(db.Model):
+    __tablename__ = 'process_tag'
+    process_id = db.Column(db.Integer, db.ForeignKey('process.id'), primary_key=True)
+    tag_id = db.Column(db.Integer, db.ForeignKey('tag.id'), primary_key=True)
+
+class Tag(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True)
+
 # Define Process model
 class Process(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -28,6 +39,8 @@ class Process(db.Model):
     selected = db.Column(db.Boolean, default=False)
     amount = db.Column(db.Integer)
     composition = db.relationship('Composition', backref='process', lazy=True)
+    tags = relationship('Tag', secondary='process_tag', backref='processes')
+    tag_names = association_proxy('tags', 'name')
 
 # Define User model
 class User(db.Model):
@@ -122,6 +135,7 @@ def dashboard():
         social = int(request.form['social'])
         process_id = int(request.form['process_id'])
         selected = request.form.get('selected')
+        tags = request.form.get('tags').split(',')
         id = request.form.get('id')
         if id is not None:
             id = int(id)
@@ -133,6 +147,14 @@ def dashboard():
         amount = request.form.get('process-amount')
         title = request.form['title']  # Add title from the form
         new_process = Process(id=id,process_id=process_id, economic=economic, envEmissions=envEmissions, social=social, title=title, selected=selected, amount=amount)
+        for tag_name in tags:
+            tag_name = tag_name.strip()
+            if tag_name:
+                tag = Tag.query.filter_by(name=tag_name).first()
+                if not tag:
+                    tag = Tag(name=tag_name)
+                    db.session.add(tag)
+                new_process.tags.append(tag)
         db.session.add(new_process)
         db.session.commit()
 
@@ -158,6 +180,7 @@ def get_processes():
     for process in processes:
         composition = Composition.query.filter_by(composed_process_id=process.id).all()
         composition_data = [{'id': comp.component_process_id, 'amount': comp.amount} for comp in composition]
+        tags = [tag.name for tag in process.tags]
         process_data = {
             'id': process.id,
             'process_id': process.process_id,
@@ -169,7 +192,8 @@ def get_processes():
             'selected': process.selected,
             'title': process.title,
             'amount': process.amount,
-            'composition': composition_data
+            'composition': composition_data,
+            'tags': tags
         }
         process_list.append(process_data)
     return jsonify(process_list)
