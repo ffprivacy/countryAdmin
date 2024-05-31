@@ -202,6 +202,9 @@ def delete_process(id):
     if not process:
         return jsonify({'error': 'Process not found'}), 404
 
+    # Supprimer les compositions associées
+    Composition.query.filter_by(composed_process_id=id).delete()
+
     db.session.delete(process)
     db.session.commit()
     return jsonify({'success': True}), 200
