@@ -31,7 +31,6 @@ class Tag(db.Model):
 # Define Process model
 class Process(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    process_id = db.Column(db.Integer, unique=False, nullable=False)
     economic = db.Column(db.Float)
     envEmissions = db.Column(db.Float)
     social = db.Column(db.Integer)
@@ -133,7 +132,6 @@ def set_process():
         economic = float(request.form['economic'])
         envEmissions = float(request.form['envEmissions'])
         social = int(request.form['social'])
-        process_id = int(request.form['process_id'])
         selected = request.form.get('selected')
         tags = request.form.get('tags').split(',')
         id = request.form.get('id')
@@ -146,7 +144,7 @@ def set_process():
             selected = ast.literal_eval(selected.capitalize())
         amount = request.form.get('process-amount')
         title = request.form['title']  # Add title from the form
-        new_process = Process(id=id,process_id=process_id, economic=economic, envEmissions=envEmissions, social=social, title=title, selected=selected, amount=amount)
+        new_process = Process(id=id, economic=economic, envEmissions=envEmissions, social=social, title=title, selected=selected, amount=amount)
         for tag_name in tags:
             tag_name = tag_name.strip()
             if tag_name:
@@ -184,7 +182,6 @@ def get_processes():
         tags = [tag.name for tag in process.tags]
         process_data = {
             'id': process.id,
-            'process_id': process.process_id,
             'metrics': {
                 'economic': process.economic,
                 'envEmissions': process.envEmissions,
@@ -198,6 +195,40 @@ def get_processes():
         }
         process_list.append(process_data)
     return jsonify(process_list)
+
+@app.route('/delete_process/<int:id>', methods=['POST'])
+def delete_process(id):
+    process = Process.query.get(id)
+    if not process:
+        return jsonify({'error': 'Process not found'}), 404
+
+    db.session.delete(process)
+    db.session.commit()
+    return jsonify({'success': True}), 200
+
+@app.route('/update_composition/<int:process_id>', methods=['POST'])
+def update_composition(process_id):
+    data = request.json
+    component_process_id = data.get('id')
+    amount = data.get('amount')
+
+    composition = Composition.query.filter_by(composed_process_id=process_id, component_process_id=component_process_id).first()
+    if not composition:
+        return jsonify({'error': 'Composition not found'}), 404
+
+    composition.amount = amount
+    db.session.commit()
+    return jsonify({'success': True}), 200
+
+@app.route('/delete_composition/<int:process_id>/<int:component_process_id>', methods=['POST'])
+def delete_composition(process_id, component_process_id):
+    composition = Composition.query.filter_by(composed_process_id=process_id, component_process_id=component_process_id).first()
+    if not composition:
+        return jsonify({'error': 'Composition not found'}), 404
+
+    db.session.delete(composition)
+    db.session.commit()
+    return jsonify({'success': True}), 200
 
 def main():
     port = 5000
