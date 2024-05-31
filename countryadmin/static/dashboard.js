@@ -97,6 +97,10 @@ function selectProcesses() {
 	};
 
 	// Select processes based on goals
+	/**
+	 * Les processus qui peuvent être permutables devraint être recherchés automatiquement.
+	 * On pourrait dans un premier temps (comme c'était avant le cas utiliser un processId ou group de processus interchangeable) (qui ont strictement les mêmes but du point de vue utilisateur)
+	 */
 	const selectedProcessIds = new Set();
 	processMap.forEach(processes => {
 		let minDistance = Infinity;
