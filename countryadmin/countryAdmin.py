@@ -166,6 +166,7 @@ def set_process():
             db.session.add(new_composition)
         
         db.session.commit()
+        return jsonify({})
 
 @app.route('/dashboard', methods=['GET'])
 def dashboard():

@@ -1,8 +1,8 @@
 // dashboard.js
 document.addEventListener('DOMContentLoaded', function() {
 
-	const compositionContainer = document.getElementById('composition-container');
-    const addCompositionBtn = document.getElementById('add-composition-btn');
+	const compositionContainer = document.getElementById('add-process-composition-container');
+    const addCompositionBtn = document.getElementById('add-process-add-composition');
 
     addCompositionBtn.addEventListener('click', () => {
         const compositionDiv = document.createElement('div');
@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
 	function getCompositionData() {
-		const compositionContainer = document.getElementById('composition-container');
+		const compositionContainer = document.getElementById('add-process-composition-container');
 		const compositionDivs = compositionContainer.querySelectorAll('div');
 		const compositionArray = Array.from(compositionDivs).map(div => {
 			const processId = div.querySelector('input[name="composition-process-id"]').value;
