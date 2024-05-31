@@ -126,8 +126,8 @@ def select_process():
         db.session.commit()
     return redirect(url_for('dashboard'))
 
-@app.route('/dashboard', methods=['GET', 'POST'])
-def dashboard():
+@app.route('/set_process', methods=['POST'])
+def set_process():
     if request.method == 'POST':
         # Process submission logic        
         economic = float(request.form['economic'])
@@ -167,9 +167,9 @@ def dashboard():
         
         db.session.commit()
 
-
+@app.route('/dashboard', methods=['GET'])
+def dashboard():
     processes = Process.query.all()
-
     return render_template('dashboard.html', processes=processes)
 
 # Endpoint to retrieve processes as JSON

@@ -384,7 +384,7 @@ document.addEventListener('DOMContentLoaded', function() {
 					formData.append('composition', JSON.stringify(process.composition));
 																			
 					// Send form data asynchronously
-					fetch("/dashboard", {
+					fetch("/set_process", {
 						method: 'POST',
 						body: formData
 					})
