@@ -274,9 +274,9 @@ async function fetchProcesses() {
 				li.setAttribute("process-composition", compoStr);
 
 				// Calculate cumulative metrics
-				const cumulativeEconomic = processRetrieveMetric(data, process, "economic");
-				const cumulativeEnvEmissions = processRetrieveMetric(data, process, "envEmissions");
-				const cumulativeSocial = processRetrieveMetric(data, process, "social");
+				const cumulativeEconomic = processRetrieveMetric(data, process, "economic") * process.amount;
+				const cumulativeEnvEmissions = processRetrieveMetric(data, process, "envEmissions") * process.amount;
+				const cumulativeSocial = processRetrieveMetric(data, process, "social") * process.amount;
 
 				li.innerHTML = `
 					<div class="d-flex justify-content-between">
