@@ -12,105 +12,117 @@
     <link rel="icon" href="/static/logo_2_24x24.png">
 </head>
 
-<body class="container">
-    <h1 class="my-4">Dashboard</h1>
-    <img src="/static/logo_2_24x24.png" width="100" />
+<body class="container" style="margin-top: 80px;">
+    <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
+        <a class="navbar-brand" href="#">
+            <img src="/static/logo_2_24x24.png" width="30" height="30" class="d-inline-block align-top" alt="Logo">
+            Dashboard
+        </a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                    <form action="/reset_database" method="POST" class="form-inline my-2 my-lg-0">
+                        <button type="submit" class="btn btn-danger">Reset Database</button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+    </nav>
 
-    <form action="/reset_database" method="POST" class="mb-4">
-        <button type="submit" class="btn btn-danger">Reset Database</button>
-    </form>
+    <div class="container mt-4">
+        <div class="mb-4">
+            <h3>Total Metrics for Selected Governance for a given period (e.g., a year):</h3>
+            <p>Economic: <span id="total-economic">0</span> $</p>
+            <p>Environmental CO2eq emissions: <span id="selected-governance-env-emissions">0</span> kgCO2eq</p>
+            <p>Total social: <span id="total-social">0</span></p>
+        </div>
 
-    <hr>
+        <hr>
 
-    <div class="mb-4">
-        <h3>Total Metrics for Selected Governance for a given period (e.g., a year):</h3>
-        <p>Economic: <span id="total-economic">0</span> $</p>
-        <p>Environmental CO2eq emissions: <span id="selected-governance-env-emissions">0</span> kgCO2eq</p>
-        <p>Total social: <span id="total-social">0</span></p>
-    </div>
+        <div class="mb-4">
+            <h3>Governance goals</h3>
+            <form id="filter-form" class="form-inline">
+                <div class="form-group mb-2">
+                    <label for="economic-goals" class="mr-2">Economic Goal:</label>
+                    <input type="number" class="form-control" id="economic-goals" name="economic-goals" value="0" required>
+                </div>
+                <div class="form-group mx-sm-3 mb-2">
+                    <label for="governance-goals-env-emissions" class="mr-2">GES emissions in kgCO2eq:</label>
+                    <input type="number" class="form-control" id="governance-goals-env-emissions" name="governance-goals-env-emissions" value="0" required>
+                </div>
+                <div class="form-group mx-sm-3 mb-2">
+                    <label for="social-goals" class="mr-2">Social Goal:</label>
+                    <input type="number" class="form-control" id="social-goals" name="social-goals" value="0" required>
+                </div>
+                <button type="button" class="btn btn-primary mb-2" id="btn-adjust">Adjust gov</button>
+            </form>
+        </div>
 
-    <hr>
+        <hr>
 
-    <div class="mb-4">
-        <h3>Governance goals</h3>
-        <form id="filter-form" class="form-inline">
-            <div class="form-group mb-2">
-                <label for="economic-goals" class="mr-2">Economic Goal:</label>
-                <input type="number" class="form-control" id="economic-goals" name="economic-goals" value="0" required>
-            </div>
-            <div class="form-group mx-sm-3 mb-2">
-                <label for="governance-goals-env-emissions" class="mr-2">GES emissions in kgCO2eq:</label>
-                <input type="number" class="form-control" id="governance-goals-env-emissions" name="governance-goals-env-emissions" value="0" required>
-            </div>
-            <div class="form-group mx-sm-3 mb-2">
-                <label for="social-goals" class="mr-2">Social Goal:</label>
-                <input type="number" class="form-control" id="social-goals" name="social-goals" value="0" required>
-            </div>
-            <button type="button" class="btn btn-primary mb-2" id="btn-adjust">Adjust gov</button>
-        </form>
-    </div>
-
-    <hr>
-
-    <div class="mb-4">
-        <form action="/set_process" method="POST" id="process-form" enctype="multipart/form-data">
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label for="economic">Economic</label>
-                        <input type="number" class="form-control" name="economic" value="10">
+        <div class="mb-4">
+            <form action="/set_process" method="POST" id="process-form" enctype="multipart/form-data">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="economic">Economic</label>
+                            <input type="number" class="form-control" name="economic" value="10">
+                        </div>
+                        <div class="form-group">
+                            <label for="envEmissions">GES emissions in kgCO2eq</label>
+                            <input type="number" class="form-control" name="envEmissions" value="10">
+                        </div>
+                        <div class="form-group">
+                            <label for="title">Title</label>
+                            <input type="text" class="form-control" name="title">
+                        </div>
+                        <div class="form-group">
+                            <label for="social">Social</label>
+                            <input type="number" class="form-control" name="social" value="10">
+                        </div>
+                        <div class="form-group">
+                            <label for="process-amount">Amount</label>
+                            <input type="number" class="form-control" name="process-amount" value="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="process-example">Upload a default process</label>
+                            <input type="file" class="form-control-file" name="process-example" multiple>
+                        </div>
+                        <div class="form-group">
+                            <label for="tags">Tags</label>
+                            <input type="text" class="form-control" name="tags" placeholder="Tags (comma separated)">
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="envEmissions">GES emissions in kgCO2eq</label>
-                        <input type="number" class="form-control" name="envEmissions" value="10">
-                    </div>
-                    <div class="form-group">
-                        <label for="title">Title</label>
-                        <input type="text" class="form-control" name="title">
-                    </div>
-                    <div class="form-group">
-                        <label for="social">Social</label>
-                        <input type="number" class="form-control" name="social" value="10">
-                    </div>
-                    <div class="form-group">
-                        <label for="process-amount">Amount</label>
-                        <input type="number" class="form-control" name="process-amount" value="1">
-                    </div>
-                    <div class="form-group">
-                        <label for="process-example">Upload a default process</label>
-                        <input type="file" class="form-control-file" name="process-example" multiple>
-                    </div>
-                    <div class="form-group">
-                        <label for="tags">Tags</label>
-                        <input type="text" class="form-control" name="tags" placeholder="Tags (comma separated)">
+
+                    <div class="col-md-6">
+                        <h3>Composition du processus</h3>
+                        <div id="add-process-composition-container" class="mb-3">
+                            <!-- Composition items will be added here -->
+                        </div>
+                        <button type="button" class="btn btn-secondary" id="add-process-add-composition">Ajouter une nouvelle composition au processus</button>
                     </div>
                 </div>
 
-                <div class="col-md-6">
-                    <h3>Composition du processus</h3>
-                    <div id="add-process-composition-container" class="mb-3">
-                        <!-- Composition items will be added here -->
-                    </div>
-                    <button type="button" class="btn btn-secondary" id="add-process-add-composition">Ajouter une nouvelle composition au processus</button>
-                </div>
-            </div>
+                <button type="submit" class="btn btn-success mt-3" id="submit-btn">Submit</button>
+            </form>
+        </div>
 
-            <button type="submit" class="btn btn-success mt-3" id="submit-btn">Submit</button>
-        </form>
+        <hr>
+
+        <div class="mb-4">
+            <button class="btn btn-info" id="export-btn">Export processes</button>
+            <label for="import-file" class="btn btn-warning ml-2">Import processes</label>
+            <input type="file" name="import-file" id="import-file" class="d-none" accept="application/json">
+        </div>
+
+        <hr>
+
+        <h3>Process List</h3>
+        <ul id="process-list" class="list-group mb-4"></ul>
     </div>
-
-    <hr>
-
-    <div class="mb-4">
-        <button class="btn btn-info" id="export-btn">Export processes</button>
-        <label for="import-file" class="btn btn-warning ml-2">Import processes</label>
-        <input type="file" name="import-file" id="import-file" class="d-none" accept="application/json">
-    </div>
-
-    <hr>
-
-    <h3>Process List</h3>
-    <ul id="process-list" class="list-group mb-4"></ul>
 </body>
 
 </html>
