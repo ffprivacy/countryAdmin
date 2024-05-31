@@ -60,7 +60,7 @@ with app.app_context():
 # Routes
 @app.route('/')
 def index():
-    return render_template('dashboard.html')
+    return render_template('index.html')
 
 @app.route('/reset_database', methods=['POST'])
 def reset_database():
