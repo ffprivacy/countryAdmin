@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		for(let compo of process.composition) {
 			let compoProcess = getProcessById(allProcesses,compo.id);
 			if( compoProcess === undefined ) {
-				throw "Error undefined";
+				console.warn("process with id " + compo.id + " is not in the retrieved processes.");
 			} else {
 				total += processRetrieveMetric(allProcesses,compoProcess,metric) * compo.amount;
 			}
