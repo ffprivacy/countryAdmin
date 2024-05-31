@@ -170,99 +170,120 @@ document.addEventListener('DOMContentLoaded', function() {
 			
     // Function to fetch processes asynchronously
     async function fetchProcesses() {
-		// Clear previous processes
-		return fetch('/get_processes')
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-			processList.innerHTML = '';
-			// Calculate total metrics for each kind in the selected governance
-			const selectedProcesses = data.filter(process => process.selected);
-			const totalEconomic = selectedProcesses.reduce((total, process) => total + processRetrieveMetric(data,process,"economic") * process.amount, 0);
-			const selectedGovEnvEmissions = selectedProcesses.reduce((total, process) => total + processRetrieveMetric(data,process,"envEmissions") * process.amount, 0);
-			const totalSocial = selectedProcesses.reduce((total, process) => total + processRetrieveMetric(data,process,"social") * process.amount, 0);
-
-			// Update total metrics in the HTML
-			document.getElementById('total-economic').textContent = `${totalEconomic}`;
-			document.getElementById('selected-governance-env-emissions').textContent = `${selectedGovEnvEmissions}`;
-			document.getElementById('total-social').textContent = `${totalSocial}`;
-
-            // Update the DOM with fetched processes
-            data.forEach(process => {
-                const li = document.createElement('li');
-				li.setAttribute("process-id",process.process_id);
-				li.setAttribute("economic",process.metrics.economic);
-				li.setAttribute("env-emissions",process.metrics.envEmissions);
-				li.setAttribute("social",process.metrics.social);
-				li.setAttribute("title",process.title);
-				li.setAttribute("process-amount",process.amount);
-				const compoStr = JSON.stringify(process.composition);
-				li.setAttribute("process-composition",compoStr);
-                li.innerHTML = `${process.process_id}(id=${process.id}): ${process.title} ${process.metrics.economic}$ ${process.metrics.envEmissions}kgCO2eq ${process.metrics.social} social X ${process.amount} composed of ${compoStr}`;
-                const form = document.createElement('form');
-                form.setAttribute('action', '/select_process');
-                form.setAttribute('method', 'POST');
-				const checkbox = document.createElement('input');
-                checkbox.setAttribute('type', 'checkbox');
-                checkbox.setAttribute('value', process.selected);
-                if (process.selected) {
-                    checkbox.setAttribute('checked', '');
+        // Clear previous processes
+        return fetch('/get_processes')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
                 }
-                const checkboxS = document.createElement('input');
-                checkboxS.setAttribute('type', 'number');
-                checkboxS.setAttribute('name', 'selected');
-                checkboxS.setAttribute('hidden', '');
+                return response.json();
+            })
+            .then(data => {
+                processList.innerHTML = '';
+                const selectedProcesses = data.filter(process => process.selected);
+                const totalEconomic = selectedProcesses.reduce((total, process) => total + processRetrieveMetric(data, process, "economic") * process.amount, 0);
+                const selectedGovEnvEmissions = selectedProcesses.reduce((total, process) => total + processRetrieveMetric(data, process, "envEmissions") * process.amount, 0);
+                const totalSocial = selectedProcesses.reduce((total, process) => total + processRetrieveMetric(data, process, "social") * process.amount, 0);
 
-                const idInput = document.createElement('input');
-                idInput.setAttribute('type', 'number');
-                idInput.setAttribute('name', 'id');
-                idInput.setAttribute('value', process.id);
-                idInput.setAttribute('hidden', '');
-                form.appendChild(checkbox);
-                form.appendChild(idInput);
-				form.appendChild(checkboxS);
-                li.appendChild(form);
+                document.getElementById('total-economic').textContent = `${totalEconomic}`;
+                document.getElementById('selected-governance-env-emissions').textContent = `${selectedGovEnvEmissions}`;
+                document.getElementById('total-social').textContent = `${totalSocial}`;
 
-				const amountInput = document.createElement('input');
-				amountInput.setAttribute('type','number');
-				amountInput.value = process.amount;
-				amountInput.addEventListener('change', () => {
-                    const newAmount = amountInput.value;
-                    fetch(`/update_process_amount`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            id: process.id,
-                            amount: newAmount
+                data.forEach(process => {
+                    const li = document.createElement('li');
+                    li.classList.add("list-group-item");
+                    li.setAttribute("process-id", process.process_id);
+                    li.setAttribute("economic", process.metrics.economic);
+                    li.setAttribute("env-emissions", process.metrics.envEmissions);
+                    li.setAttribute("social", process.metrics.social);
+                    li.setAttribute("title", process.title);
+                    li.setAttribute("process-amount", process.amount);
+                    const compoStr = JSON.stringify(process.composition);
+                    li.setAttribute("process-composition", compoStr);
+
+                    // Calculate cumulative metrics
+                    const cumulativeEconomic = processRetrieveMetric(data, process, "economic");
+                    const cumulativeEnvEmissions = processRetrieveMetric(data, process, "envEmissions");
+                    const cumulativeSocial = processRetrieveMetric(data, process, "social");
+
+                    li.innerHTML = `
+                        <strong>${process.title}</strong> (ID: ${process.id})<br>
+                        <ul>
+                            <li>Economic: ${process.metrics.economic} $</li>
+                            <li>Environmental: ${process.metrics.envEmissions} kgCO2eq</li>
+                            <li>Social: ${process.metrics.social}</li>
+                            <li>Amount: ${process.amount}</li>
+                            <li>Composition: ${compoStr}</li>
+                            <li><strong>Cumulative Metrics</strong>:
+                                <ul>
+                                    <li>Economic: ${cumulativeEconomic} $</li>
+                                    <li>Environmental: ${cumulativeEnvEmissions} kgCO2eq</li>
+                                    <li>Social: ${cumulativeSocial}</li>
+                                </ul>
+                            </li>
+                        </ul>
+                    `;
+
+                    // Add form and checkbox for selection
+                    const form = document.createElement('form');
+                    form.setAttribute('action', '/select_process');
+                    form.setAttribute('method', 'POST');
+                    const checkbox = document.createElement('input');
+                    checkbox.setAttribute('type', 'checkbox');
+                    checkbox.setAttribute('value', process.selected);
+                    if (process.selected) {
+                        checkbox.setAttribute('checked', '');
+                    }
+                    const checkboxS = document.createElement('input');
+                    checkboxS.setAttribute('type', 'number');
+                    checkboxS.setAttribute('name', 'selected');
+                    checkboxS.setAttribute('hidden', '');
+
+                    const idInput = document.createElement('input');
+                    idInput.setAttribute('type', 'number');
+                    idInput.setAttribute('name', 'id');
+                    idInput.setAttribute('value', process.id);
+                    idInput.setAttribute('hidden', '');
+                    form.appendChild(checkbox);
+                    form.appendChild(idInput);
+                    form.appendChild(checkboxS);
+                    li.appendChild(form);
+
+                    const amountInput = document.createElement('input');
+                    amountInput.setAttribute('type', 'number');
+                    amountInput.value = process.amount;
+                    amountInput.addEventListener('change', () => {
+                        const newAmount = amountInput.value;
+                        fetch(`/update_process_amount`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                id: process.id,
+                                amount: newAmount
+                            })
                         })
-                    })
-                    .then(response => response.json())
-                    .then(updatedProcess => {
-                        console.log(`Process ${updatedProcess.id} amount updated to ${updatedProcess.amount}`);
-						fetchProcesses();
-                    })
-                    .catch(error => console.error('Error updating process amount:', error));
+                            .then(response => response.json())
+                            .then(updatedProcess => {
+                                console.log(`Process ${updatedProcess.id} amount updated to ${updatedProcess.amount}`);
+                                fetchProcesses();
+                            })
+                            .catch(error => console.error('Error updating process amount:', error));
+                    });
+                    li.appendChild(amountInput);
+                    processList.appendChild(li);
+
+                    checkbox.addEventListener('click', function (e) {
+                        checkboxS.value = checkbox.checked ? 1 : 0;
+                        form.submit();
+                    });
                 });
-				li.appendChild(amountInput);
-                processList.appendChild(li);
-								
-				checkbox.addEventListener('click',function(e){									
-					checkboxS.value = checkbox.checked ? 1 : 0;
-					form.submit();
-				});
+            })
+            .catch(error => {
+                console.error('There was a problem fetching processes:', error.message);
             });
-        })
-        .catch(error => {
-            console.error('There was a problem fetching processes:', error.message);
-            // Optionally, display an error message to the user
-        });
-	}
+    }
 
     // Fetch processes when the page loads
     fetchProcesses();
