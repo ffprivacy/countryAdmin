@@ -18,7 +18,7 @@ class Composition(db.Model):
     composed_process_id = db.Column(db.Integer, db.ForeignKey('process.id'), nullable=False)
     component_process_id = db.Column(db.Integer, nullable=False)
     amount = db.Column(db.Integer, nullable=False)
-   
+
 class ProcessTag(db.Model):
     __tablename__ = 'process_tag'
     process_id = db.Column(db.Integer, db.ForeignKey('process.id'), primary_key=True)
@@ -64,7 +64,9 @@ def index():
 
 @app.route('/reset_database', methods=['POST'])
 def reset_database():
-    # Delete all records in the Process table
+    db.session.query(Tag).delete()
+    db.session.query(ProcessTag).delete()
+    db.session.query(User).delete()
     db.session.query(Process).delete()
     db.session.query(Composition).delete()
     db.session.commit()
