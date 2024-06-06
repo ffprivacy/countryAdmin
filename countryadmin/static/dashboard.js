@@ -9,7 +9,45 @@ function getCompositionData() {
 	});
 	return compositionArray;
 }
-
+let radarChart;
+function updateRadarChart(economic, envEmissions, social) {
+	const ctx = document.getElementById('metricsRadarChart').getContext('2d');
+	if (radarChart) {
+		radarChart.destroy();
+	}
+	radarChart = new Chart(ctx, {
+		type: 'radar',
+		data: {
+			labels: ['Economic', 'Environmental', 'Social'],
+			datasets: [{
+				label: 'Definition du pays',
+				data: [economic, envEmissions, social],
+				backgroundColor: 'rgba(54, 162, 235, 0.2)',
+				borderColor: 'rgba(54, 162, 235, 1)',
+				borderWidth: 1
+			}]
+		},
+		options: {
+			maintainAspectRatio: false,
+			responsive: true,
+			scale: {
+				beginAtZero: true,
+				min: 0,
+				ticks: { 
+					beginAtZero: true,
+					callback: function(value) {
+						return Number(value.toString());
+					} 
+				}
+			},
+			elements: {
+				line: {
+					tension: 0
+				}
+			}
+		}
+	});
+}
 function setScenario(scenario) {
 	let economic, social, envEmissions;
 	if (scenario === 'capitalism') {
@@ -282,6 +320,8 @@ async function fetchProcesses() {
 			document.getElementById('selected-governance-env-emissions').textContent = `${selectedGovEnvEmissions}`;
 			document.getElementById('total-social').textContent = `${totalSocial}`;
 
+			updateRadarChart(totalEconomic, selectedGovEnvEmissions, totalSocial);
+
 			data.forEach(process => {
 				const li = document.createElement('li');
 				li.classList.add("list-group-item");
@@ -429,6 +469,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 	const compositionContainer = document.getElementById('add-process-composition-container');
     const addCompositionBtn = document.getElementById('add-process-add-composition');
+
+	updateRadarChart(0, 0, 0);
 
     addCompositionBtn.addEventListener('click', () => {
         const compositionDiv = document.createElement('div');
