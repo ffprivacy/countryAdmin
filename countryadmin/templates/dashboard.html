@@ -48,22 +48,30 @@
         <hr>
 
         <div class="mb-4">
-            <h3>Governance goals</h3>
-            <form id="filter-form" class="form-inline">
-                <div class="form-group mb-2">
-                    <label for="economic-goals" class="mr-2">Economic Goal:</label>
-                    <input type="number" class="form-control" id="economic-goals" name="economic-goals" value="0" required>
-                </div>
-                <div class="form-group mx-sm-3 mb-2">
-                    <label for="governance-goals-env-emissions" class="mr-2">GES emissions in kgCO2eq:</label>
-                    <input type="number" class="form-control" id="governance-goals-env-emissions" name="governance-goals-env-emissions" value="0" required>
-                </div>
-                <div class="form-group mx-sm-3 mb-2">
-                    <label for="social-goals" class="mr-2">Social Goal:</label>
-                    <input type="number" class="form-control" id="social-goals" name="social-goals" value="0" required>
-                </div>
-                <button type="button" class="btn btn-primary mb-2" id="btn-adjust">Adjust gov</button>
-            </form>
+            <div class="ml-4">
+                <h3>Governance goals</h3>
+                <form id="filter-form" class="form-inline">
+                    <div class="form-group mb-2">
+                        <label for="economic-goals" class="mr-2">Economic Goal:</label>
+                        <input type="number" class="form-control" id="economic-goals" name="economic-goals" value="0" required>
+                    </div>
+                    <div class="form-group mx-sm-3 mb-2">
+                        <label for="governance-goals-env-emissions" class="mr-2">GES emissions in kgCO2eq:</label>
+                        <input type="number" class="form-control" id="governance-goals-env-emissions" name="governance-goals-env-emissions" value="0" required>
+                    </div>
+                    <div class="form-group mx-sm-3 mb-2">
+                        <label for="social-goals" class="mr-2">Social Goal:</label>
+                        <input type="number" class="form-control" id="social-goals" name="social-goals" value="0" required>
+                    </div>
+                    <button type="button" class="btn btn-primary mb-2" id="btn-adjust">Adjust gov</button>
+                </form>
+            </div>
+            <div class="ml-4">
+                <h3>Scenarios</h3>
+                <button type="button" class="btn btn-outline-primary mb-2" onclick="setScenario('capitalism')">Capitalism</button>
+                <button type="button" class="btn btn-outline-danger mb-2" onclick="setScenario('hell')">Hell</button>
+                <button type="button" class="btn btn-outline-success mb-2" onclick="setScenario('diamond')">Diamond</button>
+            </div>
         </div>
 
         <hr>

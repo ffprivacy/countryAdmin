@@ -10,6 +10,27 @@ function getCompositionData() {
 	return compositionArray;
 }
 
+function setScenario(scenario) {
+	let economic, social, envEmissions;
+	if (scenario === 'capitalism') {
+		economic = 1000;
+		social = 0;
+		envEmissions = 0;
+	} else if (scenario === 'hell') {
+		economic = 1000;
+		social = 0;
+		envEmissions = 1000;
+	} else if (scenario === 'diamond') {
+		economic = 1000;
+		social = 1000;
+		envEmissions = 1000;
+	}
+
+	document.getElementById('economic-goals').value = economic;
+	document.getElementById('social-goals').value = social;
+	document.getElementById('governance-goals-env-emissions').value = envEmissions;
+}
+
 // recursively compute the metric of a process
 function processRetrieveMetric(allProcesses,process,metric) {
 	let total = 0;
