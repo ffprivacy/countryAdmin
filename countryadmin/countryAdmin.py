@@ -1,16 +1,26 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify
+from flask import Flask, render_template, request, redirect, url_for, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 import ast, copy
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.associationproxy import association_proxy
+from functools import wraps
 
 # Initialize Flask app
 app = Flask(__name__)
+app.secret_key = 'your_secret_key'
 
 # Configure SQLAlchemy for database
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///processes.db'
 db = SQLAlchemy(app)
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 # Define Composition model
 class Composition(db.Model):
@@ -63,6 +73,7 @@ def index():
     return render_template('index.html')
 
 @app.route('/reset_database', methods=['POST'])
+@login_required
 def reset_database():
     db.session.query(Tag).delete()
     db.session.query(ProcessTag).delete()
@@ -73,6 +84,7 @@ def reset_database():
     return redirect(url_for('dashboard'))
 
 @app.route('/update_process_amount', methods=['POST'])
+@login_required
 def update_process_amount():
     data = request.json
     id = data.get('id')
@@ -95,7 +107,7 @@ def login():
         user = User.query.filter_by(username=username).first()
         if user:
             if user.check_password(password):
-                # TODO: Implement session management for logged in users
+                session['user_id'] = user.id
                 return redirect(url_for('dashboard'))
         else:
             # Create new user if not in database
@@ -103,11 +115,12 @@ def login():
             new_user.set_password(password)
             db.session.add(new_user)
             db.session.commit()
-            # TODO: Implement session management for newly created user
+            session['user_id'] = new_user.id
             return redirect(url_for('dashboard'))
     return render_template('login.html')
 
 @app.route('/select_process', methods=['POST'])
+@login_required
 def select_process():
     ids = []
     states = []
@@ -128,6 +141,7 @@ def select_process():
     return redirect(url_for('dashboard'))
 
 @app.route('/set_process', methods=['POST'])
+@login_required
 def set_process():
     if request.method == 'POST':
         # Process submission logic        
@@ -169,12 +183,14 @@ def set_process():
         return jsonify({})
 
 @app.route('/dashboard', methods=['GET'])
+@login_required
 def dashboard():
     processes = Process.query.all()
     return render_template('dashboard.html', processes=processes)
 
 # Endpoint to retrieve processes as JSON
 @app.route('/get_processes', methods=['GET'])
+@login_required
 def get_processes():
     processes = Process.query.all()
     process_list = []
@@ -199,6 +215,7 @@ def get_processes():
     return jsonify(process_list)
 
 @app.route('/delete_process/<int:id>', methods=['POST'])
+@login_required
 def delete_process(id):
     process = Process.query.get(id)
     if not process:
@@ -212,6 +229,7 @@ def delete_process(id):
     return jsonify({'success': True}), 200
 
 @app.route('/update_composition/<int:process_id>', methods=['POST'])
+@login_required
 def update_composition(process_id):
     data = request.json
     component_process_id = data.get('id')
@@ -226,6 +244,7 @@ def update_composition(process_id):
     return jsonify({'success': True}), 200
 
 @app.route('/delete_composition/<int:process_id>/<int:component_process_id>', methods=['POST'])
+@login_required
 def delete_composition(process_id, component_process_id):
     composition = Composition.query.filter_by(composed_process_id=process_id, component_process_id=component_process_id).first()
     if not composition:
@@ -234,6 +253,12 @@ def delete_composition(process_id, component_process_id):
     db.session.delete(composition)
     db.session.commit()
     return jsonify({'success': True}), 200
+
+@app.route('/logout')
+@login_required
+def logout():
+    session.pop('user_id', None)
+    return redirect(url_for('index'))
 
 def main():
     port = 5000
