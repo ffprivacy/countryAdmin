@@ -356,9 +356,50 @@ async function fetchProcesses() {
 			const selectedGovEnvEmissions = selectedProcesses.reduce((total, process) => total + processRetrieveMetric(data, process, "envEmissions") * process.amount, 0);
 			const totalSocial = selectedProcesses.reduce((total, process) => total + processRetrieveMetric(data, process, "social") * process.amount, 0);
 
-			document.getElementById('total-economic').textContent = `${totalEconomic}`;
-			document.getElementById('selected-governance-env-emissions').textContent = `${selectedGovEnvEmissions}`;
-			document.getElementById('total-social').textContent = `${totalSocial}`;
+			let totalResourcesUsed = {
+                human: 0,
+                ground: 0,
+                ores: 0,
+                water: 0,
+                oil: 0,
+                gas: 0
+                // Add more resources as needed
+            };
+
+            selectedProcesses.forEach(process => {
+                if (process.resources) {
+                    totalResourcesUsed.human += process.resources.human * process.amount || 0;
+                    totalResourcesUsed.ground += process.resources.ground * process.amount || 0;
+                    totalResourcesUsed.ores += process.resources.ores * process.amount || 0;
+                    totalResourcesUsed.water += process.resources.water * process.amount || 0;
+                    totalResourcesUsed.oil += process.resources.oil * process.amount || 0;
+                    totalResourcesUsed.gas += process.resources.gas * process.amount || 0;
+                    // Add more resources as needed
+                }
+            });
+
+            document.getElementById('total-economic').textContent = `${totalEconomic}`;
+            document.getElementById('selected-governance-env-emissions').textContent = `${selectedGovEnvEmissions}`;
+            document.getElementById('total-social').textContent = `${totalSocial}`;
+
+            document.getElementById('total-human-used').textContent = `${totalResourcesUsed.human}`;
+            document.getElementById('total-ground-used').textContent = `${totalResourcesUsed.ground}`;
+            document.getElementById('total-ores-used').textContent = `${totalResourcesUsed.ores}`;
+            document.getElementById('total-water-used').textContent = `${totalResourcesUsed.water}`;
+            document.getElementById('total-oil-used').textContent = `${totalResourcesUsed.oil}`;
+            document.getElementById('total-gas-used').textContent = `${totalResourcesUsed.gas}`;
+
+            fetch('/get_country_resources')
+                .then(response => response.json())
+                .then(countryResources => {
+                    document.getElementById('time-human-depletion').textContent = (countryResources.human / totalResourcesUsed.human).toFixed(2);
+                    document.getElementById('time-ground-depletion').textContent = (countryResources.ground / totalResourcesUsed.ground).toFixed(2);
+                    document.getElementById('time-ores-depletion').textContent = (countryResources.ores / totalResourcesUsed.ores).toFixed(2);
+                    document.getElementById('time-water-depletion').textContent = (countryResources.water / totalResourcesUsed.water).toFixed(2);
+                    document.getElementById('time-oil-depletion').textContent = (countryResources.oil / totalResourcesUsed.oil).toFixed(2);
+                    document.getElementById('time-gas-depletion').textContent = (countryResources.gas / totalResourcesUsed.gas).toFixed(2);
+                    // Add more resources as needed
+                });
 
 			updateRadarChart(totalEconomic, selectedGovEnvEmissions, totalSocial);
 
