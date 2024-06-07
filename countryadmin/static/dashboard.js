@@ -731,19 +731,27 @@ document.addEventListener('DOMContentLoaded', function() {
 			const reader = new FileReader();
 			reader.onload = function(event) {
 				const processes = JSON.parse(event.target.result);
-				for(let process of processes) {
+				for (let process of processes) {
 					// Serialize form data
+					console.warn(process);
 					const formData = new FormData();
-					formData.append('id',process.id);
+					formData.append('id', process.id);
 					formData.append('economic', process.metrics.economic);
 					formData.append('envEmissions', process.metrics.envEmissions);
-					formData.append('process_id', process.process_id);
 					formData.append('title', process.title);
 					formData.append('social', process.metrics.social);
 					formData.append('selected', process.selected);
 					formData.append('process-amount', process.amount);
 					formData.append('composition', JSON.stringify(process.composition));
-																			
+					formData.append('resources-human', process.resources.human || 0);
+					formData.append('resources-ground', process.resources.ground || 0);
+					formData.append('resources-ores', process.resources.ores || 0);
+					formData.append('resources-water', process.resources.water || 0);
+					formData.append('resources-oil', process.resources.oil || 0);
+					formData.append('resources-gas', process.resources.gas || 0);
+					formData.append('tags', process.tags.join(','));
+					// Add more resources as needed
+																					
 					// Send form data asynchronously
 					fetch("/set_process", {
 						method: 'POST',
@@ -770,4 +778,5 @@ document.addEventListener('DOMContentLoaded', function() {
 			reader.readAsText(file);
 		}
 	});
+
 });
