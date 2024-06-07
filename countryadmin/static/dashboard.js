@@ -93,15 +93,15 @@ function setScenario(scenario) {
 	if (scenario === 'capitalism') {
 		economic = 1000;
 		social = 0;
-		envEmissions = 0;
+		envEmissions = 1000;
 	} else if (scenario === 'hell') {
 		economic = 1000;
 		social = 0;
-		envEmissions = 1000;
+		envEmissions = 0;
 	} else if (scenario === 'diamond') {
 		economic = 1000;
 		social = 1000;
-		envEmissions = 1000;
+		envEmissions = 0;
 	}
 
 	document.getElementById('economic-goals').value = economic;
