@@ -389,17 +389,22 @@ async function fetchProcesses() {
             document.getElementById('total-oil-used').textContent = `${totalResourcesUsed.oil}`;
             document.getElementById('total-gas-used').textContent = `${totalResourcesUsed.gas}`;
 
-            fetch('/get_country_resources')
-                .then(response => response.json())
-                .then(countryResources => {
-                    document.getElementById('time-human-depletion').textContent = (countryResources.human / totalResourcesUsed.human).toFixed(2);
-                    document.getElementById('time-ground-depletion').textContent = (countryResources.ground / totalResourcesUsed.ground).toFixed(2);
-                    document.getElementById('time-ores-depletion').textContent = (countryResources.ores / totalResourcesUsed.ores).toFixed(2);
-                    document.getElementById('time-water-depletion').textContent = (countryResources.water / totalResourcesUsed.water).toFixed(2);
-                    document.getElementById('time-oil-depletion').textContent = (countryResources.oil / totalResourcesUsed.oil).toFixed(2);
-                    document.getElementById('time-gas-depletion').textContent = (countryResources.gas / totalResourcesUsed.gas).toFixed(2);
-                    // Add more resources as needed
-                });
+			fetch('/get_country_resources')
+				.then(response => response.json())
+				.then(countryResources => {
+					const getTimeToDepletion = (resourceAmount, renewRate, usage) => {
+						if (usage <= renewRate) return "∞";  // Infinite time if renew rate is greater than or equal to usage
+						return ((resourceAmount / (usage - renewRate)) || 0).toFixed(2);
+					};
+					
+					document.getElementById('time-human-depletion').textContent = getTimeToDepletion(countryResources.human.amount, countryResources.human.renew_rate, totalResourcesUsed.human);
+					document.getElementById('time-ground-depletion').textContent = getTimeToDepletion(countryResources.ground.amount, countryResources.ground.renew_rate, totalResourcesUsed.ground);
+					document.getElementById('time-ores-depletion').textContent = getTimeToDepletion(countryResources.ores.amount, countryResources.ores.renew_rate, totalResourcesUsed.ores);
+					document.getElementById('time-water-depletion').textContent = getTimeToDepletion(countryResources.water.amount, countryResources.water.renew_rate, totalResourcesUsed.water);
+					document.getElementById('time-oil-depletion').textContent = getTimeToDepletion(countryResources.oil.amount, countryResources.oil.renew_rate, totalResourcesUsed.oil);
+					document.getElementById('time-gas-depletion').textContent = getTimeToDepletion(countryResources.gas.amount, countryResources.gas.renew_rate, totalResourcesUsed.gas);
+					// Add more resources as needed
+				});
 
 			updateRadarChart(totalEconomic, selectedGovEnvEmissions, totalSocial);
 
@@ -566,40 +571,52 @@ document.addEventListener('DOMContentLoaded', function() {
 	updateRadarChart(0, 0, 0);
 
 	fetch('/get_country_resources')
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById('human-resources').value = data.human;
-            document.getElementById('ground-resources').value = data.ground;
-            document.getElementById('ores-resources').value = data.ores;
-            document.getElementById('water-resources').value = data.water;
-            document.getElementById('oil-resources').value = data.oil;
-            document.getElementById('gas-resources').value = data.gas;
-            // Add more resources as needed
-        });
+		.then(response => response.json())
+		.then(data => {
+			document.getElementById('human-resources').value = data.human.amount;
+			document.getElementById('human-resources-renew').value = data.human.renew_rate;
+			document.getElementById('ground-resources').value = data.ground.amount;
+			document.getElementById('ground-resources-renew').value = data.ground.renew_rate;
+			document.getElementById('ores-resources').value = data.ores.amount;
+			document.getElementById('ores-resources-renew').value = data.ores.renew_rate;
+			document.getElementById('water-resources').value = data.water.amount;
+			document.getElementById('water-resources-renew').value = data.water.renew_rate;
+			document.getElementById('oil-resources').value = data.oil.amount;
+			document.getElementById('oil-resources-renew').value = data.oil.renew_rate;
+			document.getElementById('gas-resources').value = data.gas.amount;
+			document.getElementById('gas-resources-renew').value = data.gas.renew_rate;
+			// Add more resources as needed
+		});
 
-    document.getElementById('btn-set-resources').addEventListener('click', () => {
-        const resources = {
-            human: document.getElementById('human-resources').value,
-            ground: document.getElementById('ground-resources').value,
-            ores: document.getElementById('ores-resources').value,
-            water: document.getElementById('water-resources').value,
-            oil: document.getElementById('oil-resources').value,
-            gas: document.getElementById('gas-resources').value
-            // Add more resources as needed
-        };
-        fetch('/set_country_resources', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(resources)
-        }).then(response => response.json())
-          .then(data => {
-              if (data.success) {
-                  alert('Resources updated successfully');
-              }
-          });
-    });
+	document.getElementById('btn-set-resources').addEventListener('click', () => {
+		const resources = {
+			human: document.getElementById('human-resources').value || 0,
+			human_renew_rate: document.getElementById('human-resources-renew').value || 0,
+			ground: document.getElementById('ground-resources').value || 0,
+			ground_renew_rate: document.getElementById('ground-resources-renew').value || 0,
+			ores: document.getElementById('ores-resources').value || 0,
+			ores_renew_rate: document.getElementById('ores-resources-renew').value || 0,
+			water: document.getElementById('water-resources').value || 0,
+			water_renew_rate: document.getElementById('water-resources-renew').value || 0,
+			oil: document.getElementById('oil-resources').value || 0,
+			oil_renew_rate: document.getElementById('oil-resources-renew').value || 0,
+			gas: document.getElementById('gas-resources').value || 0,
+			gas_renew_rate: document.getElementById('gas-resources-renew').value || 0
+			// Add more resources as needed
+		};
+		fetch('/set_country_resources', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify(resources)
+		}).then(response => response.json())
+			.then(data => {
+				if (data.success) {
+					alert('Resources updated successfully');
+				}
+			});
+	});
 	
     addCompositionBtn.addEventListener('click', () => {
         const compositionDiv = document.createElement('div');

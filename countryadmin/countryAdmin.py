@@ -279,15 +279,14 @@ def logout():
 def set_country_resources():
     data = request.json
     country_resources = {
-        'human': data.get('human', 0),
-        'ground': data.get('ground', 0),
-        'ores': data.get('ores', 0),
-        'water': data.get('water', 0),
-        'oil': data.get('oil', 0),
-        'gas': data.get('gas', 0)
+        'human': {'amount': data.get('human', 0), 'renew_rate': data.get('human_renew_rate', 0)},
+        'ground': {'amount': data.get('ground', 0), 'renew_rate': data.get('ground_renew_rate', 0)},
+        'ores': {'amount': data.get('ores', 0), 'renew_rate': data.get('ores_renew_rate', 0)},
+        'water': {'amount': data.get('water', 0), 'renew_rate': data.get('water_renew_rate', 0)},
+        'oil': {'amount': data.get('oil', 0), 'renew_rate': data.get('oil_renew_rate', 0)},
+        'gas': {'amount': data.get('gas', 0), 'renew_rate': data.get('gas_renew_rate', 0)}
         # Add more resources as needed
     }
-    # Assume we have a Country model to store these resources
     country = Country.query.first()
     if not country:
         country = Country(resources=country_resources)
@@ -303,12 +302,12 @@ def get_country_resources():
     country = Country.query.first()
     if not country:
         return jsonify({
-            'human': 0,
-            'ground': 0,
-            'ores': 0,
-            'water': 0,
-            'oil': 0,
-            'gas': 0
+            'human': {'amount': 0, 'renew_rate': 0},
+            'ground': {'amount': 0, 'renew_rate': 0},
+            'ores': {'amount': 0, 'renew_rate': 0},
+            'water': {'amount': 0, 'renew_rate': 0},
+            'oil': {'amount': 0, 'renew_rate': 0},
+            'gas': {'amount': 0, 'renew_rate': 0}
             # Add more resources as needed
         })
     return jsonify(country.resources)
