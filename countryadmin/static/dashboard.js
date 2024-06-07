@@ -421,7 +421,7 @@ async function fetchProcesses() {
 				const cumulativeEconomic = processRetrieveMetric(data, process, "economic") * process.amount;
 				const cumulativeEnvEmissions = processRetrieveMetric(data, process, "envEmissions") * process.amount;
 				const cumulativeSocial = processRetrieveMetric(data, process, "social") * process.amount;
-
+				console.warn(process);
 				li.innerHTML = `
 					<div class="d-flex justify-content-between">
 						<div>
@@ -440,6 +440,16 @@ async function fetchProcesses() {
 								</li>
 							</ul>
 						</div>
+						<p>Resources Used:</p>
+						<ul>
+							<li>Human: ${process.resources.human || 0}</li>
+							<li>Ground: ${process.resources.ground || 0}</li>
+							<li>Ores: ${process.resources.ores || 0}</li>
+							<li>Water: ${process.resources.water || 0}</li>
+							<li>Oil: ${process.resources.oil || 0}</li>
+							<li>Gas: ${process.resources.gas || 0}</li>
+							<!-- Add more resources as needed -->
+						</ul>
 						<div>
 							<button class="btn btn-danger" onclick="deleteProcess(${process.id})">Delete</button>
 						</div>
@@ -629,8 +639,18 @@ document.addEventListener('DOMContentLoaded', function() {
     submitBtn.addEventListener('click', function(event) {
 		event.preventDefault();
 			
-        // Serialize form data
-        const formData = new FormData(processForm);
+		const resources = {
+			human: document.getElementById('resources-human').value || 0,
+			ground: document.getElementById('resources-ground').value || 0,
+			ores: document.getElementById('resources-ores').value || 0,
+			water: document.getElementById('resources-water').value || 0,
+			oil: document.getElementById('resources-oil').value || 0,
+			gas: document.getElementById('resources-gas').value || 0
+			// Add more resources as needed
+		};
+		
+		const formData = new FormData(processForm);
+		formData.append('resources', JSON.stringify(resources));
 
 		let compositionData = [];
 		document.querySelectorAll('.composition-process-group').forEach(group => {
@@ -641,6 +661,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		});
 		const compositionJSON = JSON.stringify(compositionData);
 		formData.append('composition', compositionJSON);
+		formData.append('resources', JSON.stringify(resources));
 
         // Send form data asynchronously
         fetch(processForm.action, {

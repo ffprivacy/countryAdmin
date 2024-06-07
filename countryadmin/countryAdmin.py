@@ -157,13 +157,23 @@ def set_process():
         if id is not None:
             id = int(id)
 
+        resources = {
+            'human': float(request.form.get('resources-human', 0) or 0),
+            'ground': float(request.form.get('resources-ground', 0) or 0),
+            'ores': float(request.form.get('resources-ores', 0) or 0),
+            'water': float(request.form.get('resources-water', 0) or 0),
+            'oil': float(request.form.get('resources-oil', 0) or 0),
+            'gas': float(request.form.get('resources-gas', 0) or 0)
+            # Add more resources as needed
+        }
+
         if selected is None:
             selected = True
         else:
             selected = ast.literal_eval(selected.capitalize())
         amount = request.form.get('process-amount')
         title = request.form['title']  # Add title from the form
-        new_process = Process(id=id, economic=economic, envEmissions=envEmissions, social=social, title=title, selected=selected, amount=amount)
+        new_process = Process(id=id, economic=economic, envEmissions=envEmissions, social=social, title=title, selected=selected, amount=amount, resources=resources)
         for tag_name in tags:
             tag_name = tag_name.strip()
             if tag_name:
@@ -208,6 +218,7 @@ def get_processes():
                 'envEmissions': process.envEmissions,
                 'social': process.social,
             },
+            'resources': process.resources,
             'selected': process.selected,
             'title': process.title,
             'amount': process.amount,
