@@ -22,7 +22,6 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# Define Composition model
 class Composition(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     composed_process_id = db.Column(db.Integer, db.ForeignKey('process.id'), nullable=False)
@@ -38,7 +37,6 @@ class Tag(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), unique=True)
 
-# Define Process model
 class Process(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     economic = db.Column(db.Float)
@@ -50,8 +48,8 @@ class Process(db.Model):
     composition = db.relationship('Composition', backref='process', lazy=True)
     tags = relationship('Tag', secondary='process_tag', backref='processes')
     tag_names = association_proxy('tags', 'name')
+    resources = db.Column(db.JSON)
 
-# Define User model
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
@@ -62,6 +60,10 @@ class User(db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+class Country(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    resources = db.Column(db.JSON)
 
 # Ensure database tables are created
 with app.app_context():
@@ -80,6 +82,7 @@ def reset_database():
     db.session.query(User).delete()
     db.session.query(Process).delete()
     db.session.query(Composition).delete()
+    db.session.query(Country).delete()
     db.session.commit()
     return redirect(url_for('dashboard'))
 
@@ -259,6 +262,53 @@ def delete_composition(process_id, component_process_id):
 def logout():
     session.pop('user_id', None)
     return redirect(url_for('index'))
+
+@app.route('/set_country_resources', methods=['POST'])
+@login_required
+def set_country_resources():
+    data = request.json
+    country_resources = {
+        'human': data.get('human', 0),
+        'ground': data.get('ground', 0),
+        'ores': data.get('ores', 0),
+        'water': data.get('water', 0),
+        'oil': data.get('oil', 0),
+        'gas': data.get('gas', 0)
+        # Add more resources as needed
+    }
+    # Assume we have a Country model to store these resources
+    country = Country.query.first()
+    if not country:
+        country = Country(resources=country_resources)
+        db.session.add(country)
+    else:
+        country.resources = country_resources
+    db.session.commit()
+    return jsonify({'success': True})
+
+@app.route('/get_country_resources', methods=['GET'])
+@login_required
+def get_country_resources():
+    country = Country.query.first()
+    if not country:
+        return jsonify({
+            'human': 0,
+            'ground': 0,
+            'ores': 0,
+            'water': 0,
+            'oil': 0,
+            'gas': 0
+            # Add more resources as needed
+        })
+    return jsonify(country.resources)
+
+@app.route('/simulate_exports_imports', methods=['POST'])
+@login_required
+def simulate_exports_imports():
+    data = request.json
+    # Process the import/export simulation based on `data`
+    # Update the resources accordingly
+    return jsonify({'success': True})
 
 def main():
     port = 5000

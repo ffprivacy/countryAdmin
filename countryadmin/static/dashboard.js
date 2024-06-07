@@ -1,4 +1,44 @@
 // dashboard.js
+async function getCountryResources() {
+	return await fetch('/get_country_resources')
+	.then(response => response.json());
+}
+async function calculateResourceUsageAndDepletion(processes) {
+	let totalResourcesUsed = {
+		human_resources: 0,
+		land_resources: 0,
+		ores: 0,
+		water: 0,
+		oil: 0,
+		gas: 0
+	};
+
+	// TODO : summerize and recurse
+	processes.forEach(process => {
+		totalResourcesUsed.human_resources += process.human_resources || 0;
+		totalResourcesUsed.land_resources += process.land_resources || 0;
+		totalResourcesUsed.ores += process.ores || 0;
+		totalResourcesUsed.water += process.water || 0;
+		totalResourcesUsed.oil += process.oil || 0;
+		totalResourcesUsed.gas += process.gas || 0;
+	});
+
+	const country = await getCountryResources(); 
+
+	/*
+	let yearsUntilDepletion = Math.min(
+		country.human_resources / totalResourcesUsed.human_resources,
+		country.land_resources / totalResourcesUsed.land_resources,
+		country.ores / totalResourcesUsed.ores,
+		country.water / totalResourcesUsed.water,
+		country.oil / totalResourcesUsed.oil,
+		country.gas / totalResourcesUsed.gas
+	);
+
+	document.getElementById('total-resources-used').textContent = JSON.stringify(totalResourcesUsed);
+	document.getElementById('years-until-depletion').textContent = yearsUntilDepletion.toFixed(2);
+	*/
+}
 function getCompositionData() {
 	const compositionContainer = document.getElementById('add-process-composition-container');
 	const compositionDivs = compositionContainer.querySelectorAll('div');
@@ -307,7 +347,7 @@ async function fetchProcesses() {
 			}
 			return response.json();
 		})
-		.then(data => {
+		.then(async function(data) {
 			const processList = document.getElementById('process-list');
 
 			processList.innerHTML = '';
@@ -321,6 +361,8 @@ async function fetchProcesses() {
 			document.getElementById('total-social').textContent = `${totalSocial}`;
 
 			updateRadarChart(totalEconomic, selectedGovEnvEmissions, totalSocial);
+
+			await calculateResourceUsageAndDepletion(selectedProcesses);
 
 			data.forEach(process => {
 				const li = document.createElement('li');
@@ -472,6 +514,42 @@ document.addEventListener('DOMContentLoaded', function() {
 
 	updateRadarChart(0, 0, 0);
 
+	fetch('/get_country_resources')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('human-resources').value = data.human;
+            document.getElementById('ground-resources').value = data.ground;
+            document.getElementById('ores-resources').value = data.ores;
+            document.getElementById('water-resources').value = data.water;
+            document.getElementById('oil-resources').value = data.oil;
+            document.getElementById('gas-resources').value = data.gas;
+            // Add more resources as needed
+        });
+
+    document.getElementById('btn-set-resources').addEventListener('click', () => {
+        const resources = {
+            human: document.getElementById('human-resources').value,
+            ground: document.getElementById('ground-resources').value,
+            ores: document.getElementById('ores-resources').value,
+            water: document.getElementById('water-resources').value,
+            oil: document.getElementById('oil-resources').value,
+            gas: document.getElementById('gas-resources').value
+            // Add more resources as needed
+        };
+        fetch('/set_country_resources', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(resources)
+        }).then(response => response.json())
+          .then(data => {
+              if (data.success) {
+                  alert('Resources updated successfully');
+              }
+          });
+    });
+	
     addCompositionBtn.addEventListener('click', () => {
         const compositionDiv = document.createElement('div');
 		compositionDiv.setAttribute('class', 'composition-process-group');
