@@ -613,7 +613,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		}).then(response => response.json())
 			.then(data => {
 				if (data.success) {
-					alert('Resources updated successfully');
+					fetchProcesses();
 				}
 			});
 	});

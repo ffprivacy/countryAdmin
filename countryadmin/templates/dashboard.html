@@ -39,73 +39,109 @@
     </nav>
 
     <div class="container mt-4">
-    
-        <div class="mb-4">
-            <h3>Country Resources</h3>
-            <div class="form-group">
-                <label for="human-resources">Human Resources</label>
-                <input type="number" class="form-control" id="human-resources" name="human-resources">
-                <label for="human-resources-renew">Renew Rate</label>
-                <input type="number" class="form-control" id="human-resources-renew" name="human-resources-renew">
-            </div>
-            <div class="form-group">
-                <label for="ground-resources">Ground Resources</label>
-                <input type="number" class="form-control" id="ground-resources" name="ground-resources">
-                <label for="ground-resources-renew">Renew Rate</label>
-                <input type="number" class="form-control" id="ground-resources-renew" name="ground-resources-renew">
-            </div>
-            <div class="form-group">
-                <label for="ores-resources">Ores</label>
-                <input type="number" class="form-control" id="ores-resources" name="ores-resources">
-                <label for="ores-resources-renew">Renew Rate</label>
-                <input type="number" class="form-control" id="ores-resources-renew" name="ores-resources-renew">
-            </div>
-            <div class="form-group">
-                <label for="water-resources">Water</label>
-                <input type="number" class="form-control" id="water-resources" name="water-resources">
-                <label for="water-resources-renew">Renew Rate</label>
-                <input type="number" class="form-control" id="water-resources-renew" name="water-resources-renew">
-            </div>
-            <div class="form-group">
-                <label for="oil-resources">Oil</label>
-                <input type="number" class="form-control" id="oil-resources" name="oil-resources">
-                <label for="oil-resources-renew">Renew Rate</label>
-                <input type="number" class="form-control" id="oil-resources-renew" name="oil-resources-renew">
-            </div>
-            <div class="form-group">
-                <label for="gas-resources">Gas</label>
-                <input type="number" class="form-control" id="gas-resources" name="gas-resources">
-                <label for="gas-resources-renew">Renew Rate</label>
-                <input type="number" class="form-control" id="gas-resources-renew" name="gas-resources-renew">
-            </div>
-            <!-- Add more resources as needed -->
-            <button type="button" class="btn btn-primary mb-2" id="btn-set-resources">Set Resources</button>
-        </div>        
-        
-        <div class="mb-4">
-            <h3>Total Metrics for Selected Governance for a given period (e.g., a year):</h3>
-            <p>Economic: <span id="total-economic">0</span> $</p>
-            <p>Environmental CO2eq emissions: <span id="selected-governance-env-emissions">0</span> kgCO2eq</p>
-            <p>Total social: <span id="total-social">0</span></p>
-            <p>Total resources used (per year):</p>
-            <p>Human: <span id="total-human-used">0</span></p>
-            <p>Ground: <span id="total-ground-used">0</span></p>
-            <p>Ores: <span id="total-ores-used">0</span></p>
-            <p>Water: <span id="total-water-used">0</span></p>
-            <p>Oil: <span id="total-oil-used">0</span></p>
-            <p>Gas: <span id="total-gas-used">0</span></p>
-            <p>Time before depletion (years):</p>
-            <p>Human: <span id="time-human-depletion">N/A</span></p>
-            <p>Ground: <span id="time-ground-depletion">N/A</span></p>
-            <p>Ores: <span id="time-ores-depletion">N/A</span></p>
-            <p>Water: <span id="time-water-depletion">N/A</span></p>
-            <p>Oil: <span id="time-oil-depletion">N/A</span></p>
-            <p>Gas: <span id="time-gas-depletion">N/A</span></p>
-            <div class="ml-2">
-                <canvas style="max-width: 400px; max-height: 400px;" id="metricsRadarChart" width="400" height="400"></canvas>
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <h3>Country Resources</h3>
+                <div class="form-group row">
+                    <label for="human-resources" class="col-sm-4 col-form-label">Human Resources</label>
+                    <div class="col-sm-8">
+                        <input type="number" class="form-control" id="human-resources" name="human-resources">
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label for="human-resources-renew" class="col-sm-4 col-form-label">Renew Rate</label>
+                    <div class="col-sm-8">
+                        <input type="number" class="form-control" id="human-resources-renew" name="human-resources-renew">
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label for="ground-resources" class="col-sm-4 col-form-label">Ground Resources</label>
+                    <div class="col-sm-8">
+                        <input type="number" class="form-control" id="ground-resources" name="ground-resources">
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label for="ground-resources-renew" class="col-sm-4 col-form-label">Renew Rate</label>
+                    <div class="col-sm-8">
+                        <input type="number" class="form-control" id="ground-resources-renew" name="ground-resources-renew">
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label for="ores-resources" class="col-sm-4 col-form-label">Ores</label>
+                    <div class="col-sm-8">
+                        <input type="number" class="form-control" id="ores-resources" name="ores-resources">
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label for="ores-resources-renew" class="col-sm-4 col-form-label">Renew Rate</label>
+                    <div class="col-sm-8">
+                        <input type="number" class="form-control" id="ores-resources-renew" name="ores-resources-renew">
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label for="water-resources" class="col-sm-4 col-form-label">Water</label>
+                    <div class="col-sm-8">
+                        <input type="number" class="form-control" id="water-resources" name="water-resources">
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label for="water-resources-renew" class="col-sm-4 col-form-label">Renew Rate</label>
+                    <div class="col-sm-8">
+                        <input type="number" class="form-control" id="water-resources-renew" name="water-resources-renew">
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label for="oil-resources" class="col-sm-4 col-form-label">Oil</label>
+                    <div class="col-sm-8">
+                        <input type="number" class="form-control" id="oil-resources" name="oil-resources">
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label for="oil-resources-renew" class="col-sm-4 col-form-label">Renew Rate</label>
+                    <div class="col-sm-8">
+                        <input type="number" class="form-control" id="oil-resources-renew" name="oil-resources-renew">
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label for="gas-resources" class="col-sm-4 col-form-label">Gas</label>
+                    <div class="col-sm-8">
+                        <input type="number" class="form-control" id="gas-resources" name="gas-resources">
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label for="gas-resources-renew" class="col-sm-4 col-form-label">Renew Rate</label>
+                    <div class="col-sm-8">
+                        <input type="number" class="form-control" id="gas-resources-renew" name="gas-resources-renew">
+                    </div>
+                </div>
+                <!-- Add more resources as needed -->
+                <button type="button" class="btn btn-primary mb-2" id="btn-set-resources">Set Resources</button>
+            </div>        
+            
+            <div class="col-md-6 mb-4">
+                <h3>Total Metrics for Selected Governance for a given period (e.g., a year):</h3>
+                <p>Economic: <span id="total-economic">0</span> $</p>
+                <p>Environmental CO2eq emissions: <span id="selected-governance-env-emissions">0</span> kgCO2eq</p>
+                <p>Total social: <span id="total-social">0</span></p>
+                <p>Total resources used (per year):</p>
+                <p>Human: <span id="total-human-used">0</span></p>
+                <p>Ground: <span id="total-ground-used">0</span></p>
+                <p>Ores: <span id="total-ores-used">0</span></p>
+                <p>Water: <span id="total-water-used">0</span></p>
+                <p>Oil: <span id="total-oil-used">0</span></p>
+                <p>Gas: <span id="total-gas-used">0</span></p>
+                <h3>Time before depletion (years):</h3>
+                <p>Human: <span id="time-human-depletion">N/A</span></p>
+                <p>Ground: <span id="time-ground-depletion">N/A</span></p>
+                <p>Ores: <span id="time-ores-depletion">N/A</span></p>
+                <p>Water: <span id="time-water-depletion">N/A</span></p>
+                <p>Oil: <span id="time-oil-depletion">N/A</span></p>
+                <p>Gas: <span id="time-gas-depletion">N/A</span></p>
+                <div>
+                    <canvas style="max-width: 400px; max-height: 400px;" id="metricsRadarChart" width="400" height="400"></canvas>
+                </div>
             </div>
         </div>
-
         <hr>
 
         <div class="mb-4">
