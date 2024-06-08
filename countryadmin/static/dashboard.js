@@ -501,6 +501,9 @@ function attachSelectedEvent() {
 
 document.addEventListener('DOMContentLoaded', function () {
 
+	setupExportDatabaseElement(document.getElementById('export-database-btn'));
+	setupImportDatabaseElement(document.getElementById('import-database-file'));
+
 	const compositionContainer = document.getElementById('add-process-composition-container');
 	const addCompositionBtn = document.getElementById('add-process-add-composition');
 

@@ -10,6 +10,7 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="/static/countryAdmin.js" defer></script>
+    <script src="/static/countryAdminFront.js" defer></script>
     <script src="/static/dashboard.js" defer></script>
     <link rel="icon" href="/static/logo_2_24x24.png">
 </head>
@@ -31,6 +32,13 @@
                     <form action="/reset_database" method="POST" class="form-inline my-2 my-lg-0">
                         <button type="submit" class="btn btn-danger">Reset Database</button>
                     </form>
+                </li>
+                <li class="nav-item">
+                    <button class="btn btn-info" id="export-database-btn">Export Database</button>
+                </li>
+                <li>
+                    <label for="import-database-file" class="btn btn-warning ml-2">Import Database</label>
+                    <input type="file" id="import-database-file" class="d-none" accept=".db" />
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>

@@ -1,7 +1,7 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify, session
+from flask import Flask, render_template, request, redirect, url_for, jsonify, session, send_file
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
-import ast, copy
+import ast, copy, os
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.associationproxy import association_proxy
 from functools import wraps
@@ -331,9 +331,25 @@ def get_country_resources():
             'oil': {'amount': 0, 'renew_rate': 0},
             'gas': {'amount': 0, 'renew_rate': 0},
             'co2capacity': {'amount': 0, 'renew_rate': 0}
-            # Add more resources as needed
         })
     return jsonify(country.resources)
+
+@app.route('/export_database', methods=['GET'])
+@login_required
+def export_database():
+    db_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), '../instance/processes.db')
+    return send_file(db_path, as_attachment=True, download_name='processes.db')
+
+@app.route('/import_database', methods=['POST'])
+@login_required
+def import_database():
+    file = request.files['file']
+    if file:
+        file_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), '../instance/processes.db')
+        file.save(file_path)
+        db.create_all()  # Ensure the new database has the correct schema
+        return jsonify({'success': True})
+    return jsonify({'success': False}), 400
 
 @app.route('/simulate_exports_imports', methods=['POST'])
 @login_required
