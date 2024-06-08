@@ -1,44 +1,4 @@
 // dashboard.js
-async function getCountryResources() {
-	return await fetch('/get_country_resources')
-	.then(response => response.json());
-}
-async function calculateResourceUsageAndDepletion(processes) {
-	let totalResourcesUsed = {
-		human_resources: 0,
-		land_resources: 0,
-		ores: 0,
-		water: 0,
-		oil: 0,
-		gas: 0
-	};
-
-	// TODO : summerize and recurse
-	processes.forEach(process => {
-		totalResourcesUsed.human_resources += process.human_resources || 0;
-		totalResourcesUsed.land_resources += process.land_resources || 0;
-		totalResourcesUsed.ores += process.ores || 0;
-		totalResourcesUsed.water += process.water || 0;
-		totalResourcesUsed.oil += process.oil || 0;
-		totalResourcesUsed.gas += process.gas || 0;
-	});
-
-	const country = await getCountryResources(); 
-
-	/*
-	let yearsUntilDepletion = Math.min(
-		country.human_resources / totalResourcesUsed.human_resources,
-		country.land_resources / totalResourcesUsed.land_resources,
-		country.ores / totalResourcesUsed.ores,
-		country.water / totalResourcesUsed.water,
-		country.oil / totalResourcesUsed.oil,
-		country.gas / totalResourcesUsed.gas
-	);
-
-	document.getElementById('total-resources-used').textContent = JSON.stringify(totalResourcesUsed);
-	document.getElementById('years-until-depletion').textContent = yearsUntilDepletion.toFixed(2);
-	*/
-}
 function getCompositionData() {
 	const compositionContainer = document.getElementById('add-process-composition-container');
 	const compositionDivs = compositionContainer.querySelectorAll('div');
@@ -338,8 +298,7 @@ function deleteProcess(processId) {
 	.catch(error => console.error('Error deleting process:', error));
 }
 
-async function fetchProcesses() {
-	// Clear previous processes
+function fetchProcesses() {
 	return fetch('/get_processes')
 		.then(response => {
 			if (!response.ok) {
@@ -407,8 +366,6 @@ async function fetchProcesses() {
 				});
 
 			updateRadarChart(totalEconomic, totalResourcesUsed.co2eqEmission, totalSocial);
-
-			await calculateResourceUsageAndDepletion(selectedProcesses);
 
 			data.forEach(process => {
 				const li = document.createElement('li');
