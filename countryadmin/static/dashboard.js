@@ -356,10 +356,6 @@ function fetchProcesses() {
 				const compoStr = JSON.stringify(process.composition);
 				li.setAttribute("process-composition", compoStr);
 
-				const cumulativeEconomic = processRetrieveMetric(data, process, "economic") * process.amount;
-				const cumulativeEnvEmissions = processRetrieveMetric(data, process, "envEmissions") * process.amount;
-				const cumulativeSocial = processRetrieveMetric(data, process, "social") * process.amount;
-
 				li.innerHTML = `
 					<div class="card mb-3">
 						<div class="card-header d-flex justify-content-between align-items-center">
@@ -403,12 +399,29 @@ function fetchProcesses() {
 							</div>
 							<hr>
 							<div class="row">
-								<div class="col">
-									<h6 class="mt-3">Cumulative Metrics</h6>
+								<h6 class="mt-3">Cumulative Metrics</h6>
+							</div>
+							<div class="row">
+								<div class="col-md-4">
+									For ${processNSubProcess(data,process)} subprocess
+								</div>
+								<div class="col-md-4">
+									<h6>Resources Used</h6>
 									<ul class="list-unstyled">
-										<li>Economic: ${cumulativeEconomic} $</li>
-										<li>Environmental: ${cumulativeEnvEmissions} kgCO2eq</li>
-										<li>Social: ${cumulativeSocial}</li>
+										<li>Human: ${processRetrieveMetric(data, process, "human") * process.amount}</li>
+										<li>Ground: ${processRetrieveMetric(data, process, "ground") * process.amount}</li>
+										<li>Ores: ${processRetrieveMetric(data, process, "ores") * process.amount}</li>
+										<li>Water: ${processRetrieveMetric(data, process, "water") * process.amount}</li>
+										<li>Oil: ${processRetrieveMetric(data, process, "oil") * process.amount}</li>
+										<li>Gas: ${processRetrieveMetric(data, process, "gas") * process.amount}</li>
+									</ul>
+								</div>
+								<div class="col-md-4">
+									<h6>Resources Produced</h6>
+									<ul class="list-unstyled">
+										<li>Economic: ${processRetrieveMetric(data, process, "economic") * process.amount} $</li>
+										<li>Environmental: ${processRetrieveMetric(data, process, "envEmissions") * process.amount} kgCO2eq</li>
+										<li>Social: ${processRetrieveMetric(data, process, "social") * process.amount}</li>
 									</ul>
 								</div>
 							</div>

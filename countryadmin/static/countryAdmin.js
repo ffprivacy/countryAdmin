@@ -1,8 +1,8 @@
+function getProcessById(processes, id) {
+    return processes.find(process => process.id === id);
+}
 function processRetrieveMetric(allProcesses, process, metric) {
 	let total = 0;
-	function getProcessById(processes, id) {
-		return processes.find(process => process.id === id);
-	}
 	for (let compo of process.composition) {
 		let compoProcess = getProcessById(allProcesses, compo.id);
 		if (compoProcess === undefined) {
@@ -12,6 +12,18 @@ function processRetrieveMetric(allProcesses, process, metric) {
 		}
 	}
 	return total + process.metrics[metric];
+}
+function processNSubProcess(allProcesses, process) {
+    let total = 0;
+    for (let compo of process.composition) {
+		let compoProcess = getProcessById(allProcesses, compo.id);
+		if (compoProcess === undefined) {
+			console.warn("process with id " + compo.id + " is not in the retrieved processes.");
+		} else {
+			total += 1;
+		}
+	}
+	return total;
 }
 function deleteProcess(processId) {
 	console.warn("deleteProcess", processId);
