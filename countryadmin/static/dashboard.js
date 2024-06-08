@@ -282,13 +282,12 @@ function fetchProcesses() {
 		})
 		.then(async function (data) {
 			const processList = document.getElementById('process-list');
-
+			const allProcesses = data;
 			processList.innerHTML = '';
-			const selectedProcesses = data.filter(process => process.selected);
-			const totalEconomic = selectedProcesses.reduce((total, process) => total + processRetrieveMetric(data, process, "economic") * process.amount, 0);
-			const totalSocial = selectedProcesses.reduce((total, process) => total + processRetrieveMetric(data, process, "social") * process.amount, 0);
-
-			let totalResourcesUsed = {
+			const selectedProcesses = allProcesses.filter(process => process.selected);
+			let selectedProcessMetrics = {
+				economic: 0,
+				social: 0,
 				human: 0,
 				ground: 0,
 				ores: 0,
@@ -299,25 +298,26 @@ function fetchProcesses() {
 			};
 
 			selectedProcesses.forEach(process => {
-				totalResourcesUsed.human += process.metrics.human * process.amount || 0;
-				totalResourcesUsed.ground += process.metrics.ground * process.amount || 0;
-				totalResourcesUsed.ores += process.metrics.ores * process.amount || 0;
-				totalResourcesUsed.water += process.metrics.water * process.amount || 0;
-				totalResourcesUsed.oil += process.metrics.oil * process.amount || 0;
-				totalResourcesUsed.gas += process.metrics.gas * process.amount || 0;
-				totalResourcesUsed.co2eqEmission += process.metrics.envEmissions * process.amount || 0;
+				selectedProcessMetrics.economic += processRetrieveMetric(allProcesses, process, "economic") * process.amount || 0;
+				selectedProcessMetrics.social += processRetrieveMetric(allProcesses, process, "social") * process.amount || 0;
+				selectedProcessMetrics.human += processRetrieveMetric(allProcesses, process, "human") * process.amount || 0;
+				selectedProcessMetrics.ground += processRetrieveMetric(allProcesses, process, "ground") * process.amount || 0;
+				selectedProcessMetrics.ores += processRetrieveMetric(allProcesses, process, "ores") * process.amount || 0;
+				selectedProcessMetrics.water += processRetrieveMetric(allProcesses, process, "water") * process.amount || 0;
+				selectedProcessMetrics.oil += processRetrieveMetric(allProcesses, process, "oil") * process.amount || 0;
+				selectedProcessMetrics.gas += processRetrieveMetric(allProcesses, process, "gas") * process.amount || 0;
+				selectedProcessMetrics.co2eqEmission += processRetrieveMetric(allProcesses, process, "envEmissions") * process.amount || 0;
 			});
 
-			document.getElementById('total-economic').textContent = `${totalEconomic}`;
-			document.getElementById('total-social').textContent = `${totalSocial}`;
-
-			document.getElementById('total-co2eq-emissions').textContent = `${totalResourcesUsed.co2eqEmission}`;
-			document.getElementById('total-human-used').textContent = `${totalResourcesUsed.human}`;
-			document.getElementById('total-ground-used').textContent = `${totalResourcesUsed.ground}`;
-			document.getElementById('total-ores-used').textContent = `${totalResourcesUsed.ores}`;
-			document.getElementById('total-water-used').textContent = `${totalResourcesUsed.water}`;
-			document.getElementById('total-oil-used').textContent = `${totalResourcesUsed.oil}`;
-			document.getElementById('total-gas-used').textContent = `${totalResourcesUsed.gas}`;
+			document.getElementById('total-economic').textContent = `${selectedProcessMetrics.economic}`;
+			document.getElementById('total-social').textContent = `${selectedProcessMetrics.social}`;
+			document.getElementById('total-co2eq-emissions').textContent = `${selectedProcessMetrics.co2eqEmission}`;
+			document.getElementById('total-human-used').textContent = `${selectedProcessMetrics.human}`;
+			document.getElementById('total-ground-used').textContent = `${selectedProcessMetrics.ground}`;
+			document.getElementById('total-ores-used').textContent = `${selectedProcessMetrics.ores}`;
+			document.getElementById('total-water-used').textContent = `${selectedProcessMetrics.water}`;
+			document.getElementById('total-oil-used').textContent = `${selectedProcessMetrics.oil}`;
+			document.getElementById('total-gas-used').textContent = `${selectedProcessMetrics.gas}`;
 
 			fetch('/get_country_resources')
 				.then(response => response.json())
@@ -327,16 +327,16 @@ function fetchProcesses() {
 						return ((resourceAmount / (usage - renewRate)) || 0).toFixed(2);
 					};
 
-					document.getElementById('time-human-depletion').textContent = getTimeToDepletion(countryResources.human.amount, countryResources.human.renew_rate, totalResourcesUsed.human);
-					document.getElementById('time-ground-depletion').textContent = getTimeToDepletion(countryResources.ground.amount, countryResources.ground.renew_rate, totalResourcesUsed.ground);
-					document.getElementById('time-ores-depletion').textContent = getTimeToDepletion(countryResources.ores.amount, countryResources.ores.renew_rate, totalResourcesUsed.ores);
-					document.getElementById('time-water-depletion').textContent = getTimeToDepletion(countryResources.water.amount, countryResources.water.renew_rate, totalResourcesUsed.water);
-					document.getElementById('time-oil-depletion').textContent = getTimeToDepletion(countryResources.oil.amount, countryResources.oil.renew_rate, totalResourcesUsed.oil);
-					document.getElementById('time-gas-depletion').textContent = getTimeToDepletion(countryResources.gas.amount, countryResources.gas.renew_rate, totalResourcesUsed.gas);
-					document.getElementById('time-co2eq-saturation').textContent = getTimeToDepletion(countryResources.co2capacity.amount, countryResources.co2capacity.renew_rate, totalResourcesUsed.co2eqEmission);
+					document.getElementById('time-human-depletion').textContent = getTimeToDepletion(countryResources.human.amount, countryResources.human.renew_rate, selectedProcessMetrics.human);
+					document.getElementById('time-ground-depletion').textContent = getTimeToDepletion(countryResources.ground.amount, countryResources.ground.renew_rate, selectedProcessMetrics.ground);
+					document.getElementById('time-ores-depletion').textContent = getTimeToDepletion(countryResources.ores.amount, countryResources.ores.renew_rate, selectedProcessMetrics.ores);
+					document.getElementById('time-water-depletion').textContent = getTimeToDepletion(countryResources.water.amount, countryResources.water.renew_rate, selectedProcessMetrics.water);
+					document.getElementById('time-oil-depletion').textContent = getTimeToDepletion(countryResources.oil.amount, countryResources.oil.renew_rate, selectedProcessMetrics.oil);
+					document.getElementById('time-gas-depletion').textContent = getTimeToDepletion(countryResources.gas.amount, countryResources.gas.renew_rate, selectedProcessMetrics.gas);
+					document.getElementById('time-co2eq-saturation').textContent = getTimeToDepletion(countryResources.co2capacity.amount, countryResources.co2capacity.renew_rate, selectedProcessMetrics.co2eqEmission);
 				});
 
-			updateRadarChart(totalEconomic, totalResourcesUsed.co2eqEmission, totalSocial);
+			updateRadarChart(selectedProcessMetrics.economic, selectedProcessMetrics.co2eqEmission, selectedProcessMetrics.social);
 
 			data.forEach(process => {
 				const li = document.createElement('li');
