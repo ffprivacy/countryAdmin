@@ -361,38 +361,66 @@ function fetchProcesses() {
 				const cumulativeSocial = processRetrieveMetric(data, process, "social") * process.amount;
 
 				li.innerHTML = `
-					<div class="d-flex justify-content-between">
-						<div>
-							<strong>${process.title}</strong> (ID: ${process.id})<br>
-							<ul>
-								<li>Economic: ${process.metrics.economic} $</li>
-								<li>Environmental: ${process.metrics.envEmissions} kgCO2eq</li>
-								<li>Social: ${process.metrics.social}</li>
-								<li>Amount: ${process.amount}</li>
-								<li><strong>Cumulative Metrics</strong>:
-									<ul>
+					<div class="card mb-3">
+						<div class="card-header d-flex justify-content-between align-items-center">
+							<form action="/select_process" method="POST">
+								<input type="checkbox" ${process.selected ? "checked" : ""}>
+								<input type="hidden" name="id" value="${process.id}">
+								<input type="hidden" name="selected" value="${process.selected ? 1 : 0}">
+							</form>
+							<div>
+								<strong>${process.title}</strong> (ID: ${process.id})
+							</div>
+							<button class="btn btn-danger btn-sm" onclick="deleteProcess(${process.id})">Delete</button>
+						</div>
+						<div class="card-body">
+							<div class="row">
+								<div class="col-md-4">
+									<h6>Amount</h6>
+									<ul class="list-unstyled">
+										<li><input type="number" class="form-control mt-2" id="view-process-amount-${process.id}" value="${process.amount}" /></li>
+									</ul>
+								</div>
+								<div class="col-md-4">
+									<h6>Resources Used</h6>
+									<ul class="list-unstyled">
+										<li>Human: ${process.metrics.human || 0}</li>
+										<li>Ground: ${process.metrics.ground || 0}</li>
+										<li>Ores: ${process.metrics.ores || 0}</li>
+										<li>Water: ${process.metrics.water || 0}</li>
+										<li>Oil: ${process.metrics.oil || 0}</li>
+										<li>Gas: ${process.metrics.gas || 0}</li>
+									</ul>
+								</div>
+								<div class="col-md-4">
+									<h6>Resources Produced</h6>
+									<ul class="list-unstyled">
+										<li>Economic: ${process.metrics.economic} $</li>
+										<li>Environmental: ${process.metrics.envEmissions} kgCO2eq</li>
+										<li>Social: ${process.metrics.social}</li>
+									</ul>
+								</div>
+							</div>
+							<hr>
+							<div class="row">
+								<div class="col">
+									<h6 class="mt-3">Cumulative Metrics</h6>
+									<ul class="list-unstyled">
 										<li>Economic: ${cumulativeEconomic} $</li>
 										<li>Environmental: ${cumulativeEnvEmissions} kgCO2eq</li>
 										<li>Social: ${cumulativeSocial}</li>
 									</ul>
-								</li>
-							</ul>
+								</div>
+							</div>
+							<hr>
+							<div class="row">
+								<div class="col">
+									<h6>Composition</h6>
+									<div id="composition-container-${process.id}">
+									</div>
+								</div>
+							</div>
 						</div>
-						<p>Resources Used:</p>
-						<ul>
-							<li>Human: ${process.metrics.human || 0}</li>
-							<li>Ground: ${process.metrics.ground || 0}</li>
-							<li>Ores: ${process.metrics.ores || 0}</li>
-							<li>Water: ${process.metrics.water || 0}</li>
-							<li>Oil: ${process.metrics.oil || 0}</li>
-							<li>Gas: ${process.metrics.gas || 0}</li>
-						</ul>
-						<div>
-							<button class="btn btn-danger" onclick="deleteProcess(${process.id})">Delete</button>
-						</div>
-					</div>
-					<h5>Composition</h5>
-					<div id="composition-container-${process.id}">
 					</div>
 				`;
 
@@ -402,33 +430,7 @@ function fetchProcesses() {
 					compositionContainer.appendChild(compositionDiv);
 				});
 
-				const form = document.createElement('form');
-				form.setAttribute('action', '/select_process');
-				form.setAttribute('method', 'POST');
-				const checkbox = document.createElement('input');
-				checkbox.setAttribute('type', 'checkbox');
-				checkbox.setAttribute('value', process.selected);
-				if (process.selected) {
-					checkbox.setAttribute('checked', '');
-				}
-				const checkboxS = document.createElement('input');
-				checkboxS.setAttribute('type', 'number');
-				checkboxS.setAttribute('name', 'selected');
-				checkboxS.setAttribute('hidden', '');
-
-				const idInput = document.createElement('input');
-				idInput.setAttribute('type', 'number');
-				idInput.setAttribute('name', 'id');
-				idInput.setAttribute('value', process.id);
-				idInput.setAttribute('hidden', '');
-				form.appendChild(checkbox);
-				form.appendChild(idInput);
-				form.appendChild(checkboxS);
-				li.appendChild(form);
-
-				const amountInput = document.createElement('input');
-				amountInput.setAttribute('type', 'number');
-				amountInput.value = process.amount;
+				const amountInput = li.querySelector(`#view-process-amount-${process.id}`);
 				amountInput.addEventListener('change', () => {
 					const newAmount = amountInput.value;
 					fetch(`/update_process_amount`, {
@@ -441,20 +443,24 @@ function fetchProcesses() {
 							amount: newAmount
 						})
 					})
-						.then(response => response.json())
-						.then(updatedProcess => {
-							console.log(`Process ${updatedProcess.id} amount updated to ${updatedProcess.amount}`);
-							fetchProcesses();
-						})
-						.catch(error => console.error('Error updating process amount:', error));
+					.then(response => response.json())
+					.then(updatedProcess => {
+						console.log(`Process ${updatedProcess.id} amount updated to ${updatedProcess.amount}`);
+						fetchProcesses();
+					})
+					.catch(error => console.error('Error updating process amount:', error));
 				});
-				li.appendChild(amountInput);
-				processList.appendChild(li);
+
+				const form = li.querySelector('form');
+				const checkbox = form.querySelector('input[type="checkbox"]');
+				const checkboxS = form.querySelector('input[type="hidden"][name="selected"]');
 
 				checkbox.addEventListener('click', function (e) {
 					checkboxS.value = checkbox.checked ? 1 : 0;
 					form.submit();
 				});
+
+				processList.appendChild(li);
 			});
 		})
 		.catch(error => {
