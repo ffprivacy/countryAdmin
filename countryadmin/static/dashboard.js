@@ -595,7 +595,6 @@ document.addEventListener('DOMContentLoaded', function () {
 			water: document.getElementById('resources-water').value || 0,
 			oil: document.getElementById('resources-oil').value || 0,
 			gas: document.getElementById('resources-gas').value || 0
-			// Add more resources as needed
 		};
 		
 		const formData = new FormData(processForm);
@@ -664,8 +663,6 @@ document.addEventListener('DOMContentLoaded', function () {
 			reader.onload = function(event) {
 				const processes = JSON.parse(event.target.result);
 				for (let process of processes) {
-					// Serialize form data
-					console.warn(process);
 					const formData = new FormData();
 					formData.append('id', process.id);
 					formData.append('economic', process.metrics.economic);

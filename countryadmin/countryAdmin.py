@@ -279,7 +279,6 @@ def set_country_resources():
         'oil': {'amount': data.get('oil', 0), 'renew_rate': data.get('oil_renew_rate', 0)},
         'gas': {'amount': data.get('gas', 0), 'renew_rate': data.get('gas_renew_rate', 0)},
         'co2capacity': {'amount': data.get('co2capacity', 0), 'renew_rate': data.get('co2capacity_renew_rate', 0)}
-        # Add more resources as needed
     }
     country = Country.query.first()
     if not country:
