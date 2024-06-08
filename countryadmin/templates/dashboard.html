@@ -186,27 +186,64 @@
                 <!-- Add more resources as needed -->
                 <button type="button" class="btn btn-primary mb-2" id="btn-set-resources">Set Resources</button>
             </div>        
-            
             <div class="col-md-6 mb-4">
                 <h3>Total Metrics for Selected Governance for a given period (e.g., a year):</h3>
                 <p>Economic: <span id="total-economic">0</span> $</p>
-                <p>CO2eq emissions: <span id="selected-governance-env-emissions">0</span> kgCO2eq</p>
                 <p>Total social: <span id="total-social">0</span></p>
                 <p>Total resources used (per year):</p>
-                <p>Human: <span id="total-human-used">0</span></p>
-                <p>Ground: <span id="total-ground-used">0</span></p>
-                <p>Ores: <span id="total-ores-used">0</span></p>
-                <p>Water: <span id="total-water-used">0</span></p>
-                <p>Oil: <span id="total-oil-used">0</span></p>
-                <p>Gas: <span id="total-gas-used">0</span></p>
-                <h3>Time before depletion (years):</h3>
-                <p>Human: <span id="time-human-depletion">N/A</span></p>
-                <p>Ground: <span id="time-ground-depletion">N/A</span></p>
-                <p>Ores: <span id="time-ores-depletion">N/A</span></p>
-                <p>Water: <span id="time-water-depletion">N/A</span></p>
-                <p>Oil: <span id="time-oil-depletion">N/A</span></p>
-                <p>Gas: <span id="time-gas-depletion">N/A</span></p>
-                <p>Air (CO2eq saturation): <span id="time-co2eq-saturation">N/A</span></p>
+                <div class="container mt-4">
+                    <div class="row">
+                        <div class="col-6 col-md-6 card card-body">
+                            <p>Human: <span id="total-human-used">0</span></p>
+                        </div>
+                        <div class="col-6 col-md-6 card card-body">
+                            <p>Ground: <span id="total-ground-used">0</span></p>
+                        </div>
+                        <div class="col-6 col-md-6 card card-body">
+                            <p>Ores: <span id="total-ores-used">0</span></p>
+                        </div>
+                        <div class="col-6 col-md-6 card card-body">
+                            <p>Water: <span id="total-water-used">0</span></p>
+                        </div>
+                        <div class="col-6 col-md-6 card card-body">
+                            <p>Oil: <span id="total-oil-used">0</span></p>
+                        </div>
+                        <div class="col-6 col-md-6 card card-body">
+                            <p>Gas: <span id="total-gas-used">0</span></p>
+                        </div>
+                        <div class="col-12 card card-body">
+                            <p>CO2eq Emissions: <span id="total-co2eq-emissions">0</span> kgCO2eq</p>
+                        </div>
+                    </div>
+                    <div class="row mt-4">
+                      <div class="col-12">
+                        <h3>Time Before Depletion (years):</h3>
+                      </div>
+                    </div>
+                    <div class="row">
+                      <div class="col-6 col-md-6 card card-body">
+                        <p>Human: <span id="time-human-depletion">N/A</span></p>
+                      </div>
+                      <div class="col-6 col-md-6 card card-body">
+                        <p>Ground: <span id="time-ground-depletion">N/A</span></p>
+                      </div>
+                      <div class="col-6 col-md-6 card card-body">
+                        <p>Ores: <span id="time-ores-depletion">N/A</span></p>
+                      </div>
+                      <div class="col-6 col-md-6 card card-body">
+                        <p>Water: <span id="time-water-depletion">N/A</span></p>
+                      </div>
+                      <div class="col-6 col-md-6 card card-body">
+                        <p>Oil: <span id="time-oil-depletion">N/A</span></p>
+                      </div>
+                      <div class="col-6 col-md-6 card card-body">
+                        <p>Gas: <span id="time-gas-depletion">N/A</span></p>
+                      </div>
+                      <div class="col-12 card card-body">
+                        <p>Air (CO2eq saturation): <span id="time-co2eq-saturation">N/A</span></p>
+                      </div>
+                    </div>
+                  </div>
                 <div>
                     <canvas style="max-width: 400px; max-height: 400px;" id="metricsRadarChart" width="400" height="400"></canvas>
                 </div>

@@ -338,9 +338,9 @@ function fetchProcesses() {
             });
 
             document.getElementById('total-economic').textContent = `${totalEconomic}`;
-            document.getElementById('selected-governance-env-emissions').textContent = `${totalResourcesUsed.co2eqEmission}`;
             document.getElementById('total-social').textContent = `${totalSocial}`;
 
+            document.getElementById('total-co2eq-emissions').textContent = `${totalResourcesUsed.co2eqEmission}`;
             document.getElementById('total-human-used').textContent = `${totalResourcesUsed.human}`;
             document.getElementById('total-ground-used').textContent = `${totalResourcesUsed.ground}`;
             document.getElementById('total-ores-used').textContent = `${totalResourcesUsed.ores}`;
