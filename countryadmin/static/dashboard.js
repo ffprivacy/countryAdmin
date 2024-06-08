@@ -675,12 +675,12 @@ document.addEventListener('DOMContentLoaded', function () {
 					formData.append('selected', process.selected);
 					formData.append('process-amount', process.amount);
 					formData.append('composition', JSON.stringify(process.composition));
-					formData.append('resources-human', process.resources.human || 0);
-					formData.append('resources-ground', process.resources.ground || 0);
-					formData.append('resources-ores', process.resources.ores || 0);
-					formData.append('resources-water', process.resources.water || 0);
-					formData.append('resources-oil', process.resources.oil || 0);
-					formData.append('resources-gas', process.resources.gas || 0);
+					formData.append('resources-human', process.metrics.human || 0);
+					formData.append('resources-ground', process.metrics.ground || 0);
+					formData.append('resources-ores', process.metrics.ores || 0);
+					formData.append('resources-water', process.metrics.water || 0);
+					formData.append('resources-oil', process.metrics.oil || 0);
+					formData.append('resources-gas', process.metrics.gas || 0);
 					formData.append('tags', process.tags.join(','));
 					// Add more resources as needed
 																					
