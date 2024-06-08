@@ -353,7 +353,6 @@ async function fetchProcesses() {
 			processList.innerHTML = '';
 			const selectedProcesses = data.filter(process => process.selected);
 			const totalEconomic = selectedProcesses.reduce((total, process) => total + processRetrieveMetric(data, process, "economic") * process.amount, 0);
-			const selectedGovEnvEmissions = selectedProcesses.reduce((total, process) => total + processRetrieveMetric(data, process, "envEmissions") * process.amount, 0);
 			const totalSocial = selectedProcesses.reduce((total, process) => total + processRetrieveMetric(data, process, "social") * process.amount, 0);
 
 			let totalResourcesUsed = {
@@ -362,10 +361,11 @@ async function fetchProcesses() {
                 ores: 0,
                 water: 0,
                 oil: 0,
-                gas: 0
-                // Add more resources as needed
+                gas: 0,
+				co2eqEmission: 0
             };
 
+			// TODO : composition or processes - kind of processRetrieveMetric
             selectedProcesses.forEach(process => {
                 if (process.resources) {
                     totalResourcesUsed.human += process.resources.human * process.amount || 0;
@@ -374,12 +374,12 @@ async function fetchProcesses() {
                     totalResourcesUsed.water += process.resources.water * process.amount || 0;
                     totalResourcesUsed.oil += process.resources.oil * process.amount || 0;
                     totalResourcesUsed.gas += process.resources.gas * process.amount || 0;
-                    // Add more resources as needed
+					totalResourcesUsed.co2eqEmission += process.metrics.envEmissions * process.amount || 0;
                 }
             });
 
             document.getElementById('total-economic').textContent = `${totalEconomic}`;
-            document.getElementById('selected-governance-env-emissions').textContent = `${selectedGovEnvEmissions}`;
+            document.getElementById('selected-governance-env-emissions').textContent = `${totalResourcesUsed.co2eqEmission}`;
             document.getElementById('total-social').textContent = `${totalSocial}`;
 
             document.getElementById('total-human-used').textContent = `${totalResourcesUsed.human}`;
@@ -393,7 +393,7 @@ async function fetchProcesses() {
 				.then(response => response.json())
 				.then(countryResources => {
 					const getTimeToDepletion = (resourceAmount, renewRate, usage) => {
-						if (usage <= renewRate) return "∞";  // Infinite time if renew rate is greater than or equal to usage
+						if (usage <= renewRate) return "∞";
 						return ((resourceAmount / (usage - renewRate)) || 0).toFixed(2);
 					};
 					
@@ -403,10 +403,10 @@ async function fetchProcesses() {
 					document.getElementById('time-water-depletion').textContent = getTimeToDepletion(countryResources.water.amount, countryResources.water.renew_rate, totalResourcesUsed.water);
 					document.getElementById('time-oil-depletion').textContent = getTimeToDepletion(countryResources.oil.amount, countryResources.oil.renew_rate, totalResourcesUsed.oil);
 					document.getElementById('time-gas-depletion').textContent = getTimeToDepletion(countryResources.gas.amount, countryResources.gas.renew_rate, totalResourcesUsed.gas);
-					// Add more resources as needed
+					document.getElementById('time-co2eq-saturation').textContent = getTimeToDepletion(countryResources.co2capacity.amount, countryResources.co2capacity.renew_rate, totalResourcesUsed.co2eqEmission);
 				});
 
-			updateRadarChart(totalEconomic, selectedGovEnvEmissions, totalSocial);
+			updateRadarChart(totalEconomic, totalResourcesUsed.co2eqEmission, totalSocial);
 
 			await calculateResourceUsageAndDepletion(selectedProcesses);
 
@@ -453,7 +453,6 @@ async function fetchProcesses() {
 							<li>Water: ${process.resources.water || 0}</li>
 							<li>Oil: ${process.resources.oil || 0}</li>
 							<li>Gas: ${process.resources.gas || 0}</li>
-							<!-- Add more resources as needed -->
 						</ul>
 						<div>
 							<button class="btn btn-danger" onclick="deleteProcess(${process.id})">Delete</button>
@@ -585,6 +584,8 @@ document.addEventListener('DOMContentLoaded', function() {
 			document.getElementById('oil-resources-renew').value = data.oil.renew_rate;
 			document.getElementById('gas-resources').value = data.gas.amount;
 			document.getElementById('gas-resources-renew').value = data.gas.renew_rate;
+			document.getElementById('co2-capacity-resources').value = data.co2capacity.amount;
+			document.getElementById('co2-capacity-absorption').value = data.co2capacity.renew_rate;
 			// Add more resources as needed
 		});
 
@@ -601,7 +602,9 @@ document.addEventListener('DOMContentLoaded', function() {
 			oil: document.getElementById('oil-resources').value || 0,
 			oil_renew_rate: document.getElementById('oil-resources-renew').value || 0,
 			gas: document.getElementById('gas-resources').value || 0,
-			gas_renew_rate: document.getElementById('gas-resources-renew').value || 0
+			gas_renew_rate: document.getElementById('gas-resources-renew').value || 0,
+			co2capacity: document.getElementById('co2-capacity-resources').value || 0,
+			co2capacity_renew_rate: document.getElementById('co2-capacity-absorption').value || 0
 			// Add more resources as needed
 		};
 		fetch('/set_country_resources', {

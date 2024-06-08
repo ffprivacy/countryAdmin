@@ -284,7 +284,8 @@ def set_country_resources():
         'ores': {'amount': data.get('ores', 0), 'renew_rate': data.get('ores_renew_rate', 0)},
         'water': {'amount': data.get('water', 0), 'renew_rate': data.get('water_renew_rate', 0)},
         'oil': {'amount': data.get('oil', 0), 'renew_rate': data.get('oil_renew_rate', 0)},
-        'gas': {'amount': data.get('gas', 0), 'renew_rate': data.get('gas_renew_rate', 0)}
+        'gas': {'amount': data.get('gas', 0), 'renew_rate': data.get('gas_renew_rate', 0)},
+        'co2capacity': {'amount': data.get('co2capacity', 0), 'renew_rate': data.get('co2capacity_renew_rate', 0)}
         # Add more resources as needed
     }
     country = Country.query.first()
@@ -307,7 +308,8 @@ def get_country_resources():
             'ores': {'amount': 0, 'renew_rate': 0},
             'water': {'amount': 0, 'renew_rate': 0},
             'oil': {'amount': 0, 'renew_rate': 0},
-            'gas': {'amount': 0, 'renew_rate': 0}
+            'gas': {'amount': 0, 'renew_rate': 0},
+            'co2capacity': {'amount': 0, 'renew_rate': 0}
             # Add more resources as needed
         })
     return jsonify(country.resources)

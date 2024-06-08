@@ -163,6 +163,26 @@
                     </div>
                 </div>
                 <hr>
+                <div class="row">
+                    <div class="col">
+                        CO2 capacity (kgCO2eq)
+                    </div>
+                    <div class="col-sm-8">
+                        <div class="form-group row">
+                            <label for="co2-capacity-resources" class="col-sm-4 col-form-label">Capacity</label>
+                            <div class="col-sm-8">
+                                <input type="number" class="form-control" id="co2-capacity-resources" name="co2-capacity-resources">
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="co2-capacity-absorption" class="col-sm-4 col-form-label">Absorption Rate</label>
+                            <div class="col-sm-8">
+                                <input type="number" class="form-control" id="co2-capacity-absorption" name="co2-capacity-absorption">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <hr>
                 <!-- Add more resources as needed -->
                 <button type="button" class="btn btn-primary mb-2" id="btn-set-resources">Set Resources</button>
             </div>        
@@ -170,7 +190,7 @@
             <div class="col-md-6 mb-4">
                 <h3>Total Metrics for Selected Governance for a given period (e.g., a year):</h3>
                 <p>Economic: <span id="total-economic">0</span> $</p>
-                <p>Environmental CO2eq emissions: <span id="selected-governance-env-emissions">0</span> kgCO2eq</p>
+                <p>CO2eq emissions: <span id="selected-governance-env-emissions">0</span> kgCO2eq</p>
                 <p>Total social: <span id="total-social">0</span></p>
                 <p>Total resources used (per year):</p>
                 <p>Human: <span id="total-human-used">0</span></p>
@@ -186,6 +206,7 @@
                 <p>Water: <span id="time-water-depletion">N/A</span></p>
                 <p>Oil: <span id="time-oil-depletion">N/A</span></p>
                 <p>Gas: <span id="time-gas-depletion">N/A</span></p>
+                <p>Air (CO2eq saturation): <span id="time-co2eq-saturation">N/A</span></p>
                 <div>
                     <canvas style="max-width: 400px; max-height: 400px;" id="metricsRadarChart" width="400" height="400"></canvas>
                 </div>
