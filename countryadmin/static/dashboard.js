@@ -9,6 +9,7 @@ function getCompositionData() {
 	});
 	return compositionArray;
 }
+
 let radarChart;
 function updateRadarChart(economic, envEmissions, social) {
 	const ctx = document.getElementById('metricsRadarChart').getContext('2d');
@@ -48,6 +49,7 @@ function updateRadarChart(economic, envEmissions, social) {
 		}
 	});
 }
+
 function setScenario(scenario) {
 	let economic, social, envEmissions;
 	if (scenario === 'capitalism') {
@@ -69,23 +71,6 @@ function setScenario(scenario) {
 	document.getElementById('governance-goals-env-emissions').value = envEmissions;
 }
 
-// recursively compute the metric of a process
-function processRetrieveMetric(allProcesses,process,metric) {
-	let total = 0;
-	function getProcessById(processes, id) {
-		return processes.find(process => process.id === id);
-	}
-	for(let compo of process.composition) {
-		let compoProcess = getProcessById(allProcesses,compo.id);
-		if( compoProcess === undefined ) {
-			console.warn("process with id " + compo.id + " is not in the retrieved processes.");
-		} else {
-			total += processRetrieveMetric(allProcesses,compoProcess,metric) * compo.amount;
-		}
-	}
-	return total + process.metrics[metric];
-}
-
 function selectProcesses() {
 	const processList = document.getElementById('process-list');
 
@@ -102,6 +87,12 @@ function selectProcesses() {
 			economic: parseInt(li.getAttribute("economic")),
 			envEmissions: parseInt(li.getAttribute("env-emissions")),
 			social: parseInt(li.getAttribute("social")),
+			human: parseFloat(li.getAttribute("human")),
+			ground: parseFloat(li.getAttribute("ground")),
+			ores: parseFloat(li.getAttribute("ores")),
+			water: parseFloat(li.getAttribute("water")),
+			oil: parseFloat(li.getAttribute("oil")),
+			gas: parseFloat(li.getAttribute("gas"))
 		};
 		const amount = parseInt(li.getAttribute("process-amount"));
 		const composition = getCompositionData();
@@ -149,9 +140,9 @@ function selectProcesses() {
 
 	// Calculate the distance between each process and the goals
 	const calculateDistance = (allProcesses, process, goalEconomic, goalEnvEmissions, goalSocial) => {
-		const distanceEconomic = Math.abs(process.amount * processRetrieveMetric(allProcesses,process,"economic") - goalEconomic);
-		const distanceEnvEmissions = Math.abs(process.amount * processRetrieveMetric(allProcesses,process,"envEmissions") - goalEnvEmissions);
-		const distanceSocial = Math.abs(process.amount * processRetrieveMetric(allProcesses,process,"social") - goalSocial);
+		const distanceEconomic = Math.abs(process.amount * processRetrieveMetric(allProcesses, process, "economic") - goalEconomic);
+		const distanceEnvEmissions = Math.abs(process.amount * processRetrieveMetric(allProcesses, process, "envEmissions") - goalEnvEmissions);
+		const distanceSocial = Math.abs(process.amount * processRetrieveMetric(allProcesses, process, "social") - goalSocial);
 		return distanceEconomic + distanceEnvEmissions + distanceSocial;
 	};
 
@@ -166,7 +157,7 @@ function selectProcesses() {
 		let closestProcess = null;
 		for (const process of processes) {
 			if (!selectedProcessIds.has(process.processId)) {
-				const distance = calculateDistance(allProcesses,process, economicGoal - totalEconomic, govGoalEnvEmissions - selectedGovEnvEmissions, socialGoal - totalSocial);
+				const distance = calculateDistance(allProcesses, process, economicGoal - totalEconomic, govGoalEnvEmissions - selectedGovEnvEmissions, socialGoal - totalSocial);
 				if (distance < minDistance) {
 					minDistance = distance;
 					closestProcess = process;
@@ -176,25 +167,24 @@ function selectProcesses() {
 		if (closestProcess) {
 			closestProcess.selected = true;
 			selectedProcessIds.add(closestProcess.processId);
-			totalEconomic += processRetrieveMetric(allProcesses,closestProcess,"economic") * closestProcess.amount;
-			selectedGovEnvEmissions += processRetrieveMetric(allProcesses,closestProcess,"envEmissions") * closestProcess.amount;
-			totalSocial += processRetrieveMetric(allProcesses,closestProcess,"social") * closestProcess.amount;
+			totalEconomic += processRetrieveMetric(allProcesses, closestProcess, "economic") * closestProcess.amount;
+			selectedGovEnvEmissions += processRetrieveMetric(allProcesses, closestProcess, "envEmissions") * closestProcess.amount;
+			totalSocial += processRetrieveMetric(allProcesses, closestProcess, "social") * closestProcess.amount;
 		}
 	});
-	
+
 	const formData = new FormData();
 	allProcesses.forEach(process => {
 		formData.append('id[]', process.id);
 		formData.append('selected[]', process.selected);
 	});
 
-	var p = fetch('/select_process', {
+	fetch('/select_process', {
 		method: 'POST',
 		body: formData
 	})
-	p
 		.then(() => fetchProcesses())
-		.catch(function(e){
+		.catch(function (e) {
 			console.warn(e);
 		});
 }
@@ -282,22 +272,6 @@ function deleteComposition(processId, compositionId) {
 	.catch(error => console.error('Error deleting composition:', error));
 }
 
-function deleteProcess(processId) {
-	console.warn("deleteProcess", processId);
-	fetch(`/delete_process/${processId}`, {
-		method: 'POST'
-	})
-	.then(response => response.json())
-	.then(data => {
-		if (data.success) {
-			fetchProcesses();
-		} else {
-			console.error('Error deleting process:', data.error);
-		}
-	})
-	.catch(error => console.error('Error deleting process:', error));
-}
-
 function fetchProcesses() {
 	return fetch('/get_processes')
 		.then(response => {
@@ -306,7 +280,7 @@ function fetchProcesses() {
 			}
 			return response.json();
 		})
-		.then(async function(data) {
+		.then(async function (data) {
 			const processList = document.getElementById('process-list');
 
 			processList.innerHTML = '';
@@ -315,38 +289,35 @@ function fetchProcesses() {
 			const totalSocial = selectedProcesses.reduce((total, process) => total + processRetrieveMetric(data, process, "social") * process.amount, 0);
 
 			let totalResourcesUsed = {
-                human: 0,
-                ground: 0,
-                ores: 0,
-                water: 0,
-                oil: 0,
-                gas: 0,
+				human: 0,
+				ground: 0,
+				ores: 0,
+				water: 0,
+				oil: 0,
+				gas: 0,
 				co2eqEmission: 0
-            };
+			};
 
-			// TODO : composition or processes - kind of processRetrieveMetric
-            selectedProcesses.forEach(process => {
-                if (process.resources) {
-                    totalResourcesUsed.human += process.resources.human * process.amount || 0;
-                    totalResourcesUsed.ground += process.resources.ground * process.amount || 0;
-                    totalResourcesUsed.ores += process.resources.ores * process.amount || 0;
-                    totalResourcesUsed.water += process.resources.water * process.amount || 0;
-                    totalResourcesUsed.oil += process.resources.oil * process.amount || 0;
-                    totalResourcesUsed.gas += process.resources.gas * process.amount || 0;
-					totalResourcesUsed.co2eqEmission += process.metrics.envEmissions * process.amount || 0;
-                }
-            });
+			selectedProcesses.forEach(process => {
+				totalResourcesUsed.human += process.metrics.human * process.amount || 0;
+				totalResourcesUsed.ground += process.metrics.ground * process.amount || 0;
+				totalResourcesUsed.ores += process.metrics.ores * process.amount || 0;
+				totalResourcesUsed.water += process.metrics.water * process.amount || 0;
+				totalResourcesUsed.oil += process.metrics.oil * process.amount || 0;
+				totalResourcesUsed.gas += process.metrics.gas * process.amount || 0;
+				totalResourcesUsed.co2eqEmission += process.metrics.envEmissions * process.amount || 0;
+			});
 
-            document.getElementById('total-economic').textContent = `${totalEconomic}`;
-            document.getElementById('total-social').textContent = `${totalSocial}`;
+			document.getElementById('total-economic').textContent = `${totalEconomic}`;
+			document.getElementById('total-social').textContent = `${totalSocial}`;
 
-            document.getElementById('total-co2eq-emissions').textContent = `${totalResourcesUsed.co2eqEmission}`;
-            document.getElementById('total-human-used').textContent = `${totalResourcesUsed.human}`;
-            document.getElementById('total-ground-used').textContent = `${totalResourcesUsed.ground}`;
-            document.getElementById('total-ores-used').textContent = `${totalResourcesUsed.ores}`;
-            document.getElementById('total-water-used').textContent = `${totalResourcesUsed.water}`;
-            document.getElementById('total-oil-used').textContent = `${totalResourcesUsed.oil}`;
-            document.getElementById('total-gas-used').textContent = `${totalResourcesUsed.gas}`;
+			document.getElementById('total-co2eq-emissions').textContent = `${totalResourcesUsed.co2eqEmission}`;
+			document.getElementById('total-human-used').textContent = `${totalResourcesUsed.human}`;
+			document.getElementById('total-ground-used').textContent = `${totalResourcesUsed.ground}`;
+			document.getElementById('total-ores-used').textContent = `${totalResourcesUsed.ores}`;
+			document.getElementById('total-water-used').textContent = `${totalResourcesUsed.water}`;
+			document.getElementById('total-oil-used').textContent = `${totalResourcesUsed.oil}`;
+			document.getElementById('total-gas-used').textContent = `${totalResourcesUsed.gas}`;
 
 			fetch('/get_country_resources')
 				.then(response => response.json())
@@ -355,7 +326,7 @@ function fetchProcesses() {
 						if (usage <= renewRate) return "∞";
 						return ((resourceAmount / (usage - renewRate)) || 0).toFixed(2);
 					};
-					
+
 					document.getElementById('time-human-depletion').textContent = getTimeToDepletion(countryResources.human.amount, countryResources.human.renew_rate, totalResourcesUsed.human);
 					document.getElementById('time-ground-depletion').textContent = getTimeToDepletion(countryResources.ground.amount, countryResources.ground.renew_rate, totalResourcesUsed.ground);
 					document.getElementById('time-ores-depletion').textContent = getTimeToDepletion(countryResources.ores.amount, countryResources.ores.renew_rate, totalResourcesUsed.ores);
@@ -374,16 +345,21 @@ function fetchProcesses() {
 				li.setAttribute("economic", process.metrics.economic);
 				li.setAttribute("env-emissions", process.metrics.envEmissions);
 				li.setAttribute("social", process.metrics.social);
+				li.setAttribute("human", process.metrics.human);
+				li.setAttribute("ground", process.metrics.ground);
+				li.setAttribute("ores", process.metrics.ores);
+				li.setAttribute("water", process.metrics.water);
+				li.setAttribute("oil", process.metrics.oil);
+				li.setAttribute("gas", process.metrics.gas);
 				li.setAttribute("title", process.title);
 				li.setAttribute("process-amount", process.amount);
 				const compoStr = JSON.stringify(process.composition);
 				li.setAttribute("process-composition", compoStr);
 
-				// Calculate cumulative metrics
 				const cumulativeEconomic = processRetrieveMetric(data, process, "economic") * process.amount;
 				const cumulativeEnvEmissions = processRetrieveMetric(data, process, "envEmissions") * process.amount;
 				const cumulativeSocial = processRetrieveMetric(data, process, "social") * process.amount;
-				console.warn(process);
+
 				li.innerHTML = `
 					<div class="d-flex justify-content-between">
 						<div>
@@ -404,12 +380,12 @@ function fetchProcesses() {
 						</div>
 						<p>Resources Used:</p>
 						<ul>
-							<li>Human: ${process.resources.human || 0}</li>
-							<li>Ground: ${process.resources.ground || 0}</li>
-							<li>Ores: ${process.resources.ores || 0}</li>
-							<li>Water: ${process.resources.water || 0}</li>
-							<li>Oil: ${process.resources.oil || 0}</li>
-							<li>Gas: ${process.resources.gas || 0}</li>
+							<li>Human: ${process.metrics.human || 0}</li>
+							<li>Ground: ${process.metrics.ground || 0}</li>
+							<li>Ores: ${process.metrics.ores || 0}</li>
+							<li>Water: ${process.metrics.water || 0}</li>
+							<li>Oil: ${process.metrics.oil || 0}</li>
+							<li>Gas: ${process.metrics.gas || 0}</li>
 						</ul>
 						<div>
 							<button class="btn btn-danger" onclick="deleteProcess(${process.id})">Delete</button>
@@ -420,14 +396,12 @@ function fetchProcesses() {
 					</div>
 				`;
 
-				// Add composition elements
 				const compositionContainer = li.querySelector(`#composition-container-${process.id}`);
 				process.composition.forEach(composition => {
 					const compositionDiv = createCompositionDiv(process, composition);
 					compositionContainer.appendChild(compositionDiv);
 				});
 
-				// Add form and checkbox for selection
 				const form = document.createElement('form');
 				form.setAttribute('action', '/select_process');
 				form.setAttribute('method', 'POST');
@@ -519,10 +493,10 @@ function attachSelectedEvent() {
 	});
 }
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
 
 	const compositionContainer = document.getElementById('add-process-composition-container');
-    const addCompositionBtn = document.getElementById('add-process-add-composition');
+	const addCompositionBtn = document.getElementById('add-process-add-composition');
 
 	updateRadarChart(0, 0, 0);
 
@@ -543,7 +517,6 @@ document.addEventListener('DOMContentLoaded', function() {
 			document.getElementById('gas-resources-renew').value = data.gas.renew_rate;
 			document.getElementById('co2-capacity-resources').value = data.co2capacity.amount;
 			document.getElementById('co2-capacity-absorption').value = data.co2capacity.renew_rate;
-			// Add more resources as needed
 		});
 
 	document.getElementById('btn-set-resources').addEventListener('click', () => {
@@ -562,7 +535,6 @@ document.addEventListener('DOMContentLoaded', function() {
 			gas_renew_rate: document.getElementById('gas-resources-renew').value || 0,
 			co2capacity: document.getElementById('co2-capacity-resources').value || 0,
 			co2capacity_renew_rate: document.getElementById('co2-capacity-absorption').value || 0
-			// Add more resources as needed
 		};
 		fetch('/set_country_resources', {
 			method: 'POST',
@@ -577,37 +549,37 @@ document.addEventListener('DOMContentLoaded', function() {
 				}
 			});
 	});
-	
-    addCompositionBtn.addEventListener('click', () => {
-        const compositionDiv = document.createElement('div');
+
+	addCompositionBtn.addEventListener('click', () => {
+		const compositionDiv = document.createElement('div');
 		compositionDiv.setAttribute('class', 'composition-process-group');
-        
-        const processIdLabel = document.createElement('label');
-        processIdLabel.textContent = 'Process ID:';
-        compositionDiv.appendChild(processIdLabel);
 
-        const processIdInput = document.createElement('input');
-        processIdInput.setAttribute('type', 'number');
-        processIdInput.setAttribute('name', 'composition-process-id');
-        compositionDiv.appendChild(processIdInput);
+		const processIdLabel = document.createElement('label');
+		processIdLabel.textContent = 'Process ID:';
+		compositionDiv.appendChild(processIdLabel);
 
-        const processAmountLabel = document.createElement('label');
-        processAmountLabel.textContent = ' Amount:';
-        compositionDiv.appendChild(processAmountLabel);
+		const processIdInput = document.createElement('input');
+		processIdInput.setAttribute('type', 'number');
+		processIdInput.setAttribute('name', 'composition-process-id');
+		compositionDiv.appendChild(processIdInput);
 
-        const processAmountInput = document.createElement('input');
-        processAmountInput.setAttribute('type', 'number');
-        processAmountInput.setAttribute('name', 'composition-process-amount');
-        compositionDiv.appendChild(processAmountInput);
+		const processAmountLabel = document.createElement('label');
+		processAmountLabel.textContent = ' Amount:';
+		compositionDiv.appendChild(processAmountLabel);
 
-        compositionContainer.appendChild(compositionDiv);
-    });
-			
-	document.getElementById("btn-adjust").addEventListener("click",selectProcesses);
+		const processAmountInput = document.createElement('input');
+		processAmountInput.setAttribute('type', 'number');
+		processAmountInput.setAttribute('name', 'composition-process-amount');
+		compositionDiv.appendChild(processAmountInput);
 
-    // Fetch processes when the page loads
-    fetchProcesses();
-		
+		compositionContainer.appendChild(compositionDiv);
+	});
+
+	document.getElementById("btn-adjust").addEventListener("click", selectProcesses);
+
+	// Fetch processes when the page loads
+	fetchProcesses();
+
 	attachSelectedEvent();
 		
     const submitBtn = document.getElementById('submit-btn');

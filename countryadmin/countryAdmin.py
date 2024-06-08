@@ -39,16 +39,13 @@ class Tag(db.Model):
 
 class Process(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    economic = db.Column(db.Float)
-    envEmissions = db.Column(db.Float)
-    social = db.Column(db.Integer)
     title = db.Column(db.String(100))  # Add title attribute
     selected = db.Column(db.Boolean, default=False)
     amount = db.Column(db.Integer)
     composition = db.relationship('Composition', backref='process', lazy=True)
     tags = relationship('Tag', secondary='process_tag', backref='processes')
     tag_names = association_proxy('tags', 'name')
-    resources = db.Column(db.JSON)
+    metrics = db.Column(db.JSON)
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -157,14 +154,16 @@ def set_process():
         if id is not None:
             id = int(id)
 
-        resources = {
-            'human': float(request.form.get('resources-human', 0) or 0),
-            'ground': float(request.form.get('resources-ground', 0) or 0),
-            'ores': float(request.form.get('resources-ores', 0) or 0),
-            'water': float(request.form.get('resources-water', 0) or 0),
-            'oil': float(request.form.get('resources-oil', 0) or 0),
-            'gas': float(request.form.get('resources-gas', 0) or 0)
-            # Add more resources as needed
+        metrics = {
+            'human': float(request.form.get('human', 0) or 0),
+            'ground': float(request.form.get('ground', 0) or 0),
+            'ores': float(request.form.get('ores', 0) or 0),
+            'water': float(request.form.get('water', 0) or 0),
+            'oil': float(request.form.get('oil', 0) or 0),
+            'gas': float(request.form.get('gas', 0) or 0),
+            'economic': economic,
+            'envEmissions': envEmissions,
+            'social': social
         }
 
         if selected is None:
@@ -173,7 +172,7 @@ def set_process():
             selected = ast.literal_eval(selected.capitalize())
         amount = request.form.get('process-amount')
         title = request.form['title']  # Add title from the form
-        new_process = Process(id=id, economic=economic, envEmissions=envEmissions, social=social, title=title, selected=selected, amount=amount, resources=resources)
+        new_process = Process(id=id, title=title, selected=selected, amount=amount, metrics=metrics)
         for tag_name in tags:
             tag_name = tag_name.strip()
             if tag_name:
@@ -201,7 +200,6 @@ def dashboard():
     processes = Process.query.all()
     return render_template('dashboard.html', processes=processes)
 
-# Endpoint to retrieve processes as JSON
 @app.route('/get_processes', methods=['GET'])
 @login_required
 def get_processes():
@@ -213,12 +211,7 @@ def get_processes():
         tags = [tag.name for tag in process.tags]
         process_data = {
             'id': process.id,
-            'metrics': {
-                'economic': process.economic,
-                'envEmissions': process.envEmissions,
-                'social': process.social,
-            },
-            'resources': process.resources,
+            'metrics': process.metrics,
             'selected': process.selected,
             'title': process.title,
             'amount': process.amount,
