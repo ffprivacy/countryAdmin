@@ -14,6 +14,27 @@ app.secret_key = 'your_secret_key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///processes.db'
 db = SQLAlchemy(app)
 
+def debug_print(obj, indent=0):
+    indent_str = '  ' * indent
+    if isinstance(obj, dict):
+        print(f"{indent_str}{{")
+        for key, value in obj.items():
+            print(f"{indent_str}  {key}: ", end="")
+            debug_print(value, indent + 1)
+        print(f"{indent_str}}}")
+    elif isinstance(obj, list):
+        print(f"{indent_str}[")
+        for value in obj:
+            debug_print(value, indent + 1)
+        print(f"{indent_str}]")
+    elif isinstance(obj, tuple):
+        print(f"{indent_str}(")
+        for value in obj:
+            debug_print(value, indent + 1)
+        print(f"{indent_str})")
+    else:
+        print(f"{indent_str}{repr(obj)}")
+
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -143,36 +164,43 @@ def select_process():
 @app.route('/set_process', methods=['POST'])
 @login_required
 def set_process():
-    if request.method == 'POST':
-        # Process submission logic        
-        economic = float(request.form['economic'])
-        envEmissions = float(request.form['envEmissions'])
-        social = int(request.form['social'])
-        selected = request.form.get('selected')
-        tags = request.form.get('tags').split(',')
-        id = request.form.get('id')
+    data = request.json.get('data')
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    if isinstance(data, dict):
+        data = [data]
+    
+    debug_print(data)
+
+    for process_data in data:
+        id = process_data.get('id')
         if id is not None:
             id = int(id)
 
+        metrics = process_data.get('metrics', {})
         metrics = {
-            'human': float(request.form.get('human', 0) or 0),
-            'ground': float(request.form.get('ground', 0) or 0),
-            'ores': float(request.form.get('ores', 0) or 0),
-            'water': float(request.form.get('water', 0) or 0),
-            'oil': float(request.form.get('oil', 0) or 0),
-            'gas': float(request.form.get('gas', 0) or 0),
-            'economic': economic,
-            'envEmissions': envEmissions,
-            'social': social
+            'human': float(metrics.get('human', 0)),
+            'ground': float(metrics.get('ground', 0)),
+            'ores': float(metrics.get('ores', 0)),
+            'water': float(metrics.get('water', 0)),
+            'oil': float(metrics.get('oil', 0)),
+            'gas': float(metrics.get('gas', 0)),
+            'economic': float(metrics.get('economic', 0)),
+            'envEmissions': float(metrics.get('envEmissions', 0)),
+            'social': int(metrics.get('social', 0))
         }
 
-        if selected is None:
-            selected = True
-        else:
+        selected = process_data.get('selected', True)
+        if isinstance(selected, str):
             selected = ast.literal_eval(selected.capitalize())
-        amount = request.form.get('process-amount')
-        title = request.form['title']  # Add title from the form
+
+        amount = process_data.get('amount', 0)
+        title = process_data.get('title', '')
+        tags = process_data.get('tags', [])
+
         new_process = Process(id=id, title=title, selected=selected, amount=amount, metrics=metrics)
+        
         for tag_name in tags:
             tag_name = tag_name.strip()
             if tag_name:
@@ -181,18 +209,19 @@ def set_process():
                     tag = Tag(name=tag_name)
                     db.session.add(tag)
                 new_process.tags.append(tag)
+        
         db.session.add(new_process)
         db.session.commit()
 
-        composition_data = ast.literal_eval(request.form.get('composition'))
+        composition_data = process_data.get('composition', [])
         for item in composition_data:
             comp_id = item['id']
             comp_amount = item['amount']
             new_composition = Composition(component_process_id=comp_id, composed_process_id=new_process.id, amount=comp_amount)
             db.session.add(new_composition)
-        
-        db.session.commit()
-        return jsonify({})
+
+    db.session.commit()
+    return jsonify({'success': True})
 
 @app.route('/dashboard', methods=['GET'])
 @login_required

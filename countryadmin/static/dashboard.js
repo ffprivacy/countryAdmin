@@ -581,58 +581,44 @@ document.addEventListener('DOMContentLoaded', function () {
 	fetchProcesses();
 
 	attachSelectedEvent();
-		
-    const submitBtn = document.getElementById('submit-btn');
-    const processForm = document.getElementById('process-form');
 
-    submitBtn.addEventListener('click', function(event) {
+	document.getElementById('add-process-btn').addEventListener('click', function(event) {
 		event.preventDefault();
-			
-		const resources = {
-			human: document.getElementById('resources-human').value || 0,
-			ground: document.getElementById('resources-ground').value || 0,
-			ores: document.getElementById('resources-ores').value || 0,
-			water: document.getElementById('resources-water').value || 0,
-			oil: document.getElementById('resources-oil').value || 0,
-			gas: document.getElementById('resources-gas').value || 0
+
+		const processForm = document.getElementById('add-process-form');
+		const process = {
+			title: document.getElementById('add-process-title').value || '',
+			amount: document.getElementById('add-process-amount').value || 0,  
+			tags: document.getElementById('add-process-tags').value || '', 
+			metrics: {
+				human: parseFloat(document.getElementById('add-process-metric-human').value) || 0,
+				ground: parseFloat(document.getElementById('add-process-metric-ground').value) || 0,
+				ores: parseFloat(document.getElementById('add-process-metric-ores').value) || 0,
+				water: parseFloat(document.getElementById('add-process-metric-water').value) || 0,
+				oil: parseFloat(document.getElementById('add-process-metric-oil').value) || 0,
+				gas: parseFloat(document.getElementById('add-process-metric-gas').value) || 0,
+				economic: parseFloat(document.getElementById('add-process-metric-economic').value) || 0, 
+				envEmissions: parseFloat(document.getElementById('add-process-metric-envEmissions').value) || 0, 
+				social: parseInt(document.getElementById('add-process-metric-social').value) || 0 
+			},
+			composition: []
 		};
 		
-		const formData = new FormData(processForm);
-		formData.append('resources', JSON.stringify(resources));
-
-		let compositionData = [];
-		document.querySelectorAll('.composition-process-group').forEach(group => {
-			compositionData.push({ 
+		processForm.querySelectorAll('.composition-process-group').forEach(group => {
+			process.composition.push({ 
 				id: parseInt(group.querySelector('input[name="composition-process-id"]').value), 
 				amount: parseInt(group.querySelector('input[name="composition-process-amount"]').value)
 			});
 		});
-		const compositionJSON = JSON.stringify(compositionData);
-		formData.append('composition', compositionJSON);
-		formData.append('resources', JSON.stringify(resources));
-
-        // Send form data asynchronously
-        fetch(processForm.action, {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-             fetchProcesses();
-            return response.text();
-        })
-        .then(data => {
-            console.log('Process submitted successfully:', data);
-						attachSelectedEvent();
-            // Optionally, update the page with new data or display a success message
-        })
-        .catch(error => {
-            console.error('There was a problem with the process submission:', error.message);
-            // Optionally, display an error message to the user
-        });
-    });
+		
+		setProcess(process)
+			.then(() => {
+				fetchProcesses();
+			})
+			.catch(error => {
+				console.error('There was a problem with the process submission:', error.message);
+			});
+	});	
 		
 	document.getElementById('export-btn').addEventListener('click', function() {
 		fetch('/get_processes')
@@ -655,54 +641,18 @@ document.addEventListener('DOMContentLoaded', function () {
 		})
 	});
 
-	// Import button functionality
 	document.getElementById('import-file').addEventListener('change', function(event) {
 		const file = event.target.files[0];
 		if (file) {
 			const reader = new FileReader();
 			reader.onload = function(event) {
-				const processes = JSON.parse(event.target.result);
-				for (let process of processes) {
-					const formData = new FormData();
-					formData.append('id', process.id);
-					formData.append('economic', process.metrics.economic);
-					formData.append('envEmissions', process.metrics.envEmissions);
-					formData.append('title', process.title);
-					formData.append('social', process.metrics.social);
-					formData.append('selected', process.selected);
-					formData.append('process-amount', process.amount);
-					formData.append('composition', JSON.stringify(process.composition));
-					formData.append('resources-human', process.metrics.human || 0);
-					formData.append('resources-ground', process.metrics.ground || 0);
-					formData.append('resources-ores', process.metrics.ores || 0);
-					formData.append('resources-water', process.metrics.water || 0);
-					formData.append('resources-oil', process.metrics.oil || 0);
-					formData.append('resources-gas', process.metrics.gas || 0);
-					formData.append('tags', process.tags.join(','));
-					// Add more resources as needed
-																					
-					// Send form data asynchronously
-					fetch("/set_process", {
-						method: 'POST',
-						body: formData
-					})
-					.then(response => {
-						if (!response.ok) {
-							throw new Error('Network response was not ok');
-						}
-						fetchProcesses();
-						return response.text();
-					})
-					.then(data => {
-						console.log('Process submitted successfully:', data);
-						attachSelectedEvent();
-						// Optionally, update the page with new data or display a success message
-					})
-					.catch(error => {
-						console.error('There was a problem with the process submission:', error.message);
-						// Optionally, display an error message to the user
-					});
-				}
+				setProcess(JSON.parse(event.target.result))
+				.then(() => {
+					fetchProcesses();
+				})
+				.catch(error => {
+					console.error('There was a problem with the process submission:', error.message);
+				});
 			};
 			reader.readAsText(file);
 		}

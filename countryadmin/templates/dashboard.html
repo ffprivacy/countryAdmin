@@ -282,66 +282,65 @@
         <hr>
 
         <div class="mb-4">
-            <form action="/set_process" method="POST" id="process-form" enctype="multipart/form-data">
+            <form action="/set_process" method="POST" id="add-process-form" enctype="multipart/form-data">
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="economic">Economic</label>
-                            <input type="number" class="form-control" name="economic" value="10">
+                            <label for="add-process-metric-economic">Economic</label>
+                            <input type="number" class="form-control" name="add-process-metric-economic" id="add-process-metric-economic" value="10">
                         </div>
                         <div class="form-group">
-                            <label for="envEmissions">GES emissions in kgCO2eq</label>
-                            <input type="number" class="form-control" name="envEmissions" value="10">
+                            <label for="add-process-metric-envEmissions">GES emissions in kgCO2eq</label>
+                            <input type="number" class="form-control" name="add-process-metric-envEmissions" id="add-process-metric-envEmissions" value="10">
                         </div>
                         <div class="form-group">
-                            <label for="title">Title</label>
-                            <input type="text" class="form-control" name="title">
+                            <label for="add-process-title">Title</label>
+                            <input type="text" class="form-control" name="add-process-title" id="add-process-title">
                         </div>
                         <div class="form-group">
-                            <label for="social">Social</label>
-                            <input type="number" class="form-control" name="social" value="10">
+                            <label for="add-process-metric-social">Social</label>
+                            <input type="number" class="form-control" name="add-process-metric-social" id="add-process-metric-social" value="10">
                         </div>
                         <div class="form-group">
-                            <label for="process-amount">Amount</label>
-                            <input type="number" class="form-control" name="process-amount" value="1">
+                            <label for="add-process-amount">Amount</label>
+                            <input type="number" class="form-control" name="add-process-amount" id="add-process-amount" value="1">
                         </div>
                         <div class="form-group">
-                            <label for="process-example">Upload a default process</label>
-                            <input type="file" class="form-control-file" name="process-example" multiple>
+                            <label for="add-process-example">Upload a default process</label>
+                            <input type="file" class="form-control-file" name="add-process-example" id="add-process-example" multiple>
                         </div>
                         <div class="form-group">
-                            <label for="tags">Tags</label>
-                            <input type="text" class="form-control" name="tags" placeholder="Tags (comma separated)">
+                            <label for="add-process-tags">Tags</label>
+                            <input type="text" class="form-control" name="add-process-tags" id="add-process-tags" placeholder="Tags (comma separated)">
                         </div>
                     </div>
 
                     <div class="col-md-6">
                         <h3>Resources Used by Process</h3>
                         <div class="form-group">
-                            <label for="resources-human">Human Resources</label>
-                            <input type="number" class="form-control" id="resources-human" name="resources-human">
+                            <label for="add-process-metric-human">Human Resources</label>
+                            <input type="number" class="form-control" id="add-process-metric-human" name="add-process-metric-human">
                         </div>
                         <div class="form-group">
-                            <label for="resources-ground">Ground Resources</label>
-                            <input type="number" class="form-control" id="resources-ground" name="resources-ground">
+                            <label for="add-process-metric-ground">Ground Resources</label>
+                            <input type="number" class="form-control" id="add-process-metric-ground" name="add-process-metric-ground">
                         </div>
                         <div class="form-group">
-                            <label for="resources-ores">Ores</label>
-                            <input type="number" class="form-control" id="resources-ores" name="resources-ores">
+                            <label for="add-process-metric-ores">Ores</label>
+                            <input type="number" class="form-control" id="add-process-metric-ores" name="add-process-metric-ores">
                         </div>
                         <div class="form-group">
-                            <label for="resources-water">Water</label>
-                            <input type="number" class="form-control" id="resources-water" name="resources-water">
+                            <label for="add-process-metric-water">Water</label>
+                            <input type="number" class="form-control" id="add-process-metric-water" name="add-process-metric-water">
                         </div>
                         <div class="form-group">
-                            <label for="resources-oil">Oil</label>
-                            <input type="number" class="form-control" id="resources-oil" name="resources-oil">
+                            <label for="add-process-metric-oil">Oil</label>
+                            <input type="number" class="form-control" id="add-process-metric-oil" name="add-process-metric-oil">
                         </div>
                         <div class="form-group">
-                            <label for="resources-gas">Gas</label>
-                            <input type="number" class="form-control" id="resources-gas" name="resources-gas">
+                            <label for="add-process-metric-gas">Gas</label>
+                            <input type="number" class="form-control" id="add-process-metric-gas" name="add-process-metric-gas">
                         </div>
-                        <!-- Add more resources as needed -->
                     </div>
 
                     <div class="col-md-6">
@@ -353,7 +352,7 @@
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-success mt-3" id="submit-btn">Submit</button>
+                <button type="submit" class="btn btn-success mt-3" id="add-process-btn">Submit</button>
             </form>
         </div>
 

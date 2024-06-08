@@ -28,3 +28,28 @@ function deleteProcess(processId) {
 	})
 	.catch(error => console.error('Error deleting process:', error));
 }
+async function setProcess(process) {
+    try {
+        const response = await fetch('/set_process', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ data: process })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Network response was not ok: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        if (result.success) {
+            console.log('Process submitted successfully:', result);
+            // Optionally, update the page with new data or display a success message
+        } else {
+            console.error('Error submitting process:', result.error);
+        }
+    } catch (error) {
+        console.error('There was a problem with the process submission:', error.message);
+    }
+}
