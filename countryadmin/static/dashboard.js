@@ -324,8 +324,15 @@ function fetchProcesses() {
 				.then(countryResources => {
 					const getTimeToDepletion = (resourceAmount, renewRate, usage) => {
 						let resourceRenewAmount = resourceAmount * renewRate;
-						if (usage <= resourceRenewAmount) return "∞";
-						return (((resourceAmount + resourceRenewAmount) / usage) || 0).toFixed(2);
+						if (usage <= resourceRenewAmount) {
+							return "∞";
+						} else {
+							if ( 0 < usage ) {
+								return (((resourceAmount + resourceRenewAmount) / usage)).toFixed(2);
+							} else {
+								return Math.abs(resourceAmount / resourceRenewAmount).toFixed(2);
+							}
+						}
 					};
 
 					document.getElementById('time-human-depletion').textContent = getTimeToDepletion(countryResources.human.amount, countryResources.human.renew_rate, selectedProcessMetrics.human);

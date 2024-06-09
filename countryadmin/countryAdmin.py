@@ -301,13 +301,13 @@ def logout():
 def set_country_resources():
     data = request.json
     country_resources = {
-        'human': {'amount': data.get('human', 0), 'renew_rate': data.get('human_renew_rate', 0)},
-        'ground': {'amount': data.get('ground', 0), 'renew_rate': data.get('ground_renew_rate', 0)},
-        'ores': {'amount': data.get('ores', 0), 'renew_rate': data.get('ores_renew_rate', 0)},
-        'water': {'amount': data.get('water', 0), 'renew_rate': data.get('water_renew_rate', 0)},
-        'oil': {'amount': data.get('oil', 0), 'renew_rate': data.get('oil_renew_rate', 0)},
-        'gas': {'amount': data.get('gas', 0), 'renew_rate': data.get('gas_renew_rate', 0)},
-        'co2capacity': {'amount': data.get('co2capacity', 0), 'renew_rate': data.get('co2capacity_renew_rate', 0)}
+        'human': {'amount': int(data.get('human', 0)), 'renew_rate': float(data.get('human_renew_rate', 0))},
+        'ground': {'amount': int(data.get('ground', 0)), 'renew_rate': float(data.get('ground_renew_rate', 0))},
+        'ores': {'amount': int(data.get('ores', 0)), 'renew_rate': float(data.get('ores_renew_rate', 0))},
+        'water': {'amount': int(data.get('water', 0)), 'renew_rate': float(data.get('water_renew_rate', 0))},
+        'oil': {'amount': int(data.get('oil', 0)), 'renew_rate': float(data.get('oil_renew_rate', 0))},
+        'gas': {'amount': int(data.get('gas', 0)), 'renew_rate': float(data.get('gas_renew_rate', 0))},
+        'co2capacity': {'amount': int(data.get('co2capacity', 0)), 'renew_rate': float(data.get('co2capacity_renew_rate', 0))}
     }
     country = Country.query.first()
     if not country:
