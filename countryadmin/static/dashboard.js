@@ -150,6 +150,10 @@ function selectProcesses() {
 	/**
 	 * Les processus qui peuvent être permutables devraint être recherchés automatiquement.
 	 * On pourrait dans un premier temps (comme c'était avant le cas utiliser un processId ou group de processus interchangeable) (qui ont strictement les mêmes but du point de vue utilisateur)
+	 * Ou alors procéder en produits/consommable: des processus au vu des contraintes de la gouvernance produisent les même choses et
+	 * qui consomment à peu près les mêmes resources voir moins dans l'idéal peuvent être permutés.
+	 * Par exemple sur la voiture électrique peut être qu'il y a un peu plus potentiellement de travail à la production,
+	 * mais moins de travail dans la recharge (transport des hydrocarb, personnel, etc).
 	 */
 	const selectedProcessIds = new Set();
 	processMap.forEach(processes => {
