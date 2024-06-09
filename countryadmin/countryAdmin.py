@@ -60,7 +60,7 @@ class Process(db.Model):
     tags = db.relationship('Tag', secondary='process_tag', backref='processes')
     tags_names = association_proxy('tags', 'name')
     metrics = db.Column(db.JSON)
-    interactions = db.relationship('ProcessInteraction', backref='interacted_process', lazy=True)
+    interactions = db.relationship('ProcessInteraction', backref='interacted_process', lazy=True, overlaps="interacted_process,interactions")
     comments = db.relationship('ProcessComment', backref='commented_process', lazy=True)
 
 class ProcessInteraction(db.Model):
@@ -79,6 +79,7 @@ class ProcessComment(db.Model):
     comment = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     user = db.relationship('User', backref='comments')
+    process = db.relationship('Process', backref='process_comments')
 
 class ProcessTag(db.Model):
     __tablename__ = 'process_tag'
@@ -114,14 +115,15 @@ def index():
 @login_required
 def reset_database():
     db.session.query(Tag).delete()
-    db.session.query(ProcessTag).delete()
     db.session.query(User).delete()
-    db.session.query(Process).delete()
     db.session.query(Composition).delete()
     db.session.query(Country).delete()
+    db.session.query(Process).delete()
+    db.session.query(ProcessTag).delete()
+    db.session.query(ProcessComment).delete()
     db.session.query(ProcessInteraction).delete()
     db.session.commit()
-    return redirect(url_for('dashboard'))
+    return redirect(url_for('logout'))
 
 @app.route('/like_process/<int:process_id>', methods=['POST'])
 @login_required
