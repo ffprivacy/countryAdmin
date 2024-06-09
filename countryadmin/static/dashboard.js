@@ -445,6 +445,22 @@ function fetchProcesses() {
 									</div>
 								</div>
 							</div>
+							<hr>
+                            <div class="row">
+								<div class="col-md-4">
+									<button class="btn btn-outline-success" onclick="likeProcess(${process.id})">Like</button>
+									<button class="btn btn-outline-danger" onclick="dislikeProcess(${process.id})">Dislike</button>
+									<p>Score: ${process.like_count || 0}</p>
+								</div>
+								<div class="col-md-8">
+									<h6>Comments</h6>
+									<ul class="list-unstyled" id="comments-${process.id}">
+										${process.comments.map(comment => `<li><strong>${comment.user}</strong> (${new Date(comment.date).toLocaleString()}): ${comment.text}</li>`).join('')}
+									</ul>
+									<textarea class="form-control" id="comment-text-${process.id}" rows="2"></textarea>
+									<button class="btn btn-primary mt-2" onclick="addComment(${process.id}, document.getElementById('comment-text-${process.id}').value)">Add Comment</button>
+								</div>
+							</div>
 						</div>
 					</div>
 				`;

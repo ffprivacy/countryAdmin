@@ -65,3 +65,45 @@ async function setProcess(process) {
         console.error('There was a problem with the process submission:', error.message);
     }
 }
+function addComment(processId, comment) {
+    fetch(`/add_comment/${processId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ comment: comment })
+    }).then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            fetchProcesses();
+        } else {
+            console.error('Error adding comment:', data.error);
+        }
+    }).catch(error => console.error('Error adding comment:', error));
+}
+
+// 
+function likeProcess(processId) {
+    fetch(`/like_process/${processId}`, {
+        method: 'POST'
+    }).then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            fetchProcesses();
+        } else {
+            console.error('Error liking process:', data.error);
+        }
+    }).catch(error => console.error('Error liking process:', error));
+}
+function dislikeProcess(processId) {
+    fetch(`/dislike_process/${processId}`, {
+        method: 'POST'
+    }).then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            fetchProcesses();
+        } else {
+            console.error('Error disliking process:', data.error);
+        }
+    }).catch(error => console.error('Error disliking process:', error));
+}

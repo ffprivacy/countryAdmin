@@ -5,12 +5,10 @@ import ast, copy, os
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.associationproxy import association_proxy
 from functools import wraps
+from datetime import datetime
 
-# Initialize Flask app
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
-
-# Configure SQLAlchemy for database
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///processes.db'
 db = SQLAlchemy(app)
 
@@ -49,11 +47,6 @@ class Composition(db.Model):
     component_process_id = db.Column(db.Integer, nullable=False)
     amount = db.Column(db.Integer, nullable=False)
 
-class ProcessTag(db.Model):
-    __tablename__ = 'process_tag'
-    process_id = db.Column(db.Integer, db.ForeignKey('process.id'), primary_key=True)
-    tag_id = db.Column(db.Integer, db.ForeignKey('tag.id'), primary_key=True)
-
 class Tag(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), unique=True)
@@ -64,9 +57,35 @@ class Process(db.Model):
     selected = db.Column(db.Boolean, default=False)
     amount = db.Column(db.Integer)
     composition = db.relationship('Composition', backref='process', lazy=True)
-    tags = relationship('Tag', secondary='process_tag', backref='processes')
-    tag_names = association_proxy('tags', 'name')
+    tags = db.relationship('Tag', secondary='process_tag', backref='processes')
+    tags_names = association_proxy('tags', 'name')
     metrics = db.Column(db.JSON)
+    interactions = db.relationship('ProcessInteraction', backref='interacted_process', lazy=True)
+    comments = db.relationship('ProcessComment', backref='commented_process', lazy=True)
+
+class ProcessInteraction(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    process_id = db.Column(db.Integer, db.ForeignKey('process.id'), nullable=False)
+    interaction_type = db.Column(db.String(10), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    process = db.relationship('Process', backref='process_interactions')
+    user = db.relationship('User', backref='user_interactions')
+    __table_args__ = (db.UniqueConstraint('user_id', 'process_id', name='_user_process_uc'),)
+
+class ProcessComment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    process_id = db.Column(db.Integer, db.ForeignKey('process.id'), nullable=False)
+    comment = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    user = db.relationship('User', backref='comments')
+
+class ProcessTag(db.Model):
+    __tablename__ = 'process_tag'
+    process_id = db.Column(db.Integer, db.ForeignKey('process.id'), primary_key=True)
+    tag_id = db.Column(db.Integer, db.ForeignKey('tag.id'), primary_key=True)
+    process = db.relationship('Process', backref='process_tags')
+    tag = db.relationship('Tag', backref='tag_processes')
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -83,7 +102,6 @@ class Country(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     resources = db.Column(db.JSON)
 
-# Ensure database tables are created
 with app.app_context():
     db.create_all()
 
@@ -101,8 +119,79 @@ def reset_database():
     db.session.query(Process).delete()
     db.session.query(Composition).delete()
     db.session.query(Country).delete()
+    db.session.query(ProcessInteraction).delete()
     db.session.commit()
     return redirect(url_for('dashboard'))
+
+@app.route('/like_process/<int:process_id>', methods=['POST'])
+@login_required
+def like_process(process_id):
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'error': 'User not logged in'}), 403
+
+    user_id = session['user_id']
+    process = Process.query.get(process_id)
+    if not process:
+        return jsonify({'success': False, 'error': 'Process not found'}), 404
+
+    interaction = ProcessInteraction.query.filter_by(user_id=user_id, process_id=process_id).first()
+
+    if interaction:
+        if interaction.interaction_type == 'dislike':
+            interaction.interaction_type = 'like'
+        else:
+            return jsonify({'success': False, 'error': 'Already liked'}), 400
+    else:
+        new_interaction = ProcessInteraction(user_id=user_id, process_id=process_id, interaction_type='like')
+        db.session.add(new_interaction)
+    
+    db.session.commit()
+    return jsonify({'success': True})
+
+@app.route('/dislike_process/<int:process_id>', methods=['POST'])
+@login_required
+def dislike_process(process_id):
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'error': 'User not logged in'}), 403
+
+    user_id = session['user_id']
+    process = Process.query.get(process_id)
+    if not process:
+        return jsonify({'success': False, 'error': 'Process not found'}), 404
+
+    interaction = ProcessInteraction.query.filter_by(user_id=user_id, process_id=process_id).first()
+
+    if interaction:
+        if interaction.interaction_type == 'like':
+            interaction.interaction_type = 'dislike'
+        else:
+            return jsonify({'success': False, 'error': 'Already disliked'}), 400
+    else:
+        new_interaction = ProcessInteraction(user_id=user_id, process_id=process_id, interaction_type='dislike')
+        db.session.add(new_interaction)
+
+    db.session.commit()
+    return jsonify({'success': True})
+
+@app.route('/add_comment/<int:process_id>', methods=['POST'])
+@login_required
+def add_comment(process_id):
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'error': 'User not logged in'}), 403
+
+    user_id = session['user_id']
+    process = Process.query.get(process_id)
+    if not process:
+        return jsonify({'success': False, 'error': 'Process not found'}), 404
+
+    comment_text = request.json.get('comment')
+    if not comment_text:
+        return jsonify({'success': False, 'error': 'Comment is required'}), 400
+
+    comment = ProcessComment(user_id=user_id, process_id=process_id, comment=comment_text)
+    db.session.add(comment)
+    db.session.commit()
+    return jsonify({'success': True})
 
 @app.route('/update_process_amount', methods=['POST'])
 @login_required
@@ -237,7 +326,12 @@ def get_processes():
     for process in processes:
         composition = Composition.query.filter_by(composed_process_id=process.id).all()
         composition_data = [{'id': comp.component_process_id, 'amount': comp.amount} for comp in composition]
-        tags = [tag.name for tag in process.tags]
+        comments = [{'user': comment.user.username, 'date': comment.timestamp.isoformat(), 'text': comment.comment} for comment in process.comments if comment.user]
+        
+        likes_count = len([obj for obj in process.interactions if obj.interaction_type == 'like'])
+        dislikes_count = len([obj for obj in process.interactions if obj.interaction_type == 'dislike'])
+        like_count = likes_count - dislikes_count
+  
         process_data = {
             'id': process.id,
             'metrics': process.metrics,
@@ -245,7 +339,9 @@ def get_processes():
             'title': process.title,
             'amount': process.amount,
             'composition': composition_data,
-            'tags': tags
+            'tags': list(process.tags_names),
+            'like_count': like_count,
+            'comments': comments
         }
         process_list.append(process_data)
     return jsonify(process_list)
