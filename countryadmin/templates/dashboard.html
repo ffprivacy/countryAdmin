@@ -12,6 +12,7 @@
     <script src="/static/countryAdmin.js" defer></script>
     <script src="/static/countryAdminFront.js" defer></script>
     <script src="/static/dashboard.js" defer></script>
+    <script src="/static/dashboardCountries.js" defer></script>
     <link rel="icon" href="/static/logo_2_24x24.png">
 </head>
 
@@ -51,6 +52,22 @@
         <div class="row">
             <div class="col-md-6 mb-4">
                 <h3>Country Resources</h3>
+                <hr>
+                <div class="row mb-4">
+                    <h3>Country Prefill</h3>
+                    <div class="form-group">
+                        <label for="country-prefill">Select Country:</label>
+                        <select class="form-control" id="country-prefill">
+                            <option value="france">France</option>
+                            <option value="usa">USA</option>
+                            <option value="allemagne">Allemagne</option>
+                            <option value="espagne">Espagne</option>
+                            <option value="royaume-uni">Royaume-Uni</option>
+                            <option value="russie">Russie</option>
+                        </select>
+                    </div>
+                    <button type="button" class="btn btn-primary" id="prefill-button">Prefill</button>
+                </div>
                 <hr>
                 <div class="row">
                     <div class="col">

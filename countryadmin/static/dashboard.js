@@ -323,8 +323,9 @@ function fetchProcesses() {
 				.then(response => response.json())
 				.then(countryResources => {
 					const getTimeToDepletion = (resourceAmount, renewRate, usage) => {
-						if (usage <= renewRate) return "∞";
-						return ((resourceAmount / (usage - renewRate)) || 0).toFixed(2);
+						let resourceRenewAmount = resourceAmount * renewRate;
+						if (usage <= resourceRenewAmount) return "∞";
+						return (((resourceAmount + resourceRenewAmount) / usage) || 0).toFixed(2);
 					};
 
 					document.getElementById('time-human-depletion').textContent = getTimeToDepletion(countryResources.human.amount, countryResources.human.renew_rate, selectedProcessMetrics.human);
