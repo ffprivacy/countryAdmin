@@ -50,6 +50,7 @@ class Composition(db.Model):
 class Tag(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), unique=True)
+    processes = db.relationship('ProcessTag', back_populates='tag')
 
 class Process(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -57,19 +58,19 @@ class Process(db.Model):
     selected = db.Column(db.Boolean, default=False)
     amount = db.Column(db.Integer)
     composition = db.relationship('Composition', backref='process', lazy=True)
-    tags = db.relationship('Tag', secondary='process_tag', backref='processes')
-    tags_names = association_proxy('tags', 'name')
+    tags = db.relationship('ProcessTag', back_populates='process')
+    tags_names = association_proxy('tags', 'tag.name')
     metrics = db.Column(db.JSON)
-    interactions = db.relationship('ProcessInteraction', backref='interacted_process', lazy=True, overlaps="interacted_process,interactions")
-    comments = db.relationship('ProcessComment', backref='commented_process', lazy=True)
+    interactions = db.relationship('ProcessInteraction', back_populates='process', lazy=True)
+    comments = db.relationship('ProcessComment', back_populates='process', lazy=True)
 
 class ProcessInteraction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     process_id = db.Column(db.Integer, db.ForeignKey('process.id'), nullable=False)
     interaction_type = db.Column(db.String(10), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    process = db.relationship('Process', backref='process_interactions')
-    user = db.relationship('User', backref='user_interactions')
+    process = db.relationship('Process', back_populates='interactions')
+    user = db.relationship('User', backref='interactions')
     __table_args__ = (db.UniqueConstraint('user_id', 'process_id', name='_user_process_uc'),)
 
 class ProcessComment(db.Model):
@@ -79,14 +80,14 @@ class ProcessComment(db.Model):
     comment = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     user = db.relationship('User', backref='comments')
-    process = db.relationship('Process', backref='process_comments')
+    process = db.relationship('Process', back_populates='comments')
 
 class ProcessTag(db.Model):
     __tablename__ = 'process_tag'
     process_id = db.Column(db.Integer, db.ForeignKey('process.id'), primary_key=True)
     tag_id = db.Column(db.Integer, db.ForeignKey('tag.id'), primary_key=True)
-    process = db.relationship('Process', backref='process_tags')
-    tag = db.relationship('Tag', backref='tag_processes')
+    process = db.relationship('Process', back_populates='tags')
+    tag = db.relationship('Tag', back_populates='processes')
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
