@@ -44,11 +44,11 @@ function countryResourcesFillDefault() {
 }
 function addProcessMetricsForm(sens='input') {
     const container = document.createElement('div');
-    container.className = 'col-md-6';
+    container.className = 'row';
 
     processMetricsGetList().forEach(metric => {
         const formGroup = document.createElement('div');
-        formGroup.className = 'form-group';
+        formGroup.className = 'form-group p-2 col-md-6 card card group';
 
         const label = document.createElement('label');
         label.htmlFor = `add-process-metric-${sens}-${metric.id}`;
