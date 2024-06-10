@@ -63,7 +63,7 @@ class Process(db.Model):
     metrics = db.Column(db.JSON)
     interactions = db.relationship('ProcessInteraction', back_populates='process', lazy=True)
     comments = db.relationship('ProcessComment', back_populates='process', lazy=True)
-    countries = db.relationship('ProcessUsage', back_populates='process')
+    countries = db.relationship('ProcessUsage', back_populates='process', cascade='delete')
 
 class ProcessInteraction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
