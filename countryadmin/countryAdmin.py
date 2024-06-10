@@ -55,7 +55,6 @@ class Tag(db.Model):
 class Process(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100))  # Add title attribute
-    selected = db.Column(db.Boolean, default=False)
     amount = db.Column(db.Integer)
     composition = db.relationship('Composition', backref='process', lazy=True)
     tags = db.relationship('ProcessTag', back_populates='process')
@@ -63,6 +62,7 @@ class Process(db.Model):
     metrics = db.Column(db.JSON)
     interactions = db.relationship('ProcessInteraction', back_populates='process', lazy=True)
     comments = db.relationship('ProcessComment', back_populates='process', lazy=True)
+    countries = db.relationship('ProcessUsage', back_populates='process')
 
 class ProcessInteraction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -89,6 +89,17 @@ class ProcessTag(db.Model):
     process = db.relationship('Process', back_populates='tags')
     tag = db.relationship('Tag', back_populates='processes')
 
+class ProcessUsage(db.Model):
+    country_id = db.Column(db.Integer, db.ForeignKey('country.id'), primary_key=True)
+    process_id = db.Column(db.Integer, db.ForeignKey('process.id'), primary_key=True)
+    usage_count = db.Column(db.Integer, default=0)
+
+    country = db.relationship('Country', back_populates='process_usages')
+    process = db.relationship('Process', back_populates='countries')
+
+    def __repr__(self):
+        return f"<ProcessUsage country_id={self.country_id} process_id={self.process_id} usage_count={self.usage_count}>"
+
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
@@ -105,11 +116,8 @@ class Country(db.Model):
     name = db.Column(db.String(100))
     description = db.Column(db.String(100))
     resources = db.Column(db.JSON)
+    process_usages = db.relationship('ProcessUsage', back_populates='country')
 
-with app.app_context():
-    db.create_all()
-
-# Routes
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -123,6 +131,7 @@ def reset_database():
     db.session.query(Country).delete()
     db.session.query(Process).delete()
     db.session.query(ProcessTag).delete()
+    db.session.query(ProcessUsage).delete()
     db.session.query(ProcessComment).delete()
     db.session.query(ProcessInteraction).delete()
     db.session.commit()
@@ -234,6 +243,17 @@ def login():
             return redirect(url_for('dashboard'))
     return render_template('login.html')
 
+def country_process_usage(country,process,state):
+    process_usage = ProcessUsage.query.filter_by(country_id=country.id, process_id=process.id).first()
+    if state:
+        if not process_usage:
+            new_process_usage = ProcessUsage(country_id=country.id, process_id=process.id, usage_count=1)
+            db.session.add(new_process_usage)
+    else:
+        if process_usage:
+            db.session.delete(process_usage)
+    return process_usage
+
 @app.route('/select_process', methods=['POST'])
 @login_required
 def select_process():
@@ -243,16 +263,22 @@ def select_process():
     if id_single:
         ids.append(id_single)
         states.append(request.form.get('selected'))
-    else:      
+    else:
         ids = request.form.getlist('id[]')
         states = request.form.getlist('selected[]')
     states = [ast.literal_eval(value.capitalize()) for value in states]
-        
+
+    country = Country.query.first()
+    if not country:
+        return jsonify({'error': 'Country not found'}), 404
+
     processes = Process.query.filter(Process.id.in_(ids)).all()
     if processes and len(processes) == len(states):
         for process, state in zip(processes, states):
-            process.selected = state
+            country_process_usage(country,process,state)
+
         db.session.commit()
+
     return redirect(url_for('dashboard'))
 
 @app.route('/set_process', methods=['POST'])
@@ -286,12 +312,12 @@ def set_process():
         selected = process_data.get('selected', True)
         if isinstance(selected, str):
             selected = ast.literal_eval(selected.capitalize())
-
         amount = process_data.get('amount', 0)
+
         title = process_data.get('title', '')
         tags = process_data.get('tags', [])
 
-        new_process = Process(id=id, title=title, selected=selected, amount=amount, metrics=metrics)
+        new_process = Process(id=id, title=title, metrics=metrics)
 
         for tag_name in tags:
             tag_name = tag_name.strip()
@@ -304,6 +330,13 @@ def set_process():
         
         db.session.add(new_process)
         db.session.commit()
+
+        country = Country.query.first()
+        if not country:
+            return jsonify({'error': 'Country not found'}), 404
+        process_usage = country_process_usage(country,new_process,selected)
+        if process_usage:
+            process_usage.amount = amount
 
         composition_data = process_data.get('composition', [])
         for item in composition_data:
@@ -326,10 +359,16 @@ def dashboard():
 
 def process_wrap_for_response(process):
     """Helper function to format the process data for JSON response."""
+    country = Country.query.first()
+    if not country:
+        return jsonify({'error': 'Country not found'}), 404
+    process_usage = next((pu for pu in process.countries if pu.country_id == country.id), None)
+    selected = 0 < process_usage.usage_count if process_usage else 0
+
     return {
         'id': process.id,
         'title': process.title,
-        'selected': process.selected,
+        'selected': selected,
         'amount': process.amount,
         'metrics': process.metrics,
         'tags': [tag.tag.name for tag in process.tags],
@@ -446,8 +485,6 @@ def get_country():
             'name': 'Default name',
             'description': 'Default description',
             'resources': {
-                'name': 'Default Country',
-                'description': 'No description provided',
                 'human': {'amount': 0, 'renew_rate': 0},
                 'ground': {'amount': 0, 'renew_rate': 0},
                 'ores': {'amount': 0, 'renew_rate': 0},
@@ -457,12 +494,18 @@ def get_country():
                 'co2capacity': {'amount': 0, 'renew_rate': 0}
             }
         })
+
+    processes = [{
+        'id': pu.process_id,
+        'title': pu.process.title,
+        'usage_count': pu.usage_count
+    } for pu in country.process_usages]
+
     return jsonify({
         'name': country.name,
         'description': country.description,
-        'resources': {
-            **country.resources
-        }
+        'resources': country.resources,
+        'processes': processes
     })
 
 @app.route('/export_database', methods=['GET'])
@@ -478,9 +521,33 @@ def import_database():
     if file:
         file_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), '../instance/processes.db')
         file.save(file_path)
-        db.create_all()  # Ensure the new database has the correct schema
+        db.create_all()
         return jsonify({'success': True})
     return jsonify({'success': False}), 400
+
+@app.route('/update_process_usage/<int:process_id>', methods=['POST'])
+@login_required
+def update_process_usage(process_id):
+    data = request.json
+    new_usage_count = data.get('usage_count')
+
+    if new_usage_count is None:
+        return jsonify({'error': 'Missing usage count'}), 400
+
+    country = Country.query.first()  # Assuming you're dealing with a single country scenario
+    if not country:
+        return jsonify({'error': 'Country not found'}), 404
+
+    process_usage = ProcessUsage.query.filter_by(country_id=country.id, process_id=process_id).first()
+    if not process_usage:
+        # Assuming you want to create a new usage record if it doesn't exist
+        process_usage = ProcessUsage(country_id=country.id, process_id=process_id, usage_count=new_usage_count)
+        db.session.add(process_usage)
+    else:
+        process_usage.usage_count = new_usage_count
+
+    db.session.commit()
+    return jsonify({'success': True, 'id': process_id, 'new_usage_count': new_usage_count})
 
 def main():
     port = 5000
@@ -495,6 +562,9 @@ def main():
         finally:
             port += 1
             continue
+
+with app.app_context():
+    db.create_all()
 
 if __name__ == "__main__":
     main()
