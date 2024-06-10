@@ -1,17 +1,17 @@
 function getProcessById(processes, id) {
     return processes.find(process => process.id === id);
 }
-function processRetrieveMetric(allProcesses, process, metric) {
+function processRetrieveMetric(allProcesses, process, sens, metric) {
 	let total = 0;
 	for (let compo of process.composition) {
 		let compoProcess = getProcessById(allProcesses, compo.id);
 		if (compoProcess === undefined) {
 			console.warn("process with id " + compo.id + " is not in the retrieved processes.");
 		} else {
-			total += processRetrieveMetric(allProcesses, compoProcess, metric) * compo.amount;
+			total += processRetrieveMetric(allProcesses, compoProcess, sens, metric) * compo.amount;
 		}
 	}
-	return total + process.metrics[metric];
+	return total + process.metrics[sens][metric];
 }
 function processNSubProcess(allProcesses, process) {
     let total = 0;
@@ -106,4 +106,20 @@ function dislikeProcess(processId) {
             console.error('Error disliking process:', data.error);
         }
     }).catch(error => console.error('Error disliking process:', error));
+}
+function processMetricsGetList() {
+    return [
+        { id: 'social', label: 'Social', defaultValue: 10, icon: 'human.png', unit: '' },
+        { id: 'economic', label: 'Economic', defaultValue: 10, icon: 'human.png', unit: '$' },
+        { id: 'envEmissions', label: 'GES emissions in kgCO2eq', defaultValue: 10, icon: 'carbon.png', unit: 'kgCO2eq' },
+        { id: 'human', label: 'Human', defaultValue: '', icon: 'human.png', unit: 'people' },
+        { id: 'ground', label: 'Ground', defaultValue: '', icon: 'land.png', unit: 'km2' },
+        { id: 'ores', label: 'Ores', defaultValue: '', icon: 'ore2.png', unit: 'tonnes' },
+        { id: 'water', label: 'Water', defaultValue: '', icon: 'water_drop.png', unit: 'L' },
+        { id: 'oil', label: 'Oil', defaultValue: '', icon: 'oil.png', unit: 'L' },
+        { id: 'gas', label: 'Gas', defaultValue: '', icon: 'gas.png', unit: 'L' }
+    ];
+}
+function processMetricsIdsGetList() {
+    return processMetricsGetList().map(obj => obj.id);
 }

@@ -7,9 +7,10 @@ from sqlalchemy.ext.associationproxy import association_proxy
 from functools import wraps
 from datetime import datetime
 
+db_name_fname = 'country.db'
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///processes.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + db_name_fname
 db = SQLAlchemy(app)
 
 def debug_print(obj, indent=0):
@@ -344,20 +345,14 @@ def set_process():
         id = process_data.get('id')
         if id is not None:
             id = int(id)
-
+        
         metrics = process_data.get('metrics', {})
-        metrics = {
-            'human': float(metrics.get('human', 0)),
-            'ground': float(metrics.get('ground', 0)),
-            'ores': float(metrics.get('ores', 0)),
-            'water': float(metrics.get('water', 0)),
-            'oil': float(metrics.get('oil', 0)),
-            'gas': float(metrics.get('gas', 0)),
-            'economic': float(metrics.get('economic', 0)),
-            'envEmissions': float(metrics.get('envEmissions', 0)),
-            'social': int(metrics.get('social', 0))
-        }
-
+        if isinstance(metrics, dict):
+            input_metrics = metrics.get('input', {})
+            output_metrics = metrics.get('output', {})
+        else:
+            return jsonify({'error': 'Invalid metrics format'}), 400
+        
         selected = process_data.get('selected', True)
         if isinstance(selected, str):
             selected = ast.literal_eval(selected.capitalize())
@@ -366,7 +361,10 @@ def set_process():
         title = process_data.get('title', '')
         tags = process_data.get('tags', [])
 
-        new_process = Process(id=id, title=title, metrics=metrics)
+        new_process = Process(id=id, title=title, metrics={
+            "input": input_metrics,
+            "output": output_metrics
+        })
 
         for tag_name in tags:
             tag_name = tag_name.strip()
@@ -502,16 +500,30 @@ def set_country_endpoint():
     data = request.json
     return jsonify(set_country_data(data))
 
+def processMetricsGetList():
+    return [
+        {'id': 'social', 'label': 'Social', 'defaultValue': 10, 'icon': 'human.png', 'unit': ''},
+        {'id': 'economic', 'label': 'Economic', 'defaultValue': 10, 'icon': 'human.png', 'unit': '$'},
+        {'id': 'envEmissions', 'label': 'GES emissions in kgCO2eq', 'defaultValue': 10, 'icon': 'carbon.png', 'unit': 'kgCO2eq'},
+        {'id': 'human', 'label': 'Human', 'defaultValue': '', 'icon': 'human.png', 'unit': 'people'},
+        {'id': 'ground', 'label': 'Ground', 'defaultValue': '', 'icon': 'land.png', 'unit': 'km2'},
+        {'id': 'ores', 'label': 'Ores', 'defaultValue': '', 'icon': 'ore2.png', 'unit': 'tonnes'},
+        {'id': 'water', 'label': 'Water', 'defaultValue': '', 'icon': 'water_drop.png', 'unit': 'L'},
+        {'id': 'oil', 'label': 'Oil', 'defaultValue': '', 'icon': 'oil.png', 'unit': 'L'},
+        {'id': 'gas', 'label': 'Gas', 'defaultValue': '', 'icon': 'gas.png', 'unit': 'L'}
+    ]
+
 def set_country_data(data):
-    country_resources = {
-        'human': {'amount': int(data.get('human', 0)), 'renew_rate': float(data.get('human_renew_rate', 0))},
-        'ground': {'amount': int(data.get('ground', 0)), 'renew_rate': float(data.get('ground_renew_rate', 0))},
-        'ores': {'amount': int(data.get('ores', 0)), 'renew_rate': float(data.get('ores_renew_rate', 0))},
-        'water': {'amount': int(data.get('water', 0)), 'renew_rate': float(data.get('water_renew_rate', 0))},
-        'oil': {'amount': int(data.get('oil', 0)), 'renew_rate': float(data.get('oil_renew_rate', 0))},
-        'gas': {'amount': int(data.get('gas', 0)), 'renew_rate': float(data.get('gas_renew_rate', 0))},
-        'co2capacity': {'amount': int(data.get('co2capacity', 0)), 'renew_rate': float(data.get('co2capacity_renew_rate', 0))}
-    }
+    country_resources = data.get('resources', {})
+    for metric in processMetricsGetList():
+        resource = country_resources.get(metric['id'], None)
+        if resource is None:
+            country_resources[metric['id']] = {'amount': 0, 'renew_rate': 0}
+        else:
+            if 'amount' not in resource or resource['amount'] is None:
+                resource['amount'] = 0
+            if 'renew_rate' not in resource or resource['renew_rate'] is None:
+                resource['renew_rate'] = 0
 
     country_name = data.get('name', 'Default Country')
     country_description = data.get('description', 'No description provided')
@@ -532,19 +544,15 @@ def set_country_data(data):
 @login_required
 def get_country():
     country = Country.query.first()
+
     if not country:
+        resources = {}
+        for metric in processMetricsGetList():
+            resources[metric] = {'amount': 0, 'renew_rate': 0}
         return jsonify({
             'name': 'Default name',
             'description': 'Default description',
-            'resources': {
-                'human': {'amount': 0, 'renew_rate': 0},
-                'ground': {'amount': 0, 'renew_rate': 0},
-                'ores': {'amount': 0, 'renew_rate': 0},
-                'water': {'amount': 0, 'renew_rate': 0},
-                'oil': {'amount': 0, 'renew_rate': 0},
-                'gas': {'amount': 0, 'renew_rate': 0},
-                'co2capacity': {'amount': 0, 'renew_rate': 0}
-            }
+            'resources': resources
         })
 
     processes = [{
@@ -563,15 +571,15 @@ def get_country():
 @app.route('/export_database', methods=['GET'])
 @login_required
 def export_database():
-    db_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), '../instance/processes.db')
-    return send_file(db_path, as_attachment=True, download_name='processes.db')
+    db_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), '../instance/' + db_name_fname)
+    return send_file(db_path, as_attachment=True, download_name=db_name_fname)
 
 @app.route('/import_database', methods=['POST'])
 @login_required
 def import_database():
     file = request.files['file']
     if file:
-        file_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), '../instance/processes.db')
+        file_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), '../instance/' + db_name_fname)
         file.save(file_path)
         db.create_all()
         return jsonify({'success': True})
