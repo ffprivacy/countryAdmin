@@ -471,14 +471,6 @@ def import_database():
         return jsonify({'success': True})
     return jsonify({'success': False}), 400
 
-@app.route('/simulate_exports_imports', methods=['POST'])
-@login_required
-def simulate_exports_imports():
-    data = request.json
-    # Process the import/export simulation based on `data`
-    # Update the resources accordingly
-    return jsonify({'success': True})
-
 def main():
     port = 5000
     while True:
