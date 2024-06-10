@@ -51,7 +51,7 @@ function addProcessMetricsForm(sens='input') {
         input.className = 'form-control';
         input.id = `add-process-metric-${sens}-${metric.id}`;
         input.name = `add-process-metric-${sens}-${metric.id}`;
-        input.value = metric.defaultValue;
+        input.value = 0;
         formGroup.appendChild(input);
 
         container.appendChild(formGroup);

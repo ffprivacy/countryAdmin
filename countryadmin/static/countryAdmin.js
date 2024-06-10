@@ -109,15 +109,15 @@ function dislikeProcess(processId) {
 }
 function processMetricsGetList() {
     return [
-        { id: 'social', label: 'Social', defaultValue: 10, icon: 'human.png', unit: '' },
-        { id: 'economic', label: 'Economic', defaultValue: 10, icon: 'human.png', unit: '$' },
-        { id: 'envEmissions', label: 'GES emissions in kgCO2eq', defaultValue: 10, icon: 'carbon.png', unit: 'kgCO2eq' },
-        { id: 'human', label: 'Human', defaultValue: '', icon: 'human.png', unit: 'people' },
-        { id: 'ground', label: 'Ground', defaultValue: '', icon: 'land.png', unit: 'km2' },
-        { id: 'ores', label: 'Ores', defaultValue: '', icon: 'ore2.png', unit: 'tonnes' },
-        { id: 'water', label: 'Water', defaultValue: '', icon: 'water_drop.png', unit: 'L' },
-        { id: 'oil', label: 'Oil', defaultValue: '', icon: 'oil.png', unit: 'L' },
-        { id: 'gas', label: 'Gas', defaultValue: '', icon: 'gas.png', unit: 'L' }
+        { id: 'social', label: 'Social', icon: 'human.png', unit: '' },
+        { id: 'economic', label: 'Economic', icon: 'human.png', unit: '$' },
+        { id: 'envEmissions', label: 'GES emissions in kgCO2eq', icon: 'carbon.png', unit: 'kgCO2eq' },
+        { id: 'human', label: 'Human', icon: 'human.png', unit: 'people' },
+        { id: 'ground', label: 'Ground', icon: 'land.png', unit: 'km2' },
+        { id: 'ores', label: 'Ores', icon: 'ore2.png', unit: 'tonnes' },
+        { id: 'water', label: 'Water', icon: 'water_drop.png', unit: 'L' },
+        { id: 'oil', label: 'Oil', icon: 'oil.png', unit: 'L' },
+        { id: 'gas', label: 'Gas', icon: 'gas.png', unit: 'L' }
     ];
 }
 function processMetricsIdsGetList() {
