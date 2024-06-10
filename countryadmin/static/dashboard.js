@@ -582,6 +582,7 @@ function tradesAttach() {
 
 document.addEventListener('DOMContentLoaded', function () {
 
+	countryResourcesFillDefault();
 	tradesAttach();
 	setupExportDatabaseElement(document.getElementById('export-database-btn'));
 	setupImportDatabaseElement(document.getElementById('import-database-file'));

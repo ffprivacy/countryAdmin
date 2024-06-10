@@ -510,7 +510,8 @@ def processMetricsGetList():
         {'id': 'ores', 'label': 'Ores', 'icon': 'ore2.png', 'unit': 'tonnes'},
         {'id': 'water', 'label': 'Water', 'icon': 'water_drop.png', 'unit': 'L'},
         {'id': 'oil', 'label': 'Oil', 'icon': 'oil.png', 'unit': 'L'},
-        {'id': 'gas', 'label': 'Gas', 'icon': 'gas.png', 'unit': 'L'}
+        {'id': 'gas', 'label': 'Gas', 'icon': 'gas.png', 'unit': 'L'},
+        {'id': 'pm25', 'label': 'PM2.5', 'icon': 'smoke.png', 'unit': 'µg/m3'}
     ]
 
 def set_country_data(data):

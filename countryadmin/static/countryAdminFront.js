@@ -33,6 +33,15 @@ function setupImportDatabaseElement(e) {
         }
     });
 }
+function countryResourcesFillDefault() {
+    for(let country in countryResourcesDefaults) {
+        const list = document.getElementById("country-prefill");
+        const opt = document.createElement("option");
+        opt.value = country;
+        opt.innerText = country;
+        list.appendChild(opt);
+    }
+}
 function addProcessMetricsForm(sens='input') {
     const container = document.createElement('div');
     container.className = 'col-md-6';
