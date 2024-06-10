@@ -135,6 +135,7 @@ def reset_database():
     db.session.query(ProcessComment).delete()
     db.session.query(ProcessInteraction).delete()
     db.session.commit()
+    set_country_data({})
     return redirect(url_for('logout'))
 
 @app.route('/like_process/<int:process_id>', methods=['POST'])

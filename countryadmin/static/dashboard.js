@@ -649,7 +649,10 @@ document.addEventListener('DOMContentLoaded', function () {
 		const process = {
 			title: document.getElementById('add-process-title').value || '',
 			amount: parseInt(document.getElementById('add-process-amount').value) || 0,  
-			tags: document.getElementById('add-process-tags').value || '', 
+			tags: document.getElementById('add-process-tags').value
+					.split(',')
+					.map(item => item.trim())
+					.filter(item => item !== '') || [], 
 			metrics: {
 				human: parseFloat(document.getElementById('add-process-metric-human').value) || 0,
 				ground: parseFloat(document.getElementById('add-process-metric-ground').value) || 0,
