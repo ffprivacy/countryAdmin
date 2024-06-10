@@ -322,6 +322,7 @@ function fetchProcesses() {
 							selectedProcessMetrics.gas += processRetrieveMetric(allProcesses, process, "gas") * amount || 0;
 							selectedProcessMetrics.co2eqEmission += processRetrieveMetric(allProcesses, process, "envEmissions") * amount || 0;
 						}
+						processList.appendChild(createProcessElement(allProcesses,process,usage));
 					});
 
 					document.getElementById('total-economic').textContent = `${selectedProcessMetrics.economic}`;
@@ -354,167 +355,167 @@ function fetchProcesses() {
 					document.getElementById('time-oil-depletion').textContent = getTimeToDepletion(countryResources.oil.amount, countryResources.oil.renew_rate, selectedProcessMetrics.oil);
 					document.getElementById('time-gas-depletion').textContent = getTimeToDepletion(countryResources.gas.amount, countryResources.gas.renew_rate, selectedProcessMetrics.gas);
 					document.getElementById('time-co2eq-saturation').textContent = getTimeToDepletion(countryResources.co2capacity.amount, countryResources.co2capacity.renew_rate, selectedProcessMetrics.co2eqEmission);
+				
+					updateRadarChart(selectedProcessMetrics.economic, selectedProcessMetrics.co2eqEmission, selectedProcessMetrics.social);
 				});
-
-			updateRadarChart(selectedProcessMetrics.economic, selectedProcessMetrics.co2eqEmission, selectedProcessMetrics.social);
-
-			data.forEach(process => {
-				const li = document.createElement('li');
-				li.classList.add("list-group-item");
-				li.setAttribute("process-id", process.id);
-				li.setAttribute("economic", process.metrics.economic);
-				li.setAttribute("env-emissions", process.metrics.envEmissions);
-				li.setAttribute("social", process.metrics.social);
-				li.setAttribute("human", process.metrics.human);
-				li.setAttribute("ground", process.metrics.ground);
-				li.setAttribute("ores", process.metrics.ores);
-				li.setAttribute("water", process.metrics.water);
-				li.setAttribute("oil", process.metrics.oil);
-				li.setAttribute("gas", process.metrics.gas);
-				li.setAttribute("title", process.title);
-				li.setAttribute("process-amount", process.amount);
-				const compoStr = JSON.stringify(process.composition);
-				li.setAttribute("process-composition", compoStr);
-
-				li.innerHTML = `
-					<div class="card mb-3">
-						<div class="card-header d-flex justify-content-between align-items-center">
-							<form action="/select_process" method="POST">
-								<input type="checkbox" ${process.selected ? "checked" : ""}>
-								<input type="hidden" name="id" value="${process.id}">
-								<input type="hidden" name="selected" value="${process.selected ? 1 : 0}">
-							</form>
-							<div>
-								<strong>${process.title}</strong> (ID: ${process.id})
-							</div>
-							<button class="btn btn-danger btn-sm" onclick="deleteProcess(${process.id})">Delete</button>
-						</div>
-						<div class="card-body">
-							<div class="row">
-								<div class="col-md-4">
-									<h6>Amount</h6>
-									<ul class="list-unstyled">
-										<li><input type="number" class="form-control mt-2" id="view-process-amount-${process.id}" value="${process.amount}" /></li>
-									</ul>
-								</div>
-								<div class="col-md-4">
-									<h6>Resources Used</h6>
-									<ul class="list-unstyled">
-										<li>Human: ${process.metrics.human || 0}</li>
-										<li>Ground: ${process.metrics.ground || 0}</li>
-										<li>Ores: ${process.metrics.ores || 0}</li>
-										<li>Water: ${process.metrics.water || 0}</li>
-										<li>Oil: ${process.metrics.oil || 0}</li>
-										<li>Gas: ${process.metrics.gas || 0}</li>
-									</ul>
-								</div>
-								<div class="col-md-4">
-									<h6>Resources Produced</h6>
-									<ul class="list-unstyled">
-										<li>Economic: ${process.metrics.economic} $</li>
-										<li>Environmental: ${process.metrics.envEmissions} kgCO2eq</li>
-										<li>Social: ${process.metrics.social}</li>
-									</ul>
-								</div>
-							</div>
-							<hr>
-							<div class="row">
-								<h6 class="mt-3">Cumulative Metrics</h6>
-							</div>
-							<div class="row">
-								<div class="col-md-4">
-									For ${processNSubProcess(data,process)} subprocess
-								</div>
-								<div class="col-md-4">
-									<h6>Resources Used</h6>
-									<ul class="list-unstyled">
-										<li>Human: ${processRetrieveMetric(data, process, "human")}</li>
-										<li>Ground: ${processRetrieveMetric(data, process, "ground")}</li>
-										<li>Ores: ${processRetrieveMetric(data, process, "ores")}</li>
-										<li>Water: ${processRetrieveMetric(data, process, "water")}</li>
-										<li>Oil: ${processRetrieveMetric(data, process, "oil")}</li>
-										<li>Gas: ${processRetrieveMetric(data, process, "gas")}</li>
-									</ul>
-								</div>
-								<div class="col-md-4">
-									<h6>Resources Produced</h6>
-									<ul class="list-unstyled">
-										<li>Economic: ${processRetrieveMetric(data, process, "economic")} $</li>
-										<li>Environmental: ${processRetrieveMetric(data, process, "envEmissions")} kgCO2eq</li>
-										<li>Social: ${processRetrieveMetric(data, process, "social")}</li>
-									</ul>
-								</div>
-							</div>
-							<hr>
-							<div class="row">
-								<div class="col">
-									<h6>Composition</h6>
-									<div id="composition-container-${process.id}">
-									</div>
-								</div>
-							</div>
-							<hr>
-                            <div class="row">
-								<div class="col-md-4">
-									<button class="btn btn-outline-success" onclick="likeProcess(${process.id})">Like</button>
-									<button class="btn btn-outline-danger" onclick="dislikeProcess(${process.id})">Dislike</button>
-									<p>Score: ${process.like_count || 0}</p>
-								</div>
-								<div class="col-md-8">
-									<h6>Comments</h6>
-									<ul class="list-unstyled" id="comments-${process.id}">
-										${process.comments.map(comment => `<li><strong>${comment.user}</strong> (${new Date(comment.date).toLocaleString()}): ${comment.text}</li>`).join('')}
-									</ul>
-									<textarea class="form-control" id="comment-text-${process.id}" rows="2"></textarea>
-									<button class="btn btn-primary mt-2" onclick="addComment(${process.id}, document.getElementById('comment-text-${process.id}').value)">Add Comment</button>
-								</div>
-							</div>
-						</div>
-					</div>
-				`;
-
-				const compositionContainer = li.querySelector(`#composition-container-${process.id}`);
-				process.composition.forEach(composition => {
-					const compositionDiv = createCompositionDiv(process, composition);
-					compositionContainer.appendChild(compositionDiv);
-				});
-
-				const amountInput = li.querySelector(`#view-process-amount-${process.id}`);
-				amountInput.addEventListener('change', () => {
-					const newAmount = amountInput.value;
-					fetch(`/update_process_amount`, {
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json'
-						},
-						body: JSON.stringify({
-							id: process.id,
-							amount: newAmount
-						})
-					})
-					.then(response => response.json())
-					.then(updatedProcess => {
-						console.log(`Process ${updatedProcess.id} amount updated to ${updatedProcess.amount}`);
-						fetchProcesses();
-					})
-					.catch(error => console.error('Error updating process amount:', error));
-				});
-
-				const form = li.querySelector('form');
-				const checkbox = form.querySelector('input[type="checkbox"]');
-				const checkboxS = form.querySelector('input[type="hidden"][name="selected"]');
-
-				checkbox.addEventListener('click', function (e) {
-					checkboxS.value = checkbox.checked ? 1 : 0;
-					form.submit();
-				});
-
-				processList.appendChild(li);
-			});
 		})
 		.catch(error => {
 			console.error('There was a problem fetching processes:', error.message);
 		});
+}
+
+function createProcessElement(allProcesses,process,usage) {
+	const process_selected = usage != undefined && 0 < usage.usage_count;
+	const process_amount = usage == undefined ? 0 : usage.usage_count;
+	const li = document.createElement('li');
+	li.classList.add("list-group-item");
+	li.setAttribute("process-id", process.id);
+	li.setAttribute("economic", process.metrics.economic);
+	li.setAttribute("env-emissions", process.metrics.envEmissions);
+	li.setAttribute("social", process.metrics.social);
+	li.setAttribute("human", process.metrics.human);
+	li.setAttribute("ground", process.metrics.ground);
+	li.setAttribute("ores", process.metrics.ores);
+	li.setAttribute("water", process.metrics.water);
+	li.setAttribute("oil", process.metrics.oil);
+	li.setAttribute("gas", process.metrics.gas);
+	li.setAttribute("title", process.title);
+	li.setAttribute("process-amount", process.amount);
+	const compoStr = JSON.stringify(process.composition);
+	li.setAttribute("process-composition", compoStr);
+
+	li.innerHTML = `
+		<div class="card mb-3">
+			<div class="card-header d-flex justify-content-between align-items-center">
+				<form action="/select_process" method="POST">
+					<input type="checkbox" ${process_selected ? "checked" : ""}>
+					<input type="hidden" name="id" value="${process.id}">
+					<input type="hidden" name="selected" value="${process_selected ? 1 : 0}">
+				</form>
+				<div>
+					<strong>${process.title}</strong> (ID: ${process.id})
+				</div>
+				<button class="btn btn-danger btn-sm" onclick="deleteProcess(${process.id})">Delete</button>
+			</div>
+			<div class="card-body">
+				<div class="row">
+					<div class="col-md-4">
+						<h6>Amount</h6>
+						<ul class="list-unstyled">
+							<li><input type="number" class="form-control mt-2" id="view-process-amount-${process.id}" value="${process_amount}" /></li>
+						</ul>
+					</div>
+					<div class="col-md-4">
+						<h6>Resources Used</h6>
+						<ul class="list-unstyled">
+							<li>Human: ${process.metrics.human || 0}</li>
+							<li>Ground: ${process.metrics.ground || 0}</li>
+							<li>Ores: ${process.metrics.ores || 0}</li>
+							<li>Water: ${process.metrics.water || 0}</li>
+							<li>Oil: ${process.metrics.oil || 0}</li>
+							<li>Gas: ${process.metrics.gas || 0}</li>
+						</ul>
+					</div>
+					<div class="col-md-4">
+						<h6>Resources Produced</h6>
+						<ul class="list-unstyled">
+							<li>Economic: ${process.metrics.economic} $</li>
+							<li>Environmental: ${process.metrics.envEmissions} kgCO2eq</li>
+							<li>Social: ${process.metrics.social}</li>
+						</ul>
+					</div>
+				</div>
+				<hr>
+				<div class="row">
+					<h6 class="mt-3">Cumulative Metrics</h6>
+				</div>
+				<div class="row">
+					<div class="col-md-4">
+						For ${processNSubProcess(allProcesses,process)} subprocess
+					</div>
+					<div class="col-md-4">
+						<h6>Resources Used</h6>
+						<ul class="list-unstyled">
+							<li>Human: ${processRetrieveMetric(allProcesses, process, "human")}</li>
+							<li>Ground: ${processRetrieveMetric(allProcesses, process, "ground")}</li>
+							<li>Ores: ${processRetrieveMetric(allProcesses, process, "ores")}</li>
+							<li>Water: ${processRetrieveMetric(allProcesses, process, "water")}</li>
+							<li>Oil: ${processRetrieveMetric(allProcesses, process, "oil")}</li>
+							<li>Gas: ${processRetrieveMetric(allProcesses, process, "gas")}</li>
+						</ul>
+					</div>
+					<div class="col-md-4">
+						<h6>Resources Produced</h6>
+						<ul class="list-unstyled">
+							<li>Economic: ${processRetrieveMetric(allProcesses, process, "economic")} $</li>
+							<li>Environmental: ${processRetrieveMetric(allProcesses, process, "envEmissions")} kgCO2eq</li>
+							<li>Social: ${processRetrieveMetric(allProcesses, process, "social")}</li>
+						</ul>
+					</div>
+				</div>
+				<hr>
+				<div class="row">
+					<div class="col">
+						<h6>Composition</h6>
+						<div id="composition-container-${process.id}">
+						</div>
+					</div>
+				</div>
+				<hr>
+				<div class="row">
+					<div class="col-md-4">
+						<button class="btn btn-outline-success" onclick="likeProcess(${process.id})">Like</button>
+						<button class="btn btn-outline-danger" onclick="dislikeProcess(${process.id})">Dislike</button>
+						<p>Score: ${process.like_count || 0}</p>
+					</div>
+					<div class="col-md-8">
+						<h6>Comments</h6>
+						<ul class="list-unstyled" id="comments-${process.id}">
+							${process.comments.map(comment => `<li><strong>${comment.user}</strong> (${new Date(comment.date).toLocaleString()}): ${comment.text}</li>`).join('')}
+						</ul>
+						<textarea class="form-control" id="comment-text-${process.id}" rows="2"></textarea>
+						<button class="btn btn-primary mt-2" onclick="addComment(${process.id}, document.getElementById('comment-text-${process.id}').value)">Add Comment</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	`;
+
+	const compositionContainer = li.querySelector(`#composition-container-${process.id}`);
+	process.composition.forEach(composition => {
+		const compositionDiv = createCompositionDiv(process, composition);
+		compositionContainer.appendChild(compositionDiv);
+	});
+
+	const amountInput = li.querySelector(`#view-process-amount-${process.id}`);
+	amountInput.addEventListener('change', () => {
+		const newAmount = amountInput.value;
+		fetch(`/update_process_usage/${process.id}`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({
+				usage_count: newAmount
+			})
+		})
+		.then(response => response.json())
+		.then(updatedProcess => {
+			console.log(`Process ${updatedProcess.id} amount updated to ${newAmount}`);
+			fetchProcesses();
+		})
+		.catch(error => console.error('Error updating process amount:', error));
+	});
+
+	const form = li.querySelector('form');
+	const checkbox = form.querySelector('input[type="checkbox"]');
+	const checkboxS = form.querySelector('input[type="hidden"][name="selected"]');
+
+	checkbox.addEventListener('click', function (e) {
+		checkboxS.value = checkbox.checked ? 1 : 0;
+		form.submit();
+	});
+	return li;
 }
 
 function attachSelectedEvent() {
