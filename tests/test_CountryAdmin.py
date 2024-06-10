@@ -2,21 +2,21 @@ import pytest
 from countryadmin.countryAdmin import app, db, User, Process
 from werkzeug.security import generate_password_hash
 from io import BytesIO
+from flask import Flask, render_template, request, redirect, url_for, jsonify, session, send_file
+from flask_sqlalchemy import SQLAlchemy
+from countryadmin.countryAdmin import app, db, User
 
 @pytest.fixture
 def client():
-    app.config['TESTING'] = True
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
-    app.config['WTF_CSRF_ENABLED'] = False
-
     with app.test_client() as client:
-        with app.app_context():
-            db.create_all()
-            # Pre-populate the database with a test user
-            test_user = User(username='testuser', password_hash=generate_password_hash('testpass'))
-            db.session.add(test_user)
-            db.session.commit()
         yield client
+
+@pytest.fixture
+def setup_user():
+    with app.app_context():
+        test_user = User(username='testuser', password_hash=generate_password_hash('testpass'))
+        db.session.add(test_user)
+        db.session.commit()
 
 def login(client, username, password):
     return client.post('/login', data=dict(
