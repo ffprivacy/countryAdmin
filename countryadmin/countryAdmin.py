@@ -503,7 +503,7 @@ def set_country_endpoint():
 def processMetricsGetList():
     return [
         {'id': 'social', 'label': 'Social', 'icon': 'human.png', 'unit': ''},
-        {'id': 'economic', 'label': 'Economic', 'icon': 'human.png', 'unit': '$'},
+        {'id': 'economic', 'label': 'Economic', 'icon': 'economic.png', 'unit': '$'},
         {'id': 'envEmissions', 'label': 'GES emissions in kgCO2eq', 'icon': 'carbon.png', 'unit': 'kgCO2eq'},
         {'id': 'human', 'label': 'Human', 'icon': 'human.png', 'unit': 'people'},
         {'id': 'ground', 'label': 'Ground', 'icon': 'land.png', 'unit': 'km2'},
