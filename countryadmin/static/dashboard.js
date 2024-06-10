@@ -288,45 +288,52 @@ function fetchProcesses() {
 			const processList = document.getElementById('process-list');
 			const allProcesses = data;
 			processList.innerHTML = '';
-			const selectedProcesses = allProcesses.filter(process => process.selected);
-			let selectedProcessMetrics = {
-				economic: 0,
-				social: 0,
-				human: 0,
-				ground: 0,
-				ores: 0,
-				water: 0,
-				oil: 0,
-				gas: 0,
-				co2eqEmission: 0
-			};
-
-			selectedProcesses.forEach(process => {
-				selectedProcessMetrics.economic += processRetrieveMetric(allProcesses, process, "economic") * process.amount || 0;
-				selectedProcessMetrics.social += processRetrieveMetric(allProcesses, process, "social") * process.amount || 0;
-				selectedProcessMetrics.human += processRetrieveMetric(allProcesses, process, "human") * process.amount || 0;
-				selectedProcessMetrics.ground += processRetrieveMetric(allProcesses, process, "ground") * process.amount || 0;
-				selectedProcessMetrics.ores += processRetrieveMetric(allProcesses, process, "ores") * process.amount || 0;
-				selectedProcessMetrics.water += processRetrieveMetric(allProcesses, process, "water") * process.amount || 0;
-				selectedProcessMetrics.oil += processRetrieveMetric(allProcesses, process, "oil") * process.amount || 0;
-				selectedProcessMetrics.gas += processRetrieveMetric(allProcesses, process, "gas") * process.amount || 0;
-				selectedProcessMetrics.co2eqEmission += processRetrieveMetric(allProcesses, process, "envEmissions") * process.amount || 0;
-			});
-
-			document.getElementById('total-economic').textContent = `${selectedProcessMetrics.economic}`;
-			document.getElementById('total-social').textContent = `${selectedProcessMetrics.social}`;
-			document.getElementById('total-co2eq-emissions').textContent = `${selectedProcessMetrics.co2eqEmission}`;
-			document.getElementById('total-human-used').textContent = `${selectedProcessMetrics.human}`;
-			document.getElementById('total-ground-used').textContent = `${selectedProcessMetrics.ground}`;
-			document.getElementById('total-ores-used').textContent = `${selectedProcessMetrics.ores}`;
-			document.getElementById('total-water-used').textContent = `${selectedProcessMetrics.water}`;
-			document.getElementById('total-oil-used').textContent = `${selectedProcessMetrics.oil}`;
-			document.getElementById('total-gas-used').textContent = `${selectedProcessMetrics.gas}`;
 
 			fetch('/get_country')
 				.then(response => response.json())
 				.then(country => {
 					const countryResources = country.resources;
+					let selectedProcessMetrics = {
+						economic: 0,
+						social: 0,
+						human: 0,
+						ground: 0,
+						ores: 0,
+						water: 0,
+						oil: 0,
+						gas: 0,
+						co2eqEmission: 0
+					};
+
+					allProcesses.forEach(process => {
+						function findProcessById(processes, id) {
+							return processes ? processes.find(process => process.id === id) : null;
+						}
+						const usage = findProcessById(country.processes, process.id);
+						if ( usage ) {
+							const amount = usage.usage_count;
+							selectedProcessMetrics.economic += processRetrieveMetric(allProcesses, process, "economic") * amount || 0;
+							selectedProcessMetrics.social += processRetrieveMetric(allProcesses, process, "social") * amount || 0;
+							selectedProcessMetrics.human += processRetrieveMetric(allProcesses, process, "human") * amount || 0;
+							selectedProcessMetrics.ground += processRetrieveMetric(allProcesses, process, "ground") * amount || 0;
+							selectedProcessMetrics.ores += processRetrieveMetric(allProcesses, process, "ores") * amount || 0;
+							selectedProcessMetrics.water += processRetrieveMetric(allProcesses, process, "water") * amount || 0;
+							selectedProcessMetrics.oil += processRetrieveMetric(allProcesses, process, "oil") * amount || 0;
+							selectedProcessMetrics.gas += processRetrieveMetric(allProcesses, process, "gas") * amount || 0;
+							selectedProcessMetrics.co2eqEmission += processRetrieveMetric(allProcesses, process, "envEmissions") * amount || 0;
+						}
+					});
+
+					document.getElementById('total-economic').textContent = `${selectedProcessMetrics.economic}`;
+					document.getElementById('total-social').textContent = `${selectedProcessMetrics.social}`;
+					document.getElementById('total-co2eq-emissions').textContent = `${selectedProcessMetrics.co2eqEmission}`;
+					document.getElementById('total-human-used').textContent = `${selectedProcessMetrics.human}`;
+					document.getElementById('total-ground-used').textContent = `${selectedProcessMetrics.ground}`;
+					document.getElementById('total-ores-used').textContent = `${selectedProcessMetrics.ores}`;
+					document.getElementById('total-water-used').textContent = `${selectedProcessMetrics.water}`;
+					document.getElementById('total-oil-used').textContent = `${selectedProcessMetrics.oil}`;
+					document.getElementById('total-gas-used').textContent = `${selectedProcessMetrics.gas}`;
+					
 					const getTimeToDepletion = (resourceAmount, renewRate, usage) => {
 						let resourceRenewAmount = resourceAmount * renewRate;
 						if (usage <= resourceRenewAmount) {
@@ -421,20 +428,20 @@ function fetchProcesses() {
 								<div class="col-md-4">
 									<h6>Resources Used</h6>
 									<ul class="list-unstyled">
-										<li>Human: ${processRetrieveMetric(data, process, "human") * process.amount}</li>
-										<li>Ground: ${processRetrieveMetric(data, process, "ground") * process.amount}</li>
-										<li>Ores: ${processRetrieveMetric(data, process, "ores") * process.amount}</li>
-										<li>Water: ${processRetrieveMetric(data, process, "water") * process.amount}</li>
-										<li>Oil: ${processRetrieveMetric(data, process, "oil") * process.amount}</li>
-										<li>Gas: ${processRetrieveMetric(data, process, "gas") * process.amount}</li>
+										<li>Human: ${processRetrieveMetric(data, process, "human")}</li>
+										<li>Ground: ${processRetrieveMetric(data, process, "ground")}</li>
+										<li>Ores: ${processRetrieveMetric(data, process, "ores")}</li>
+										<li>Water: ${processRetrieveMetric(data, process, "water")}</li>
+										<li>Oil: ${processRetrieveMetric(data, process, "oil")}</li>
+										<li>Gas: ${processRetrieveMetric(data, process, "gas")}</li>
 									</ul>
 								</div>
 								<div class="col-md-4">
 									<h6>Resources Produced</h6>
 									<ul class="list-unstyled">
-										<li>Economic: ${processRetrieveMetric(data, process, "economic") * process.amount} $</li>
-										<li>Environmental: ${processRetrieveMetric(data, process, "envEmissions") * process.amount} kgCO2eq</li>
-										<li>Social: ${processRetrieveMetric(data, process, "social") * process.amount}</li>
+										<li>Economic: ${processRetrieveMetric(data, process, "economic")} $</li>
+										<li>Environmental: ${processRetrieveMetric(data, process, "envEmissions")} kgCO2eq</li>
+										<li>Social: ${processRetrieveMetric(data, process, "social")}</li>
 									</ul>
 								</div>
 							</div>
