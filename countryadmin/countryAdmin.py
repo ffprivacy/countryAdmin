@@ -258,14 +258,12 @@ def select_process():
 @app.route('/set_process', methods=['POST'])
 @login_required
 def set_process():
-    data = request.json.get('data')
+    data = request.json
     if not data:
         return jsonify({'error': 'No data provided'}), 400
 
     if isinstance(data, dict):
         data = [data]
-    
-    debug_print(data)
 
     for process_data in data:
         id = process_data.get('id')
@@ -294,7 +292,7 @@ def set_process():
         tags = process_data.get('tags', [])
 
         new_process = Process(id=id, title=title, selected=selected, amount=amount, metrics=metrics)
-        
+
         for tag_name in tags:
             tag_name = tag_name.strip()
             if tag_name:
@@ -311,8 +309,11 @@ def set_process():
         for item in composition_data:
             comp_id = item['id']
             comp_amount = item['amount']
-            new_composition = Composition(component_process_id=comp_id, composed_process_id=new_process.id, amount=comp_amount)
-            db.session.add(new_composition)
+            if comp_id and comp_amount:
+                new_composition = Composition(component_process_id=comp_id, composed_process_id=new_process.id, amount=comp_amount)
+                db.session.add(new_composition)
+            else:
+                return jsonify({'error': 'Wrong missing keys in composition'}), 400
 
     db.session.commit()
     return jsonify({'success': True})

@@ -62,7 +62,8 @@ def test_add_process(client):
         'amount': 150,
         'selected': True,
         'tags': ['tag1', 'tag2'],
-        'metrics': {'economic': 200}
+        'metrics': {'economic': 200},
+        'composition': []
     })
     assert response.status_code == 200
     assert b'success' in response.data

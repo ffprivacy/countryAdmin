@@ -47,7 +47,7 @@ async function setProcess(process) {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ data: process })
+            body: JSON.stringify(process)
         });
 
         if (!response.ok) {

@@ -640,7 +640,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		const processForm = document.getElementById('add-process-form');
 		const process = {
 			title: document.getElementById('add-process-title').value || '',
-			amount: document.getElementById('add-process-amount').value || 0,  
+			amount: parseInt(document.getElementById('add-process-amount').value) || 0,  
 			tags: document.getElementById('add-process-tags').value || '', 
 			metrics: {
 				human: parseFloat(document.getElementById('add-process-metric-human').value) || 0,
