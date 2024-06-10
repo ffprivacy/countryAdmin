@@ -449,8 +449,11 @@ def logout():
 
 @app.route('/set_country', methods=['POST'])
 @login_required
-def set_country():
+def set_country_endpoint():
     data = request.json
+    return jsonify(set_country_data(data))
+
+def set_country_data(data):
     country_resources = {
         'human': {'amount': int(data.get('human', 0)), 'renew_rate': float(data.get('human_renew_rate', 0))},
         'ground': {'amount': int(data.get('ground', 0)), 'renew_rate': float(data.get('ground_renew_rate', 0))},
@@ -474,7 +477,7 @@ def set_country():
         country.resources = country_resources
 
     db.session.commit()
-    return jsonify({'success': True})
+    return {'success': True}
 
 @app.route('/get_country', methods=['GET'])
 @login_required
@@ -565,6 +568,8 @@ def main():
 
 with app.app_context():
     db.create_all()
+    if not Country.query.first():
+        set_country_data({})
 
 if __name__ == "__main__":
     main()
