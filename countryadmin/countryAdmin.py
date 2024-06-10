@@ -323,33 +323,43 @@ def dashboard():
     processes = Process.query.all()
     return render_template('dashboard.html', processes=processes)
 
+def process_wrap_for_response(process):
+    """Helper function to format the process data for JSON response."""
+    return {
+        'id': process.id,
+        'title': process.title,
+        'selected': process.selected,
+        'amount': process.amount,
+        'metrics': process.metrics,
+        'tags': [tag.tag.name for tag in process.tags],
+        'composition': [{
+            'id': comp.component_process_id,
+            'amount': comp.amount
+        } for comp in process.composition],
+        'like_count': len([i for i in process.interactions if i.interaction_type == 'like']) -
+                       len([i for i in process.interactions if i.interaction_type == 'dislike']),
+        'comments': [{
+            'user': comment.user.username,
+            'date': comment.timestamp.isoformat(),
+            'text': comment.comment
+        } for comment in process.comments if comment.user]
+    }
+
 @app.route('/get_processes', methods=['GET'])
 @login_required
 def get_processes():
     processes = Process.query.all()
-    process_list = []
-    for process in processes:
-        composition = Composition.query.filter_by(composed_process_id=process.id).all()
-        composition_data = [{'id': comp.component_process_id, 'amount': comp.amount} for comp in composition]
-        comments = [{'user': comment.user.username, 'date': comment.timestamp.isoformat(), 'text': comment.comment} for comment in process.comments if comment.user]
-        
-        likes_count = len([obj for obj in process.interactions if obj.interaction_type == 'like'])
-        dislikes_count = len([obj for obj in process.interactions if obj.interaction_type == 'dislike'])
-        like_count = likes_count - dislikes_count
-  
-        process_data = {
-            'id': process.id,
-            'metrics': process.metrics,
-            'selected': process.selected,
-            'title': process.title,
-            'amount': process.amount,
-            'composition': composition_data,
-            'tags': list(process.tags_names),
-            'like_count': like_count,
-            'comments': comments
-        }
-        process_list.append(process_data)
+    process_list = [process_wrap_for_response(process) for process in processes]
     return jsonify(process_list)
+
+@app.route('/get_process/<int:process_id>', methods=['GET'])
+@login_required
+def get_process(process_id):
+    process = Process.query.get(process_id)
+    if not process:
+        return jsonify({'error': 'Process not found'}), 404
+    process_data = process_wrap_for_response(process)
+    return jsonify(process_data)
 
 @app.route('/delete_process/<int:id>', methods=['POST'])
 @login_required
