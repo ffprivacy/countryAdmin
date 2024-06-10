@@ -102,6 +102,8 @@ class User(db.Model):
 
 class Country(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100))
+    description = db.Column(db.String(100))
     resources = db.Column(db.JSON)
 
 with app.app_context():
@@ -395,9 +397,9 @@ def logout():
     session.pop('user_id', None)
     return redirect(url_for('index'))
 
-@app.route('/set_country_resources', methods=['POST'])
+@app.route('/set_country', methods=['POST'])
 @login_required
-def set_country_resources():
+def set_country():
     data = request.json
     country_resources = {
         'human': {'amount': int(data.get('human', 0)), 'renew_rate': float(data.get('human_renew_rate', 0))},
@@ -408,30 +410,49 @@ def set_country_resources():
         'gas': {'amount': int(data.get('gas', 0)), 'renew_rate': float(data.get('gas_renew_rate', 0))},
         'co2capacity': {'amount': int(data.get('co2capacity', 0)), 'renew_rate': float(data.get('co2capacity_renew_rate', 0))}
     }
+
+    country_name = data.get('name', 'Default Country')
+    country_description = data.get('description', 'No description provided')
+
     country = Country.query.first()
     if not country:
-        country = Country(resources=country_resources)
+        country = Country(name=country_name, description=country_description, resources=country_resources)
         db.session.add(country)
     else:
+        country.name = country_name
+        country.description = country_description
         country.resources = country_resources
+
     db.session.commit()
     return jsonify({'success': True})
 
-@app.route('/get_country_resources', methods=['GET'])
+@app.route('/get_country', methods=['GET'])
 @login_required
-def get_country_resources():
+def get_country():
     country = Country.query.first()
     if not country:
         return jsonify({
-            'human': {'amount': 0, 'renew_rate': 0},
-            'ground': {'amount': 0, 'renew_rate': 0},
-            'ores': {'amount': 0, 'renew_rate': 0},
-            'water': {'amount': 0, 'renew_rate': 0},
-            'oil': {'amount': 0, 'renew_rate': 0},
-            'gas': {'amount': 0, 'renew_rate': 0},
-            'co2capacity': {'amount': 0, 'renew_rate': 0}
+            'name': 'Default name',
+            'description': 'Default description',
+            'resources': {
+                'name': 'Default Country',
+                'description': 'No description provided',
+                'human': {'amount': 0, 'renew_rate': 0},
+                'ground': {'amount': 0, 'renew_rate': 0},
+                'ores': {'amount': 0, 'renew_rate': 0},
+                'water': {'amount': 0, 'renew_rate': 0},
+                'oil': {'amount': 0, 'renew_rate': 0},
+                'gas': {'amount': 0, 'renew_rate': 0},
+                'co2capacity': {'amount': 0, 'renew_rate': 0}
+            }
         })
-    return jsonify(country.resources)
+    return jsonify({
+        'name': country.name,
+        'description': country.description,
+        'resources': {
+            **country.resources
+        }
+    })
 
 @app.route('/export_database', methods=['GET'])
 @login_required

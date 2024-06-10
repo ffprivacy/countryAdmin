@@ -323,9 +323,10 @@ function fetchProcesses() {
 			document.getElementById('total-oil-used').textContent = `${selectedProcessMetrics.oil}`;
 			document.getElementById('total-gas-used').textContent = `${selectedProcessMetrics.gas}`;
 
-			fetch('/get_country_resources')
+			fetch('/get_country')
 				.then(response => response.json())
-				.then(countryResources => {
+				.then(country => {
+					const countryResources = country.resources;
 					const getTimeToDepletion = (resourceAmount, renewRate, usage) => {
 						let resourceRenewAmount = resourceAmount * renewRate;
 						if (usage <= resourceRenewAmount) {
@@ -550,9 +551,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
 	updateRadarChart(0, 0, 0);
 
-	fetch('/get_country_resources')
+	fetch('/get_country')
 		.then(response => response.json())
-		.then(data => {
+		.then(country => {
+			const data = country.resources;
 			document.getElementById('human-resources').value = data.human.amount;
 			document.getElementById('human-resources-renew').value = data.human.renew_rate;
 			document.getElementById('ground-resources').value = data.ground.amount;
@@ -586,7 +588,7 @@ document.addEventListener('DOMContentLoaded', function () {
 			co2capacity: document.getElementById('co2-capacity-resources').value || 0,
 			co2capacity_renew_rate: document.getElementById('co2-capacity-absorption').value || 0
 		};
-		fetch('/set_country_resources', {
+		fetch('/set_country', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json'
