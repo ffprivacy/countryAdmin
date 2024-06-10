@@ -549,8 +549,58 @@ function attachSelectedEvent() {
 	});
 }
 
+function initiateTrade() {
+    const tradeData = {
+        to_country_uri: document.getElementById('to-country-uri').value,
+        from_process_id: parseInt(document.getElementById('from-process-id').value),
+        to_process_id: parseInt(document.getElementById('to-process-id').value),
+        from_amount: parseInt(document.getElementById('from-amount').value),
+        to_amount: parseInt(document.getElementById('to-amount').value)
+    };
+    fetch('/initiate_trade', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(tradeData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert(data.message);
+        if (data.success) {
+            $('#tradeModal').modal('hide');
+            fetchTrades();
+        }
+    })
+    .catch(error => console.error('Error initiating trade:', error));
+}
+
+function fetchTrades() {
+    fetch('/get_trades')
+    .then(response => response.json())
+    .then(trades => {
+        const tradesList = document.getElementById('trades-list');
+        tradesList.innerHTML = '';
+        trades.forEach(trade => {
+            const listItem = document.createElement('div');
+            listItem.className = 'list-group-item';
+            listItem.textContent = `Trade with ${trade.to_country_uri}: ${trade.from_process_id} (amount: ${trade.from_amount}) for ${trade.to_process_id} (amount: ${trade.to_amount}) - Status: ${trade.status}`;
+            tradesList.appendChild(listItem);
+        });
+    })
+    .catch(error => console.error('Error fetching trades:', error));
+}
+
+function tradesAttach() {
+	document.getElementById('show-trade-modal').addEventListener('click', function() {
+		$('#tradeModal').modal('show');
+	});
+	fetchTrades();
+}
+
 document.addEventListener('DOMContentLoaded', function () {
 
+	tradesAttach();
 	setupExportDatabaseElement(document.getElementById('export-database-btn'));
 	setupImportDatabaseElement(document.getElementById('import-database-file'));
 

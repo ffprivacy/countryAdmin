@@ -298,6 +298,51 @@
                     <canvas style="max-width: 400px; max-height: 400px;" id="metricsRadarChart" width="400" height="400"></canvas>
                 </div>
             </div>
+            <div class="col-md-6 mb-4">
+                <h3>Trade Management</h3>
+                <button type="button" class="btn btn-primary mb-2" id="show-trade-modal">Manage Trades</button>
+                <div id="trades-list" class="list-group"></div>
+                <div class="modal fade" id="tradeModal" tabindex="-1" role="dialog" aria-labelledby="tradeModalLabel" aria-hidden="true">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="tradeModalLabel">New Trade</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="trade-form">
+                                    <div class="form-group">
+                                        <label for="to-country-uri">To Country URI:</label>
+                                        <input type="text" class="form-control" id="to-country-uri" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="from-process-id">From Process ID:</label>
+                                        <input type="number" class="form-control" id="from-process-id" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="to-process-id">To Process ID:</label>
+                                        <input type="number" class="form-control" id="to-process-id" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="from-amount">From Amount:</label>
+                                        <input type="number" class="form-control" id="from-amount" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="to-amount">To Amount:</label>
+                                        <input type="number" class="form-control" id="to-amount" required>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                <button type="button" class="btn btn-primary" onclick="initiateTrade()">Initiate Trade</button>
+                            </div>
+                        </div>
+                    </div>
+                </div> 
+            </div>           
         </div>
         <hr>
 

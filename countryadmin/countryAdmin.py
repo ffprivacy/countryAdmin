@@ -111,16 +111,79 @@ class User(db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
+class Trade(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    home_country_id = db.Column(db.Integer, db.ForeignKey('country.id'), nullable=False)
+    to_country_uri = db.Column(db.String(255), nullable=False)
+    from_process_id = db.Column(db.Integer, db.ForeignKey('process.id'), nullable=False)
+    to_process_id = db.Column(db.Integer, nullable=False)
+    from_amount = db.Column(db.Integer, nullable=False)
+    to_amount = db.Column(db.Integer, nullable=False)
+    status = db.Column(db.String(50), default='pending')
+
+    home_country = db.relationship('Country', foreign_keys=[home_country_id], back_populates='trades')
+    from_process = relationship("Process", foreign_keys=[from_process_id])
+
+    def __repr__(self):
+        return f"<ProcessUsage country_id={self.home_country_id} trade id={self.id}>"
+
 class Country(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100))
     description = db.Column(db.String(100))
     resources = db.Column(db.JSON)
     process_usages = db.relationship('ProcessUsage', back_populates='country')
+    trades = db.relationship('Trade', foreign_keys='Trade.home_country_id', back_populates='home_country')
 
 @app.route('/')
 def index():
     return render_template('index.html')
+
+@app.route('/initiate_trade', methods=['POST'])
+@login_required
+def initiate_trade():
+    data = request.get_json()
+    if not data:
+        return jsonify({'success': False, 'error': 'No data provided'}), 400
+
+    country = Country.query.first()
+    if not country:
+        return jsonify({'error': 'Country not found'}), 404
+    
+    try:
+        new_trade = Trade(
+            home_country_id=country.id,
+            from_process_id=data['from_process_id'],
+            from_amount=data['from_amount'],
+            to_country_uri=data['to_country_uri'],
+            to_process_id=data['to_process_id'],
+            to_amount=data['to_amount']
+        )
+        db.session.add(new_trade)
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Trade initiated successfully'}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/get_trades', methods=['GET'])
+@login_required
+def get_trades():
+    country = Country.query.first()
+    if not country:
+        return jsonify({'error': 'Country not found'}), 404
+
+    trades_data = [{
+        'id': trade.id,
+        'to_country_uri': trade.to_country_uri,
+        'from_process_id': trade.from_process_id,
+        'to_process_id': trade.to_process_id,
+        'from_amount': trade.from_amount,
+        'to_amount': trade.to_amount,
+        'status': trade.status
+    } for trade in country.trades]
+
+    return jsonify(trades_data)
 
 @app.route('/reset_database', methods=['POST'])
 @login_required
@@ -134,6 +197,7 @@ def reset_database():
     db.session.query(ProcessUsage).delete()
     db.session.query(ProcessComment).delete()
     db.session.query(ProcessInteraction).delete()
+    db.session.query(Trade).delete()
     db.session.commit()
     set_country_data({})
     return redirect(url_for('logout'))
