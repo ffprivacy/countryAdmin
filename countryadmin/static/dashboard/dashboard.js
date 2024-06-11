@@ -256,7 +256,7 @@ function fetchProcesses() {
 												</span>
 											</p>`;
 					}
-					updateRadarChart(selectedProcessMetrics.economic, selectedProcessMetrics.co2eqEmission, selectedProcessMetrics.social);
+					updateRadarChart(selectedProcessMetrics['output'].economic, selectedProcessMetrics['input'].envEmissions-selectedProcessMetrics['output'].envEmissions, selectedProcessMetrics['output'].social);
 				});
 		})
 		.catch(error => {
