@@ -462,9 +462,12 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         if not process:
             return jsonify({'error': 'Process not found'}), 404
 
-        # Supprimer les compositions associées
         Composition.query.filter_by(composed_process_id=id).delete()
-
+        ProcessInteraction.query.filter_by(process_id=process.id).delete()
+        ProcessComment.query.filter_by(process_id=process.id).delete()
+        ProcessUsage.query.filter_by(process_id=process.id).delete()
+        ProcessTag.query.filter_by(process_id=process.id).delete()
+      
         db.session.delete(process)
         db.session.commit()
         return jsonify({'success': True}), 200
