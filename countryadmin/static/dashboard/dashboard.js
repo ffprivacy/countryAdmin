@@ -399,12 +399,17 @@ function tradeAddProcess(tradeId, type) {
     const homeTradesContainer = document.getElementById(`trade-${tradeId}-${type}-processes`);
     homeTradesContainer.insertAdjacentHTML('beforeend', generateProcessInput(tradeId,type));
 }
-function generateProcessInput(tradeId,type,process_id=undefined,process_amount=1) {
+function generateProcessInput(tradeId,type,process_id='',process_amount=1) {
+	const uniqueId = `trade-${tradeId}-${type}-${Math.random()}${Math.random()}${Math.random()}${Math.random()}`;
+
 	return `
-        <div class="input-group mb-2 trade-${tradeId}-${type}-process">
-            <input type="number" class="form-control" id="process-id" placeholder="Process ID" value="${process_id}">
+		<div class="input-group mb-2 trade-${tradeId}-${type}-process" id="${uniqueId}">
+			<input type="number" class="form-control" id="process-id" placeholder="Process ID" value="${process_id}">
             <input type="number" class="form-control" id="process-amount" placeholder="Amount" value="${process_amount}">
-        </div>
+            <div class="input-group-append">
+                <button class="btn btn-danger" onclick="document.getElementById('${uniqueId}').remove();updateTrade(${tradeId})">Delete</button>
+            </div>
+		</div>
     `
 }
 document.addEventListener('DOMContentLoaded', function () {
