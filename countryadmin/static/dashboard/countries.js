@@ -29,7 +29,7 @@ document.getElementById('prefill-button').addEventListener('click', function() {
     const selectedCountry = document.getElementById('country-prefill').value;
     const defaults = countryResourcesDefaults[selectedCountry];
 
-    for(let metric of processMetricsIdsGetList()) {
+    for(let metric of Processes.metricsGetIdsList()) {
         document.getElementById(`country-resources-${metric}-amount`).value = defaults[metric].amount;
         document.getElementById(`country-resources-${metric}-renew-rate`).renew_rate = defaults[metric].renew_rate;
     }

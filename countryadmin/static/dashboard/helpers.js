@@ -52,7 +52,7 @@ function countryResourcesSetup(prefix) {
     const container = document.getElementById(prefix);
 
     container.innerHTML = '';
-    for(let metric of processMetricsGetList()) {
+    for(let metric of Processes.metricsGetList()) {
         container.innerHTML += ` <div class="row">
                                     <div class="col">
                                         <img src="/static/${metric.icon}" class="ms-2" style="max-width: 50px;" />${metric.label}
@@ -79,7 +79,7 @@ function countryResourcesSetup(prefix) {
     .then(response => response.json())
     .then(country => {
         const data = country.resources;
-        for(let metric of processMetricsIdsGetList()) {
+        for(let metric of Processes.metricsGetIdsList()) {
             document.getElementById(`${prefix}-${metric}-amount`).value = data[metric] ? data[metric].amount || 0 : 0;
             document.getElementById(`${prefix}-${metric}-renew-rate`).value = data[metric] ? data[metric].renew_rate || 0 : 0;
         }
@@ -87,7 +87,7 @@ function countryResourcesSetup(prefix) {
 
     document.getElementById('btn-set-resources').addEventListener('click', () => {
         const resources = {};
-        for(let metric of processMetricsIdsGetList()) {
+        for(let metric of Processes.metricsGetIdsList()) {
             resources[metric] = {
                 amount: document.getElementById(`${prefix}-${metric}-amount`).value || 0,
                 renew_rate: document.getElementById(`${prefix}-${metric}-renew-rate`).value || 0

@@ -7,7 +7,12 @@ from sqlalchemy.ext.associationproxy import association_proxy
 from functools import wraps
 from datetime import datetime
 
-def create_app(db_name="country",name=None,description=None):
+DEFAULT_DB_NAME = "country"
+DEFAULT_PORT = 5000
+DEFAULT_COUNTRY_NAME = None
+DEFAULT_COUNTRY_DESCRIPTION = None
+
+def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEFAULT_COUNTRY_DESCRIPTION):
 
     db_name_fname = f'{db_name}.db'
     app = Flask(__name__)
@@ -598,16 +603,15 @@ def create_app(db_name="country",name=None,description=None):
 
     return app, db
 
-def run_app(db_name=None,port=5000,name=None,description=None,cli=False):
+def run_app(db_name=DEFAULT_DB_NAME,port=DEFAULT_PORT,name=DEFAULT_COUNTRY_NAME,description=DEFAULT_COUNTRY_DESCRIPTION,cli=False):
     app, db = create_app(db_name,name,description)
     app.run(host='127.0.0.1', port=port, debug=True,use_reloader=cli)
 
 def main(cli=False):
-    # Default values
-    db_name = None
-    port = None
-    name = None
-    description = None
+    db_name = DEFAULT_DB_NAME
+    port = DEFAULT_PORT
+    name = DEFAULT_COUNTRY_NAME
+    description = DEFAULT_COUNTRY_DESCRIPTION
     
     # Update with command line arguments if provided
     if len(sys.argv) > 1:

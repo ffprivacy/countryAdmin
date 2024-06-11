@@ -1,4 +1,53 @@
 
+
+function processCompositionElement(process, composition) {
+	const compositionDiv = document.createElement('div');
+	compositionDiv.classList.add('composition-process-group', 'mb-2');
+
+	const processIdLabel = document.createElement('label');
+	processIdLabel.textContent = 'Process ID:';
+	compositionDiv.appendChild(processIdLabel);
+
+	const processIdInput = document.createElement('input');
+	processIdInput.setAttribute('type', 'number');
+	processIdInput.setAttribute('name', 'composition-process-id');
+	processIdInput.setAttribute('value', composition.id);
+	processIdInput.classList.add('form-control', 'mr-2');
+	compositionDiv.appendChild(processIdInput);
+
+	const processAmountLabel = document.createElement('label');
+	processAmountLabel.textContent = ' Amount:';
+	compositionDiv.appendChild(processAmountLabel);
+
+	const processAmountInput = document.createElement('input');
+	processAmountInput.setAttribute('type', 'number');
+	processAmountInput.setAttribute('name', 'composition-process-amount');
+	processAmountInput.setAttribute('value', composition.amount);
+	processAmountInput.classList.add('form-control', 'mr-2');
+	compositionDiv.appendChild(processAmountInput);
+
+	const updateBtn = document.createElement('button');
+	updateBtn.textContent = 'Update';
+	updateBtn.classList.add('btn', 'btn-primary', 'mr-2');
+	updateBtn.addEventListener('click', () => {
+		const updatedComposition = {
+			id: parseInt(processIdInput.value, 1),
+			amount: parseInt(processAmountInput.value, 1)
+		};
+		Processes.compositionUpdate(process.id, updatedComposition);
+	});
+	compositionDiv.appendChild(updateBtn);
+
+	const deleteBtn = document.createElement('button');
+	deleteBtn.textContent = 'Delete';
+	deleteBtn.classList.add('btn', 'btn-danger');
+	deleteBtn.addEventListener('click', () => {
+		Processes.compositionDelete(process.id, composition.id);
+	});
+	compositionDiv.appendChild(deleteBtn);
+
+	return compositionDiv;
+}
 function processCreateElement(allProcesses,process,usage) {
 	const process_selected = usage != undefined && 0 < usage.usage_count;
 	const process_amount = usage == undefined ? 0 : usage.usage_count;
@@ -22,7 +71,7 @@ function processCreateElement(allProcesses,process,usage) {
 				<div>
 					<strong>${process.title}</strong> (ID: ${process.id})
 				</div>
-				<button class="btn btn-danger btn-sm" onclick="deleteProcess(${process.id})">Delete</button>
+				<button class="btn btn-danger btn-sm" onclick="Processes.delete(${process.id})">Delete</button>
 			</div>
 			<div class="card-body">
 				<div class="row">
@@ -47,7 +96,7 @@ function processCreateElement(allProcesses,process,usage) {
 				</div>
 				<div class="row">
 					<div class="col-md-4">
-						For ${processNSubProcess(allProcesses,process)} subprocess
+						For ${Processes.countSubProcesses(allProcesses,process)} subprocess
 					</div>
 					<div class="col-md-4">
 						<h6>Process input</h6>
@@ -69,8 +118,8 @@ function processCreateElement(allProcesses,process,usage) {
 				<hr>
 				<div class="row">
 					<div class="col-md-4">
-						<button class="btn btn-outline-success" onclick="likeProcess(${process.id})">Like</button>
-						<button class="btn btn-outline-danger" onclick="dislikeProcess(${process.id})">Dislike</button>
+						<button class="btn btn-outline-success" onclick="Processes.like(${process.id})">Like</button>
+						<button class="btn btn-outline-danger" onclick="Processes.dislike(${process.id})">Dislike</button>
 						<p>Score: ${process.like_count || 0}</p>
 					</div>
 					<div class="col-md-8">
@@ -79,7 +128,7 @@ function processCreateElement(allProcesses,process,usage) {
 							${process.comments.map(comment => `<li><strong>${comment.user}</strong> (${new Date(comment.date).toLocaleString()}): ${comment.text}</li>`).join('')}
 						</ul>
 						<textarea class="form-control" id="comment-text-${process.id}" rows="2"></textarea>
-						<button class="btn btn-primary mt-2" onclick="addComment(${process.id}, document.getElementById('comment-text-${process.id}').value)">Add Comment</button>
+						<button class="btn btn-primary mt-2" onclick="Processes.addComment(${process.id}, document.getElementById('comment-text-${process.id}').value)">Add Comment</button>
 					</div>
 				</div>
 			</div>
@@ -88,22 +137,21 @@ function processCreateElement(allProcesses,process,usage) {
 
 	for(let sens of ['input','output']) {
 		const metricsElement = li.querySelector(`#process-view-metrics-${sens}`);
-		for(let metric of processMetricsIdsGetList()) {
+		for(let metric of Processes.metricsGetIdsList()) {
 			const metricElement = document.createElement('li');
 			metricElement.textContent = `${metric}: ${process.metrics[sens][metric]}`;
 			metricsElement.appendChild(metricElement);
 		}
 		const cumulativeMetricsElement = li.querySelector(`#process-view-cumulative-metrics-${sens}`);
-		for(let metric of processMetricsIdsGetList()) {
+		for(let metric of Processes.metricsGetIdsList()) {
 			const cumulativeMetricElement = document.createElement('li');
-			cumulativeMetricElement.textContent = `${metric}: ${processRetrieveMetric(allProcesses, process, sens, metric)}`;
+			cumulativeMetricElement.textContent = `${metric}: ${Processes.retrieveMetric(allProcesses, process, sens, metric)}`;
 			cumulativeMetricsElement.appendChild(cumulativeMetricElement);
 		}
 	}
 	const compositionContainer = li.querySelector(`#composition-container-${process.id}`);
 	process.composition.forEach(composition => {
-		const compositionDiv = createCompositionDiv(process, composition);
-		compositionContainer.appendChild(compositionDiv);
+		compositionContainer.appendChild(processCompositionElement(process, composition));
 	});
 
 	const amountInput = li.querySelector(`#view-process-amount-${process.id}`);
@@ -158,7 +206,7 @@ function addProcessMetricsForm(sens='input') {
     const container = document.createElement('div');
     container.className = 'row';
 
-    processMetricsGetList().forEach(metric => {
+    Processes.metricsGetList().forEach(metric => {
         const formGroup = document.createElement('div');
         formGroup.className = 'form-group p-2 col-md-6 card card group';
 
@@ -179,4 +227,14 @@ function addProcessMetricsForm(sens='input') {
     });
 
     document.getElementById(`add-process-metrics-${sens}`).appendChild(container);
+}
+function addProcessGetCompositionData() {
+	const compositionContainer = document.getElementById('add-process-composition-container');
+	const compositionDivs = compositionContainer.querySelectorAll('div');
+	const compositionArray = Array.from(compositionDivs).map(div => {
+		const processId = div.querySelector('input[name="composition-process-id"]').value;
+		const processAmount = div.querySelector('input[name="composition-process-amount"]').value;
+		return { id: parseInt(processId, 1), amount: parseInt(processAmount, 1) };
+	});
+	return compositionArray;
 }

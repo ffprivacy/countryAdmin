@@ -1,15 +1,4 @@
 // dashboard.js
-function getCompositionData() {
-	const compositionContainer = document.getElementById('add-process-composition-container');
-	const compositionDivs = compositionContainer.querySelectorAll('div');
-	const compositionArray = Array.from(compositionDivs).map(div => {
-		const processId = div.querySelector('input[name="composition-process-id"]').value;
-		const processAmount = div.querySelector('input[name="composition-process-amount"]').value;
-		return { id: parseInt(processId, 1), amount: parseInt(processAmount, 1) };
-	});
-	return compositionArray;
-}
-
 let radarChart;
 function updateRadarChart(economic, envEmissions, social) {
 	const ctx = document.getElementById('metricsRadarChart').getContext('2d');
@@ -85,7 +74,7 @@ function selectProcesses() {
 		const processId = parseInt(li.getAttribute("process-id"));
 		const metrics = JSON.parse(li.getAttribute("metrics"));
 		const amount = parseInt(li.getAttribute("process-amount"));
-		const composition = getCompositionData();
+		const composition = addProcessGetCompositionData();
 		return { id, processId, metrics, selected: checkbox.checked, amount, composition, form };
 	});
 
@@ -130,9 +119,9 @@ function selectProcesses() {
 
 	// Calculate the distance between each process and the goals
 	const calculateDistance = (allProcesses, process, goalEconomic, goalEnvEmissions, goalSocial) => {
-		const distanceEconomic = Math.abs(process.amount * processRetrieveMetric(allProcesses, process, "economic") - goalEconomic);
-		const distanceEnvEmissions = Math.abs(process.amount * processRetrieveMetric(allProcesses, process, "envEmissions") - goalEnvEmissions);
-		const distanceSocial = Math.abs(process.amount * processRetrieveMetric(allProcesses, process, "social") - goalSocial);
+		const distanceEconomic = Math.abs(process.amount * Processes.retrieveMetric(allProcesses, process, "economic") - goalEconomic);
+		const distanceEnvEmissions = Math.abs(process.amount * Processes.retrieveMetric(allProcesses, process, "envEmissions") - goalEnvEmissions);
+		const distanceSocial = Math.abs(process.amount * Processes.retrieveMetric(allProcesses, process, "social") - goalSocial);
 		return distanceEconomic + distanceEnvEmissions + distanceSocial;
 	};
 
@@ -161,9 +150,9 @@ function selectProcesses() {
 		if (closestProcess) {
 			closestProcess.selected = true;
 			selectedProcessIds.add(closestProcess.processId);
-			totalEconomic += processRetrieveMetric(allProcesses, closestProcess, "economic") * closestProcess.amount;
-			selectedGovEnvEmissions += processRetrieveMetric(allProcesses, closestProcess, "envEmissions") * closestProcess.amount;
-			totalSocial += processRetrieveMetric(allProcesses, closestProcess, "social") * closestProcess.amount;
+			totalEconomic += Processes.retrieveMetric(allProcesses, closestProcess, "economic") * closestProcess.amount;
+			selectedGovEnvEmissions += Processes.retrieveMetric(allProcesses, closestProcess, "envEmissions") * closestProcess.amount;
+			totalSocial += Processes.retrieveMetric(allProcesses, closestProcess, "social") * closestProcess.amount;
 		}
 	});
 
@@ -182,90 +171,6 @@ function selectProcesses() {
 			console.warn(e);
 		});
 }
-
-function createCompositionDiv(process, composition) {
-	const compositionDiv = document.createElement('div');
-	compositionDiv.classList.add('composition-process-group', 'mb-2');
-
-	const processIdLabel = document.createElement('label');
-	processIdLabel.textContent = 'Process ID:';
-	compositionDiv.appendChild(processIdLabel);
-
-	const processIdInput = document.createElement('input');
-	processIdInput.setAttribute('type', 'number');
-	processIdInput.setAttribute('name', 'composition-process-id');
-	processIdInput.setAttribute('value', composition.id);
-	processIdInput.classList.add('form-control', 'mr-2');
-	compositionDiv.appendChild(processIdInput);
-
-	const processAmountLabel = document.createElement('label');
-	processAmountLabel.textContent = ' Amount:';
-	compositionDiv.appendChild(processAmountLabel);
-
-	const processAmountInput = document.createElement('input');
-	processAmountInput.setAttribute('type', 'number');
-	processAmountInput.setAttribute('name', 'composition-process-amount');
-	processAmountInput.setAttribute('value', composition.amount);
-	processAmountInput.classList.add('form-control', 'mr-2');
-	compositionDiv.appendChild(processAmountInput);
-
-	const updateBtn = document.createElement('button');
-	updateBtn.textContent = 'Update';
-	updateBtn.classList.add('btn', 'btn-primary', 'mr-2');
-	updateBtn.addEventListener('click', () => {
-		const updatedComposition = {
-			id: parseInt(processIdInput.value, 1),
-			amount: parseInt(processAmountInput.value, 1)
-		};
-		updateComposition(process.id, updatedComposition);
-	});
-	compositionDiv.appendChild(updateBtn);
-
-	const deleteBtn = document.createElement('button');
-	deleteBtn.textContent = 'Delete';
-	deleteBtn.classList.add('btn', 'btn-danger');
-	deleteBtn.addEventListener('click', () => {
-		deleteComposition(process.id, composition.id);
-	});
-	compositionDiv.appendChild(deleteBtn);
-
-	return compositionDiv;
-}
-
-function updateComposition(processId, composition) {
-	fetch(`/update_composition/${processId}`, {
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json'
-		},
-		body: JSON.stringify(composition)
-	})
-	.then(response => response.json())
-	.then(data => {
-		if (data.success) {
-			fetchProcesses();
-		} else {
-			console.error('Error updating composition:', data.error);
-		}
-	})
-	.catch(error => console.error('Error updating composition:', error));
-}
-
-function deleteComposition(processId, compositionId) {
-	fetch(`/delete_composition/${processId}/${compositionId}`, {
-		method: 'POST'
-	})
-	.then(response => response.json())
-	.then(data => {
-		if (data.success) {
-			fetchProcesses();
-		} else {
-			console.error('Error deleting composition:', data.error);
-		}
-	})
-	.catch(error => console.error('Error deleting composition:', error));
-}
-
 function fetchProcesses() {
 	return fetch('/get_processes')
 		.then(response => {
@@ -286,25 +191,22 @@ function fetchProcesses() {
 					let selectedProcessMetrics = {};
 					for(let sens of ['input','output']) {
 						selectedProcessMetrics[sens] = {};
-						for(let metric of processMetricsIdsGetList()) {
+						for(let metric of Processes.metricsGetIdsList()) {
 							selectedProcessMetrics[sens][metric] = 0;
 						}
 					}
 
 					allProcesses.forEach(process => {
-						function findProcessById(processes, id) {
-							return processes ? processes.find(process => process.id === id) : null;
-						}
-						const usage = findProcessById(country.processes, process.id);
+						const usage = Processes.getById(country.processes, process.id);
 						if ( usage ) {
 							const amount = usage.usage_count;
 							for(let sens of ['input','output']) {
 								selectedProcessMetrics[sens] = {};
-								for(let metric of processMetricsIdsGetList()) {
+								for(let metric of Processes.metricsGetIdsList()) {
 									if ( ! selectedProcessMetrics[sens][metric] ) {
 										selectedProcessMetrics[sens][metric] = 0;
 									}
-									selectedProcessMetrics[sens][metric] += processRetrieveMetric(allProcesses, process, sens, metric) * amount || 0;
+									selectedProcessMetrics[sens][metric] += Processes.retrieveMetric(allProcesses, process, sens, metric) * amount || 0;
 								}
 							}
 						}
@@ -313,7 +215,7 @@ function fetchProcesses() {
 
 					for(let sens of ['input','output']) {
 						const container = document.getElementById(`country-resource-total-${sens}`);
-						for(let metric of processMetricsGetList()) {
+						for(let metric of Processes.metricsGetList()) {
 							const id = `country-resource-total-${sens}-${metric.id}`;
 							let element = document.getElementById(id);
 							if ( !element ) {
@@ -340,7 +242,7 @@ function fetchProcesses() {
 					};
 
 					const container = document.getElementById("country-resource-depletion");
-					for(let metric of processMetricsGetList()) {
+					for(let metric of Processes.metricsGetList()) {
 						const id = `country-resources-depletion-time-${metric.id}-container`
 						let element = document.getElementById(id);
 						if (!element) {
@@ -461,7 +363,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		let metrics = {};
 		for(let sens of ['input','output']) {
 			metrics[sens] = {};
-			for(let metric of processMetricsIdsGetList()) {
+			for(let metric of Processes.metricsGetIdsList()) {
 				metrics[sens][metric] = parseFloat(document.getElementById(`add-process-metric-${sens}-${metric}`).value || 0);
 			}
 		}
@@ -484,7 +386,7 @@ document.addEventListener('DOMContentLoaded', function () {
 			});
 		});
 		
-		setProcess(process)
+		Processes.set(process)
 			.then(() => {
 				fetchProcesses();
 			})
@@ -519,7 +421,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		if (file) {
 			const reader = new FileReader();
 			reader.onload = function(event) {
-				setProcess(JSON.parse(event.target.result))
+				Processes.set(JSON.parse(event.target.result))
 				.then(() => {
 					fetchProcesses();
 				})
