@@ -63,7 +63,7 @@ function processCreateElement(allProcesses,process) {
 	li.innerHTML = `
 		<div class="card mb-3">
 			<div class="card-header d-flex justify-content-between align-items-center">
-				<form action="/select_process" method="POST">
+				<form action="/api/select_process" method="POST">
 					<input type="checkbox" ${process_selected ? "checked" : ""}>
 					<input type="hidden" name="id" value="${process.id}">
 					<input type="hidden" name="selected" value="${process_selected ? 1 : 0}">
@@ -157,7 +157,7 @@ function processCreateElement(allProcesses,process) {
 	const amountInput = li.querySelector(`#view-process-amount-${process.id}`);
 	amountInput.addEventListener('change', () => {
 		const newAmount = amountInput.value;
-		fetch(`/update_process_usage/${process.id}`, {
+		fetch(`/api/update_process_usage/${process.id}`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json'

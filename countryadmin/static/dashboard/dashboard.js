@@ -162,7 +162,7 @@ function selectProcesses() {
 		formData.append('selected[]', process.selected);
 	});
 
-	fetch('/select_process', {
+	fetch('/api/select_process', {
 		method: 'POST',
 		body: formData
 	})
@@ -172,7 +172,7 @@ function selectProcesses() {
 		});
 }
 function fetchProcesses() {
-	return fetch('/get_processes')
+	return fetch('/api/get_processes')
 		.then(response => {
 			if (!response.ok) {
 				throw new Error('Network response was not ok');
@@ -184,7 +184,7 @@ function fetchProcesses() {
 			const allProcesses = data;
 			processList.innerHTML = '';
 
-			fetch('/get_country')
+			fetch('/api/get_country')
 				.then(response => response.json())
 				.then(country => {
 					const countryResources = country.resources;
@@ -302,7 +302,7 @@ function initiateTrade() {
         from_amount: parseInt(document.getElementById('from-amount').value),
         to_amount: parseInt(document.getElementById('to-amount').value)
     };
-    fetch('/initiate_trade', {
+    fetch('/api/initiate_trade', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -321,7 +321,7 @@ function initiateTrade() {
 }
 
 function fetchTrades() {
-    fetch('/get_trades')
+    fetch('/api/get_trades')
     .then(response => response.json())
     .then(trades => {
         const tradesList = document.getElementById('trades-list');
@@ -392,7 +392,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	});	
 		
 	document.getElementById('export-btn').addEventListener('click', function() {
-		fetch('/get_processes')
+		fetch('/api/get_processes')
 		.then(response => {
 		if (!response.ok) {
 			throw new Error('Network response was not ok');

@@ -10,7 +10,7 @@ function setupImportDatabaseElement(e) {
             const formData = new FormData();
             formData.append('file', file);
     
-            fetch('/import_database', {
+            fetch('/api/import_database', {
                 method: 'POST',
                 body: formData
             })
@@ -75,7 +75,7 @@ function countryResourcesSetup(prefix) {
                                 <hr>`;
     }
 
-    fetch('/get_country')
+    fetch('/api/get_country')
     .then(response => response.json())
     .then(country => {
         const data = country.resources;
@@ -93,7 +93,7 @@ function countryResourcesSetup(prefix) {
                 renew_rate: document.getElementById(`${prefix}-${metric}-renew-rate`).value || 0
             };
         }
-        fetch('/set_country', {
+        fetch('/api/set_country', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

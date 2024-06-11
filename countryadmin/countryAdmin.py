@@ -146,7 +146,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
     def index():
         return render_template('index.html')
 
-    @app.route('/initiate_trade', methods=['POST'])
+    @app.route('/api/initiate_trade', methods=['POST'])
     @login_required
     def initiate_trade():
         data = request.get_json()
@@ -173,7 +173,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             db.session.rollback()
             return jsonify({'success': False, 'error': str(e)}), 500
 
-    @app.route('/get_trades', methods=['GET'])
+    @app.route('/api/get_trades', methods=['GET'])
     @login_required
     def get_trades():
         country = Country.query.first()
@@ -192,7 +192,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
         return jsonify(trades_data)
 
-    @app.route('/reset_database', methods=['POST'])
+    @app.route('/api/reset_database', methods=['POST'])
     @login_required
     def reset_database():
         db.session.query(Tag).delete()
@@ -209,7 +209,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         set_country_data({})
         return redirect(url_for('logout'))
 
-    @app.route('/like_process/<int:process_id>', methods=['POST'])
+    @app.route('/api/like_process/<int:process_id>', methods=['POST'])
     @login_required
     def like_process(process_id):
         if 'user_id' not in session:
@@ -234,7 +234,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         db.session.commit()
         return jsonify({'success': True})
 
-    @app.route('/dislike_process/<int:process_id>', methods=['POST'])
+    @app.route('/api/dislike_process/<int:process_id>', methods=['POST'])
     @login_required
     def dislike_process(process_id):
         if 'user_id' not in session:
@@ -259,7 +259,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         db.session.commit()
         return jsonify({'success': True})
 
-    @app.route('/add_comment/<int:process_id>', methods=['POST'])
+    @app.route('/api/add_comment/<int:process_id>', methods=['POST'])
     @login_required
     def add_comment(process_id):
         if 'user_id' not in session:
@@ -310,7 +310,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 db.session.delete(process_usage)
         return process_usage
 
-    @app.route('/select_process', methods=['POST'])
+    @app.route('/api/select_process', methods=['POST'])
     @login_required
     def select_process():
         ids = []
@@ -337,7 +337,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
         return redirect(url_for('dashboard'))
 
-    @app.route('/set_process', methods=['POST'])
+    @app.route('/api/set_process', methods=['POST'])
     @login_required
     def set_process():
         data = request.json
@@ -438,14 +438,14 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             } for comment in process.comments if comment.user]
         }
 
-    @app.route('/get_processes', methods=['GET'])
+    @app.route('/api/get_processes', methods=['GET'])
     @login_required
     def get_processes():
         processes = Process.query.all()
         process_list = [process_wrap_for_response(process) for process in processes]
         return jsonify(process_list)
 
-    @app.route('/get_process/<int:process_id>', methods=['GET'])
+    @app.route('/api/get_process/<int:process_id>', methods=['GET'])
     @login_required
     def get_process(process_id):
         process = Process.query.get(process_id)
@@ -454,7 +454,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         process_data = process_wrap_for_response(process)
         return jsonify(process_data)
 
-    @app.route('/delete_process/<int:id>', methods=['POST'])
+    @app.route('/api/delete_process/<int:id>', methods=['POST'])
     @login_required
     def delete_process(id):
         process = Process.query.get(id)
@@ -471,7 +471,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         db.session.commit()
         return jsonify({'success': True}), 200
 
-    @app.route('/update_composition/<int:process_id>', methods=['POST'])
+    @app.route('/api/update_composition/<int:process_id>', methods=['POST'])
     @login_required
     def update_composition(process_id):
         data = request.json
@@ -486,7 +486,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         db.session.commit()
         return jsonify({'success': True}), 200
 
-    @app.route('/delete_composition/<int:process_id>/<int:component_process_id>', methods=['POST'])
+    @app.route('/api/delete_composition/<int:process_id>/<int:component_process_id>', methods=['POST'])
     @login_required
     def delete_composition(process_id, component_process_id):
         composition = Composition.query.filter_by(composed_process_id=process_id, component_process_id=component_process_id).first()
@@ -497,13 +497,13 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         db.session.commit()
         return jsonify({'success': True}), 200
 
-    @app.route('/logout')
+    @app.route('/api/logout')
     @login_required
     def logout():
         session.pop('user_id', None)
         return redirect(url_for('index'))
 
-    @app.route('/set_country', methods=['POST'])
+    @app.route('/api/set_country', methods=['POST'])
     @login_required
     def set_country_endpoint():
         data = request.json
@@ -532,7 +532,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         db.session.commit()
         return {'success': True}
 
-    @app.route('/get_country', methods=['GET'])
+    @app.route('/api/get_country', methods=['GET'])
     @login_required
     def get_country():
         country = Country.query.first()
@@ -557,13 +557,13 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             'processes': processes
         })
 
-    @app.route('/export_database', methods=['GET'])
+    @app.route('/api/export_database', methods=['GET'])
     @login_required
     def export_database():
         db_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), '../instance/' + db_name_fname)
         return send_file(db_path, as_attachment=True, download_name=db_name_fname)
 
-    @app.route('/import_database', methods=['POST'])
+    @app.route('/api/import_database', methods=['POST'])
     @login_required
     def import_database():
         file = request.files['file']
@@ -574,7 +574,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             return jsonify({'success': True})
         return jsonify({'success': False}), 400
 
-    @app.route('/update_process_usage/<int:process_id>', methods=['POST'])
+    @app.route('/api/update_process_usage/<int:process_id>', methods=['POST'])
     @login_required
     def update_process_usage(process_id):
         data = request.json
