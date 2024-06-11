@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flask Instance Manager</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+        }
+        input, button {
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Flask Instance Manager</h1>
+
+    <div>
+        <h2>Start New Instance</h2>
+        <label for="name">Instance Name:</label>
+        <input type="text" id="name" placeholder="Enter instance name" value="france">
+        <label for="port">Port:</label>
+        <input type="number" id="port" placeholder="Enter port number" value="5001">
+        <button onclick="startInstance()">Start Instance</button>
+    </div>
+
+    <div>
+        <h2>Active Instances</h2>
+        <button onclick="listInstances()">Refresh List</button>
+        <ul id="instanceList"></ul>
+    </div>
+
+    <script>
+        function startInstance() {
+            const name = document.getElementById('name').value;
+            const port = document.getElementById('port').value;
+            fetch('/start', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name, port })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message || data.error);
+                listInstances();
+            })
+            .catch(error => console.error('Error starting instance:', error));
+        }
+
+        function listInstances() {
+            fetch('/list', { method: 'GET' })
+            .then(response => response.json())
+            .then(data => {
+                const list = document.getElementById('instanceList');
+                list.innerHTML = ''; // Clear existing list
+                data.forEach(instance => {
+                    const item = document.createElement('li');
+                    item.textContent = `${instance.name} - URL: <a href="${instance.url}">${instance.url}</a> - Port: ${instance.port}`;
+                    list.appendChild(item);
+                });
+            })
+            .catch(error => console.error('Error listing instances:', error));
+        }
+
+        // Initial list update on page load
+        window.onload = listInstances;
+    </script>
+</body>
+</html>
