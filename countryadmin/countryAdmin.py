@@ -10,7 +10,7 @@ from datetime import datetime
 def create_app(db_name="country",name=None,description=None):
 
     db_name_fname = f'{db_name}.db'
-    app = Flask(__name__)
+    app = Flask(db_name)
     app.secret_key = 'your_secret_key'
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + db_name_fname
     db = SQLAlchemy(app)
