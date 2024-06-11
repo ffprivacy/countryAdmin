@@ -59,7 +59,7 @@
                 list.innerHTML = ''; // Clear existing list
                 data.forEach(instance => {
                     const item = document.createElement('li');
-                    item.textContent = `${instance.name} - URL: <a href="${instance.url}">${instance.url}</a> - Port: ${instance.port}`;
+                    item.innerHTML = `${instance.name} - URL: <a href="${instance.url}" target="_blank">${instance.url}</a> - Port: ${instance.port}`;
                     list.appendChild(item);
                 });
             })
