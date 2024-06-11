@@ -63,7 +63,6 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
     class Process(db.Model):
         id = db.Column(db.Integer, primary_key=True)
         title = db.Column(db.String(100))  # Add title attribute
-        amount = db.Column(db.Integer)
         composition = db.relationship('Composition', backref='process', lazy=True)
         tags = db.relationship('ProcessTag', back_populates='process')
         tags_names = association_proxy('tags', 'tag.name')
@@ -423,7 +422,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             'id': process.id,
             'title': process.title,
             'selected': selected,
-            'amount': process.amount,
+            'amount': process_usage.usage_count,
             'metrics': process.metrics,
             'tags': [tag.tag.name for tag in process.tags],
             'composition': [{

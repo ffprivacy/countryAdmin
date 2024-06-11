@@ -8,10 +8,11 @@ class Processes {
         let total = 0;
         for (let compo of process.composition) {
             let compoProcess = Processes.getById(allProcesses, compo.id);
-            if (!compoProcess) {
-                console.warn(`process with id ${compo.id} is not in the retrieved processes.`);
+            if (compoProcess) {
+                const metric2 = Processes.retrieveMetric(allProcesses, compoProcess, sens, metric);
+                total += metric2 * compo.amount;
             } else {
-                total += Processes.retrieveMetric(allProcesses, compoProcess, sens, metric) * compo.amount;
+                console.warn(`process with id ${compo.id} is not in the retrieved processes.`);
             }
         }
         return total + process.metrics[sens][metric];

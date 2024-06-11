@@ -197,20 +197,18 @@ function fetchProcesses() {
 					}
 
 					allProcesses.forEach(process => {
-						const usage = Processes.getById(country.processes, process.id);
-						if ( usage ) {
-							const amount = usage.usage_count;
-							for(let sens of ['input','output']) {
+						for(let sens of ['input','output']) {
+							if ( ! selectedProcessMetrics[sens] ) {
 								selectedProcessMetrics[sens] = {};
-								for(let metric of Processes.metricsGetIdsList()) {
-									if ( ! selectedProcessMetrics[sens][metric] ) {
-										selectedProcessMetrics[sens][metric] = 0;
-									}
-									selectedProcessMetrics[sens][metric] += Processes.retrieveMetric(allProcesses, process, sens, metric) * amount || 0;
+							}
+							for(let metric of Processes.metricsGetIdsList()) {
+								if ( ! selectedProcessMetrics[sens][metric] ) {
+									selectedProcessMetrics[sens][metric] = 0;
 								}
+								selectedProcessMetrics[sens][metric] += Processes.retrieveMetric(allProcesses, process, sens, metric) * process.amount || 0;
 							}
 						}
-						processList.appendChild(processCreateElement(allProcesses,process,usage));
+						processList.appendChild(processCreateElement(allProcesses,process));
 					});
 
 					for(let sens of ['input','output']) {
