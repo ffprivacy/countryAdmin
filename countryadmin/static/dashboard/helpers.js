@@ -147,11 +147,12 @@ function deleteTrade(tradeId) {
 }
 function getTradeDetails(type, tradeId) {
     let details = [];
-    const tradeInputs = document.querySelectorAll(`.${type}-trade-${tradeId}`);
-    tradeInputs.forEach(input => {
-        const processId = input.dataset.processId;
-        const amount = input.value;
-        details.push({process_id: processId, amount: parseInt(amount, 10)});
+    const tradeProcesses = document.querySelectorAll(`#trade-${tradeId}-${type}-processes > .trade-${tradeId}-${type}-process`);
+    tradeProcesses.forEach(tradeProcess => {
+        details.push({
+            process_id: parseInt(tradeProcess.querySelector(`#process-id`).value), 
+            amount: parseInt(tradeProcess.querySelector(`#process-amount`).value)
+        });
     });
     return details;
 }

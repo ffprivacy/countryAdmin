@@ -358,49 +358,55 @@ function fetchTrades() {
         tradesList.innerHTML = '';
         trades.forEach(trade => {
             const listItem = document.createElement('div');
-            listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+            listItem.className = 'list-group-item';
             listItem.innerHTML = `
-                <div class="trade-info">
-                    Trade with <a href="${trade.to_country_uri}" target="_blank">${trade.to_country_uri}</a><br />
-                    Status: <input type="text" id="trade-status-${trade.id}" value="${trade.status}"/>
-					<div class="row">
+                <div class="mb-3">
+                    <h5>Trade with <a href="${trade.to_country_uri}" target="_blank">${trade.to_country_uri}</a></h5>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="trade-status-${trade.id}" ${trade.status === 'active' ? 'checked' : ''}>
+                        <label class="form-check-label" for="trade-status-${trade.id}">${trade.status}</label>
+                    </div>
+                    <div class="row">
                         <div class="col-md-6">
-                            <h6>Home Country Trades:</h6>
-                            ${trade.home_trades.map(ht => `
-                                <div class="input-group mb-2">
-                                    <div class="input-group-prepend">
-										<span>process id ${ht.process_id}</span>
-                                        <span class="input-group-text">Amount:</span>
-                                    </div>
-                                    <input type="number" class="form-control home-trade-${trade.id}" data-process-id="${ht.process_id}" value="${ht.amount}">
-                                </div>
-                            `).join('')}
+                            <h6>Home Country Processes</h6>
+                            <div id="trade-${trade.id}-home-processes"></div>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="tradeAddProcess(${trade.id},'home')">Add Process</button>
                         </div>
                         <div class="col-md-6">
-                            <h6>Foreign Country Trades:</h6>
-                            ${trade.foreign_trades.map(ft => `
-                                <div class="input-group mb-2">
-                                    <div class="input-group-prepend">
-										<span>process id ${ft.process_id}</span>
-										<span class="input-group-text">Amount:</span>
-									</div>
-                                    <input type="number" class="form-control foreign-trade-${trade.id}" data-process-id="${ft.process_id}" value="${ft.amount}">
-                                </div>
-                            `).join('')}
+                            <h6>Foreign Country Processes</h6>
+                            <div id="trade-${trade.id}-foreign-processes"></div>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="tradeAddProcess(${trade.id},'foreign')">Add Process</button>
                         </div>
                     </div>
-                </div>
-                <div>
-                    <button class="btn btn-primary btn-sm" onclick="updateTrade(${trade.id})">Update</button>
-                    <button class="btn btn-danger btn-sm" onclick="deleteTrade(${trade.id})">Delete</button>
+                    <div class="mt-3">
+                        <button class="btn btn-primary" onclick="updateTrade(${trade.id})">Update</button>
+                        <button class="btn btn-danger" onclick="deleteTrade(${trade.id})">Delete</button>
+                    </div>
                 </div>
             `;
             tradesList.appendChild(listItem);
+            renderTradeProcesses(trade.id, 'home', trade.home_trades);
+            renderTradeProcesses(trade.id, 'foreign', trade.foreign_trades);
         });
     })
     .catch(error => console.error('Error fetching trades:', error));
 }
-
+function renderTradeProcesses(tradeId, type, processes) {
+    const container = document.getElementById(`trade-${tradeId}-${type}-processes`);
+    container.innerHTML = processes.map(p => generateProcessInput(tradeId,type,p.process_id,p.amount)).join('');
+}
+function tradeAddProcess(tradeId, type) {
+    const homeTradesContainer = document.getElementById(`trade-${tradeId}-${type}-processes`);
+    homeTradesContainer.insertAdjacentHTML('beforeend', generateProcessInput(tradeId,type));
+}
+function generateProcessInput(tradeId,type,process_id=undefined,process_amount=1) {
+	return `
+        <div class="input-group mb-2 trade-${tradeId}-${type}-process">
+            <input type="number" class="form-control" id="process-id" placeholder="Process ID" value="${process_id}">
+            <input type="number" class="form-control" id="process-amount" placeholder="Amount" value="${process_amount}">
+        </div>
+    `
+}
 document.addEventListener('DOMContentLoaded', function () {
 
 	tradesSetup();
