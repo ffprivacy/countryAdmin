@@ -33,6 +33,12 @@ function setupImportDatabaseElement(e) {
         }
     });
 }
+function tradesSetup() {
+	document.getElementById('show-trade-modal').addEventListener('click', function() {
+		$('#tradeModal').modal('show');
+	});
+	fetchTrades();
+}
 function countryResourcesFillDefault() {
     for(let country in countryResourcesDefaults) {
         const list = document.getElementById("country-prefill");
@@ -42,34 +48,7 @@ function countryResourcesFillDefault() {
         list.appendChild(opt);
     }
 }
-function addProcessMetricsForm(sens='input') {
-    const container = document.createElement('div');
-    container.className = 'row';
-
-    processMetricsGetList().forEach(metric => {
-        const formGroup = document.createElement('div');
-        formGroup.className = 'form-group p-2 col-md-6 card card group';
-
-        const label = document.createElement('label');
-        label.htmlFor = `add-process-metric-${sens}-${metric.id}`;
-        label.textContent = metric.label;
-        formGroup.appendChild(label);
-
-        const input = document.createElement('input');
-        input.type = 'number';
-        input.className = 'form-control';
-        input.id = `add-process-metric-${sens}-${metric.id}`;
-        input.name = `add-process-metric-${sens}-${metric.id}`;
-        input.value = 0;
-        formGroup.appendChild(input);
-
-        container.appendChild(formGroup);
-    });
-
-    document.getElementById(`add-process-metrics-${sens}`).appendChild(container);
-}
-
-function countryResourcesSetElements(prefix) {
+function countryResourcesSetup(prefix) {
     const container = document.getElementById(prefix);
 
     container.innerHTML = '';
