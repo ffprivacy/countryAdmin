@@ -9,9 +9,6 @@ app = Flask(__name__)
 
 instances = {}
 
-def start_flask_app(name, port):
-    run_app(name,port)
-
 def is_port_available(port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         return s.connect_ex(('127.0.0.1', port)) != 0
@@ -28,7 +25,7 @@ def start_instance():
         return jsonify({'success': False, 'error': f'Port {port} is already in use.'}), 400
 
     # Run a new Flask app in a separate thread
-    thread = threading.Thread(target=start_flask_app, args=(name, port), daemon=True)
+    thread = threading.Thread(target=run_app, args=(name, port), daemon=True)
     thread.start()
     instances[name] = {'thread': thread, 'port': port}
     status = f'Instance {name} started on port {port}'
@@ -59,7 +56,7 @@ def index():
     return render_template('manager.html')
 
 def main():
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=5000, use_reloader=False)
 
 if __name__ == '__main__':
     main()

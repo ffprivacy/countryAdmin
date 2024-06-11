@@ -10,7 +10,7 @@ from datetime import datetime
 def create_app(db_name="country",name=None,description=None):
 
     db_name_fname = f'{db_name}.db'
-    app = Flask(db_name)
+    app = Flask(__name__)
     app.secret_key = 'your_secret_key'
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + db_name_fname
     db = SQLAlchemy(app)
@@ -619,11 +619,11 @@ def create_app(db_name="country",name=None,description=None):
 
     return app, db
 
-def run_app(db_name=None,port=5000,name=None,description=None):
+def run_app(db_name=None,port=5000,name=None,description=None,cli=False):
     app, db = create_app(db_name,name,description)
-    app.run(host='127.0.0.1', port=port)
+    app.run(host='127.0.0.1', port=port, debug=True,use_reloader=cli)
 
-def main():
+def main(cli=False):
     # Default values
     db_name = None
     port = None
@@ -639,7 +639,7 @@ def main():
         name = sys.argv[3]
     if len(sys.argv) > 4:
         description = sys.argv[4]
-    run_app(db_name,port,name,description)
+    run_app(db_name,port,name,description,cli)
 
 if __name__ == "__main__":
-    main()
+    main(True)
