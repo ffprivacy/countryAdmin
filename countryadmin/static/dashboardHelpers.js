@@ -95,4 +95,38 @@ function countryResourcesSetElements(prefix) {
                                 </div>
                                 <hr>`;
     }
+
+    fetch('/get_country')
+    .then(response => response.json())
+    .then(country => {
+        const data = country.resources;
+        for(let metric of processMetricsIdsGetList()) {
+            document.getElementById(`${prefix}-${metric}-amount`).value = data[metric] ? data[metric].amount || 0 : 0;
+            document.getElementById(`${prefix}-${metric}-renew-rate`).value = data[metric] ? data[metric].renew_rate || 0 : 0;
+        }
+    });
+
+    document.getElementById('btn-set-resources').addEventListener('click', () => {
+        const resources = {};
+        for(let metric of processMetricsIdsGetList()) {
+            resources[metric] = {
+                amount: document.getElementById(`${prefix}-${metric}-amount`).value || 0,
+                renew_rate: document.getElementById(`${prefix}-${metric}-renew-rate`).value || 0
+            };
+        }
+        fetch('/set_country', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({resources: resources})
+        }).then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    fetchProcesses();
+                }
+            });
+    });
+
+    countryResourcesFillDefault();
 }

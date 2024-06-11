@@ -583,78 +583,34 @@ function tradesAttach() {
 	fetchTrades();
 }
 
+function addProcessSetup() {
+	addProcessMetricsForm('input');
+	addProcessMetricsForm('output');
+
+	const addCompositionBtn = document.getElementById('add-process-add-composition');
+	addCompositionBtn.addEventListener('click', () => {
+		const compositionContainer = document.getElementById('add-process-composition-container');
+		const compositionDiv = document.createElement('div');
+		compositionDiv.className = 'composition-process-group';
+		compositionDiv.innerHTML = `
+			<label>Process ID:</label>
+			<input type="number" name="composition-process-id">
+			<label> Amount:</label>
+			<input type="number" name="composition-process-amount">
+		`;
+		compositionContainer.appendChild(compositionDiv);
+	});
+}
 document.addEventListener('DOMContentLoaded', function () {
 
-	countryResourcesFillDefault();
 	tradesAttach();
 	setupExportDatabaseElement(document.getElementById('export-database-btn'));
 	setupImportDatabaseElement(document.getElementById('import-database-file'));
-	addProcessMetricsForm('input');
-	addProcessMetricsForm('output');
 	const countryResourcesPrefix = "country-resources";
 	countryResourcesSetElements(countryResourcesPrefix);
-
-	const compositionContainer = document.getElementById('add-process-composition-container');
-	const addCompositionBtn = document.getElementById('add-process-add-composition');
+	addProcessSetup();
 
 	updateRadarChart(0, 0, 0);
-
-	fetch('/get_country')
-		.then(response => response.json())
-		.then(country => {
-			const data = country.resources;
-			for(let metric of processMetricsIdsGetList()) {
-				document.getElementById(`${countryResourcesPrefix}-${metric}-amount`).value = data[metric] ? data[metric].amount || 0 : 0;
-				document.getElementById(`${countryResourcesPrefix}-${metric}-renew-rate`).value = data[metric] ? data[metric].renew_rate || 0 : 0;
-			}
-		});
-
-	document.getElementById('btn-set-resources').addEventListener('click', () => {
-		const resources = {};
-		for(let metric of processMetricsIdsGetList()) {
-			resources[metric] = {
-				amount: document.getElementById(`${countryResourcesPrefix}-${metric}-amount`).value || 0,
-				renew_rate: document.getElementById(`${countryResourcesPrefix}-${metric}-renew-rate`).value || 0
-			};
-		}
-		fetch('/set_country', {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({resources: resources})
-		}).then(response => response.json())
-			.then(data => {
-				if (data.success) {
-					fetchProcesses();
-				}
-			});
-	});
-
-	addCompositionBtn.addEventListener('click', () => {
-		const compositionDiv = document.createElement('div');
-		compositionDiv.setAttribute('class', 'composition-process-group');
-
-		const processIdLabel = document.createElement('label');
-		processIdLabel.textContent = 'Process ID:';
-		compositionDiv.appendChild(processIdLabel);
-
-		const processIdInput = document.createElement('input');
-		processIdInput.setAttribute('type', 'number');
-		processIdInput.setAttribute('name', 'composition-process-id');
-		compositionDiv.appendChild(processIdInput);
-
-		const processAmountLabel = document.createElement('label');
-		processAmountLabel.textContent = ' Amount:';
-		compositionDiv.appendChild(processAmountLabel);
-
-		const processAmountInput = document.createElement('input');
-		processAmountInput.setAttribute('type', 'number');
-		processAmountInput.setAttribute('name', 'composition-process-amount');
-		compositionDiv.appendChild(processAmountInput);
-
-		compositionContainer.appendChild(compositionDiv);
-	});
 
 	document.getElementById("btn-adjust").addEventListener("click", selectProcesses);
 
