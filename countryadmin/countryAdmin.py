@@ -143,6 +143,45 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
     def index():
         return render_template('index.html')
 
+    @app.route('/api/update_trade/<int:trade_id>', methods=['POST'])
+    @login_required
+    def update_trade(trade_id):
+        data = request.get_json()
+        trade = Trade.query.get(trade_id)
+        if not trade:
+            return jsonify({'error': 'Trade not found'}), 404
+
+        try:
+            if 'to_country_uri' in data:
+                trade.to_country_uri = data['to_country_uri']
+            if 'home_trades' in data:
+                trade.home_trades = data['home_trades']
+            if 'foreign_trades' in data:
+                trade.foreign_trades = data['foreign_trades']
+            if 'status' in data:
+                trade.status = data['status']
+
+            db.session.commit()
+            return jsonify({'success': True, 'message': 'Trade updated successfully'}), 200
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'success': False, 'error': str(e)}), 500
+
+    @app.route('/api/delete_trade/<int:trade_id>', methods=['DELETE'])
+    @login_required
+    def delete_trade(trade_id):
+        trade = Trade.query.get(trade_id)
+        if not trade:
+            return jsonify({'error': 'Trade not found'}), 404
+
+        try:
+            db.session.delete(trade)
+            db.session.commit()
+            return jsonify({'success': True, 'message': 'Trade deleted successfully'}), 200
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'success': False, 'error': str(e)}), 500
+
     @app.route('/api/initiate_trade', methods=['POST'])
     @login_required
     def initiate_trade():

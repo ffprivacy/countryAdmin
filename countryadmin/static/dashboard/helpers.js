@@ -109,3 +109,49 @@ function countryResourcesSetup(prefix) {
 
     countryResourcesFillDefault();
 }
+function updateTrade(tradeId) {
+    const data = {
+        home_trades: getTradeDetails('home', tradeId),
+        foreign_trades: getTradeDetails('foreign', tradeId),
+        status: document.getElementById(`trade-status-${tradeId}`).value
+    };
+
+    fetch(`/api/update_trade/${tradeId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if ( ! data.message ) {
+            alert(data.error);
+        }
+        fetchTrades();
+    })
+    .catch(error => console.error('Error updating trade:', error));
+}
+function deleteTrade(tradeId) {
+    fetch(`/api/delete_trade/${tradeId}`, {
+        method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if ( ! data.message ) {
+            alert(data.error);
+        }
+        fetchTrades();
+    })
+    .catch(error => console.error('Error deleting trade:', error));
+}
+function getTradeDetails(type, tradeId) {
+    let details = [];
+    const tradeInputs = document.querySelectorAll(`.${type}-trade-${tradeId}`);
+    tradeInputs.forEach(input => {
+        const processId = input.dataset.processId;
+        const amount = input.value;
+        details.push({process_id: processId, amount: parseInt(amount, 10)});
+    });
+    return details;
+}
