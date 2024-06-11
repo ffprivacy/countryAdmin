@@ -31,8 +31,8 @@ function processCompositionElement(process, composition) {
 	updateBtn.classList.add('btn', 'btn-primary', 'mr-2');
 	updateBtn.addEventListener('click', () => {
 		const updatedComposition = {
-			id: parseInt(processIdInput.value, 1),
-			amount: parseInt(processAmountInput.value, 1)
+			id: parseInt(processIdInput.value, 10),
+			amount: parseInt(processAmountInput.value, 10)
 		};
 		Processes.compositionUpdate(process.id, updatedComposition);
 	});
@@ -234,7 +234,7 @@ function addProcessGetCompositionData() {
 	const compositionArray = Array.from(compositionDivs).map(div => {
 		const processId = div.querySelector('input[name="composition-process-id"]').value;
 		const processAmount = div.querySelector('input[name="composition-process-amount"]').value;
-		return { id: parseInt(processId, 1), amount: parseInt(processAmount, 1) };
+		return { id: parseInt(processId, 10), amount: parseInt(processAmount, 10) };
 	});
 	return compositionArray;
 }
