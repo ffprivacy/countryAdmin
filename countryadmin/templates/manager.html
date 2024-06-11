@@ -58,7 +58,9 @@
             })
             .then(response => response.json())
             .then(data => {
-                alert(data.message || data.error);
+                if ( ! data.message ) {
+                    alert(data.error);
+                }
                 listInstances();
             })
             .catch(error => console.error('Error starting instance:', error));

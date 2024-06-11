@@ -18,14 +18,25 @@ def start_instance():
     data = request.get_json()
     name = data.get('name')
     port = int(data.get('port'))
+    db_path = data.get('db_path', None)
+    
     if name in instances:
         return jsonify({'error': 'Instance already running'}), 400
 
     if not is_port_available(port):
         return jsonify({'success': False, 'error': f'Port {port} is already in use.'}), 400
 
-    # Run a new Flask app in a separate thread
-    thread = threading.Thread(target=run_app, args=(name, port), daemon=True)
+    if not db_path:
+        db_path = "country_default.db"
+
+    try:
+        import shutil
+        destination_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), f'../instance/{name}.db')
+        shutil.copyfile(db_path, destination_path)
+    except Exception as e:
+        return jsonify({'success': False, 'error': f'Failed to import database: {str(e)}'}), 500
+
+    thread = threading.Thread(target=run_app, args=(name, port, destination_path), daemon=True)
     thread.start()
     instances[name] = {'thread': thread, 'port': port}
     status = f'Instance {name} started on port {port}'
