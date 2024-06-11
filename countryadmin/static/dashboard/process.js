@@ -1,52 +1,28 @@
 
 
 function processCompositionElement(process, composition) {
-	const compositionDiv = document.createElement('div');
-	compositionDiv.classList.add('composition-process-group', 'mb-2');
+    const compositionDiv = document.createElement('div');
+    compositionDiv.className = 'composition-process-group mb-2';
 
-	const processIdLabel = document.createElement('label');
-	processIdLabel.textContent = 'Process ID:';
-	compositionDiv.appendChild(processIdLabel);
+    compositionDiv.innerHTML = `
+        <label>Process ID:</label>
+        <input type="number" name="composition-process-id" value="${composition.id}" class="form-control mr-2">
+        <label>Amount:</label>
+        <input type="number" name="composition-process-amount" value="${composition.amount}" class="form-control mr-2">
+        <button class="btn btn-primary mr-2" onclick="processCompositionUpdate(${process.id}, this.parentNode)">Update</button>
+        <button class="btn btn-danger" onclick="Processes.compositionDelete(${process.id}, ${composition.id})">Delete</button>
+    `;
 
-	const processIdInput = document.createElement('input');
-	processIdInput.setAttribute('type', 'number');
-	processIdInput.setAttribute('name', 'composition-process-id');
-	processIdInput.setAttribute('value', composition.id);
-	processIdInput.classList.add('form-control', 'mr-2');
-	compositionDiv.appendChild(processIdInput);
-
-	const processAmountLabel = document.createElement('label');
-	processAmountLabel.textContent = ' Amount:';
-	compositionDiv.appendChild(processAmountLabel);
-
-	const processAmountInput = document.createElement('input');
-	processAmountInput.setAttribute('type', 'number');
-	processAmountInput.setAttribute('name', 'composition-process-amount');
-	processAmountInput.setAttribute('value', composition.amount);
-	processAmountInput.classList.add('form-control', 'mr-2');
-	compositionDiv.appendChild(processAmountInput);
-
-	const updateBtn = document.createElement('button');
-	updateBtn.textContent = 'Update';
-	updateBtn.classList.add('btn', 'btn-primary', 'mr-2');
-	updateBtn.addEventListener('click', () => {
-		const updatedComposition = {
-			id: parseInt(processIdInput.value, 10),
-			amount: parseInt(processAmountInput.value, 10)
-		};
-		Processes.compositionUpdate(process.id, updatedComposition);
-	});
-	compositionDiv.appendChild(updateBtn);
-
-	const deleteBtn = document.createElement('button');
-	deleteBtn.textContent = 'Delete';
-	deleteBtn.classList.add('btn', 'btn-danger');
-	deleteBtn.addEventListener('click', () => {
-		Processes.compositionDelete(process.id, composition.id);
-	});
-	compositionDiv.appendChild(deleteBtn);
-
-	return compositionDiv;
+    return compositionDiv;
+}
+function processCompositionUpdate(process_id, compositionDiv) {
+    const processIdInput = compositionDiv.querySelector('input[name="composition-process-id"]');
+    const processAmountInput = compositionDiv.querySelector('input[name="composition-process-amount"]');
+    const updatedComposition = {
+        id: parseInt(processIdInput.value, 10),
+        amount: parseInt(processAmountInput.value, 10)
+    };
+    Processes.compositionUpdate(process_id, updatedComposition);
 }
 function processCreateElement(allProcesses,process) {
 	const process_selected = 0 < process.amount;
@@ -232,9 +208,9 @@ function addProcessGetCompositionData() {
 	const compositionContainer = document.getElementById('add-process-composition-container');
 	const compositionDivs = compositionContainer.querySelectorAll('div');
 	const compositionArray = Array.from(compositionDivs).map(div => {
-		const processId = div.querySelector('input[name="composition-process-id"]').value;
+		const process_id = div.querySelector('input[name="composition-process-id"]').value;
 		const processAmount = div.querySelector('input[name="composition-process-amount"]').value;
-		return { id: parseInt(processId, 10), amount: parseInt(processAmount, 10) };
+		return { id: parseInt(process_id, 10), amount: parseInt(processAmount, 10) };
 	});
 	return compositionArray;
 }

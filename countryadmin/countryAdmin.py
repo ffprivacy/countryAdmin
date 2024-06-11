@@ -122,17 +122,14 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         id = db.Column(db.Integer, primary_key=True)
         home_country_id = db.Column(db.Integer, db.ForeignKey('country.id'), nullable=False)
         to_country_uri = db.Column(db.String(255), nullable=False)
-        from_process_id = db.Column(db.Integer, db.ForeignKey('process.id'), nullable=False)
-        to_process_id = db.Column(db.Integer, nullable=False)
-        from_amount = db.Column(db.Integer, nullable=False)
-        to_amount = db.Column(db.Integer, nullable=False)
+        home_trades = db.Column(db.JSON)
+        foreign_trades = db.Column(db.JSON)
         status = db.Column(db.String(50), default='pending')
 
         home_country = db.relationship('Country', foreign_keys=[home_country_id], back_populates='trades')
-        from_process = relationship("Process", foreign_keys=[from_process_id])
 
         def __repr__(self):
-            return f"<ProcessUsage country_id={self.home_country_id} trade id={self.id}>"
+            return f"<Trade country_id={self.home_country_id} trade id={self.id}>"
 
     class Country(db.Model):
         id = db.Column(db.Integer, primary_key=True)
@@ -150,21 +147,20 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
     @login_required
     def initiate_trade():
         data = request.get_json()
-        if not data:
-            return jsonify({'success': False, 'error': 'No data provided'}), 400
+        if not data or 'home' not in data or 'foreign' not in data:
+            return jsonify({'success': False, 'error': 'Incomplete data provided'}), 400
 
         country = Country.query.first()
         if not country:
-            return jsonify({'error': 'Country not found'}), 404
-        
+            return jsonify({'error': 'Home country not found'}), 404
+
         try:
             new_trade = Trade(
                 home_country_id=country.id,
-                from_process_id=data['from_process_id'],
-                from_amount=data['from_amount'],
                 to_country_uri=data['to_country_uri'],
-                to_process_id=data['to_process_id'],
-                to_amount=data['to_amount']
+                home_trades=data['home'],
+                foreign_trades=data['foreign'],
+                status='pending'
             )
             db.session.add(new_trade)
             db.session.commit()
@@ -183,10 +179,8 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         trades_data = [{
             'id': trade.id,
             'to_country_uri': trade.to_country_uri,
-            'from_process_id': trade.from_process_id,
-            'to_process_id': trade.to_process_id,
-            'from_amount': trade.from_amount,
-            'to_amount': trade.to_amount,
+            'home_trades': trade.home_trades,
+            'foreign_trades': trade.foreign_trades,
             'status': trade.status
         } for trade in country.trades]
 

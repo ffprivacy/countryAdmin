@@ -71,11 +71,11 @@ function selectProcesses() {
 		const form = li.querySelector('form');
 		const checkbox = form.querySelector('input[name="selected"]');
 		const id = parseInt(form.querySelector('input[name="id"]').value);
-		const processId = parseInt(li.getAttribute("process-id"));
+		const process_id = parseInt(li.getAttribute("process-id"));
 		const metrics = JSON.parse(li.getAttribute("metrics"));
 		const amount = parseInt(li.getAttribute("process-amount"));
 		const composition = addProcessGetCompositionData();
-		return { id, processId, metrics, selected: checkbox.checked, amount, composition, form };
+		return { id, process_id, metrics, selected: checkbox.checked, amount, composition, form };
 	});
 
 	// Unselect all processes
@@ -87,10 +87,10 @@ function selectProcesses() {
 	// Group processes by process_id
 	const processMap = new Map();
 	allProcesses.forEach(process => {
-		if (!processMap.has(process.processId)) {
-			processMap.set(process.processId, []);
+		if (!processMap.has(process.process_id)) {
+			processMap.set(process.process_id, []);
 		}
-		processMap.get(process.processId).push(process);
+		processMap.get(process.process_id).push(process);
 	});
 
 	/**
@@ -128,7 +128,7 @@ function selectProcesses() {
 	// Select processes based on goals
 	/**
 	 * Les processus qui peuvent être permutables devraint être recherchés automatiquement.
-	 * On pourrait dans un premier temps (comme c'était avant le cas utiliser un processId ou group de processus interchangeable) (qui ont strictement les mêmes but du point de vue utilisateur)
+	 * On pourrait dans un premier temps (comme c'était avant le cas utiliser un process_id ou group de processus interchangeable) (qui ont strictement les mêmes but du point de vue utilisateur)
 	 * Ou alors procéder en produits/consommable: des processus au vu des contraintes de la gouvernance produisent les même choses et
 	 * qui consomment à peu près les mêmes resources voir moins dans l'idéal peuvent être permutés.
 	 * Par exemple sur la voiture électrique peut être qu'il y a un peu plus potentiellement de travail à la production,
@@ -139,7 +139,7 @@ function selectProcesses() {
 		let minDistance = Infinity;
 		let closestProcess = null;
 		for (const process of processes) {
-			if (!selectedProcessIds.has(process.processId)) {
+			if (!selectedProcessIds.has(process.process_id)) {
 				const distance = calculateDistance(allProcesses, process, economicGoal - totalEconomic, govGoalEnvEmissions - selectedGovEnvEmissions, socialGoal - totalSocial);
 				if (distance < minDistance) {
 					minDistance = distance;
@@ -149,7 +149,7 @@ function selectProcesses() {
 		}
 		if (closestProcess) {
 			closestProcess.selected = true;
-			selectedProcessIds.add(closestProcess.processId);
+			selectedProcessIds.add(closestProcess.process_id);
 			totalEconomic += Processes.retrieveMetric(allProcesses, closestProcess, "economic") * closestProcess.amount;
 			selectedGovEnvEmissions += Processes.retrieveMetric(allProcesses, closestProcess, "envEmissions") * closestProcess.amount;
 			totalSocial += Processes.retrieveMetric(allProcesses, closestProcess, "social") * closestProcess.amount;
@@ -294,14 +294,45 @@ function attachSelectedEvent() {
 	});
 }
 
-function initiateTrade() {
+function tradesAddProcess(country) {
+    const container = document.getElementById(country + 'Processes');
+    const newProcessDiv = document.createElement('div');
+    newProcessDiv.className = 'form-group';
+    newProcessDiv.innerHTML = `
+        <label>Process ID:</label>
+        <input type="number" class="form-control mb-2" placeholder="Process ID" name="${country}ProcessId[]">
+        <label>Amount:</label>
+        <input type="number" class="form-control mb-2" placeholder="Amount" name="${country}Amount[]">
+    `;
+    container.appendChild(newProcessDiv);
+}
+
+function submitTrade() {
+    const homeProcessIds = document.querySelectorAll('input[name="homeProcessId[]"]');
+    const homeAmounts = document.querySelectorAll('input[name="homeAmount[]"]');
+    const foreignProcessIds = document.querySelectorAll('input[name="foreignProcessId[]"]');
+    const foreignAmounts = document.querySelectorAll('input[name="foreignAmount[]"]');
+	const foreignCountryUri = document.getElementById('trade-initiate-foreign-country-uri').value;
     const tradeData = {
-        to_country_uri: document.getElementById('to-country-uri').value,
-        from_process_id: parseInt(document.getElementById('from-process-id').value),
-        to_process_id: parseInt(document.getElementById('to-process-id').value),
-        from_amount: parseInt(document.getElementById('from-amount').value),
-        to_amount: parseInt(document.getElementById('to-amount').value)
+        home: [],
+        foreign: [],
+		to_country_uri: foreignCountryUri
     };
+
+    homeProcessIds.forEach((input, index) => {
+        tradeData.home.push({
+            process_id: input.value,
+            amount: homeAmounts[index].value
+        });
+    });
+
+    foreignProcessIds.forEach((input, index) => {
+        tradeData.foreign.push({
+            process_id: input.value,
+            amount: foreignAmounts[index].value
+        });
+    });
+
     fetch('/api/initiate_trade', {
         method: 'POST',
         headers: {
@@ -311,15 +342,14 @@ function initiateTrade() {
     })
     .then(response => response.json())
     .then(data => {
-        alert(data.message);
-        if (data.success) {
-            $('#tradeModal').modal('hide');
-            fetchTrades();
-        }
+		if ( ! data.message ) {
+			alert(data.error);
+		}
+		fetchTrades();
+        $('#tradeModal').modal('hide');
     })
-    .catch(error => console.error('Error initiating trade:', error));
+    .catch(error => console.error('Error submitting trade:', error));
 }
-
 function fetchTrades() {
     fetch('/api/get_trades')
     .then(response => response.json())
@@ -327,14 +357,25 @@ function fetchTrades() {
         const tradesList = document.getElementById('trades-list');
         tradesList.innerHTML = '';
         trades.forEach(trade => {
-            const listItem = document.createElement('div');
-            listItem.className = 'list-group-item';
-            listItem.textContent = `Trade with ${trade.to_country_uri}: ${trade.from_process_id} (amount: ${trade.from_amount}) for ${trade.to_process_id} (amount: ${trade.to_amount}) - Status: ${trade.status}`;
-            tradesList.appendChild(listItem);
+            let tradeHTML = `<div class="list-group-item">
+                <h4>Trade with <a href="${trade.to_country_uri}" target="_blank">${trade.to_country_uri}</a> - Status: ${trade.status}</h4>
+                <ul>
+                    <li><strong>From Home Country:</strong></li>`;
+
+            trade.home_trades.forEach(homeTrade => {
+                tradeHTML += `<li>${homeTrade.process_id} (amount: ${homeTrade.amount})</li>`;
+            });
+            tradeHTML += `<li><strong>To Foreign Country:</strong></li>`;
+            trade.foreign_trades.forEach(foreignTrade => {
+                tradeHTML += `<li>${foreignTrade.process_id} (amount: ${foreignTrade.amount})</li>`;
+            });
+            tradeHTML += `</ul></div>`;
+            tradesList.innerHTML += tradeHTML;
         });
     })
     .catch(error => console.error('Error fetching trades:', error));
 }
+
 document.addEventListener('DOMContentLoaded', function () {
 
 	tradesSetup();

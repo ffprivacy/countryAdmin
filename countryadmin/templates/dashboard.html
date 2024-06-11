@@ -109,36 +109,33 @@
                             </div>
                             <div class="modal-body">
                                 <form id="trade-form">
-                                    <div class="form-group">
-                                        <label for="to-country-uri">To Country URI:</label>
-                                        <input type="text" class="form-control" id="to-country-uri" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="from-process-id">From Process ID:</label>
-                                        <input type="number" class="form-control" id="from-process-id" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="to-process-id">To Process ID:</label>
-                                        <input type="number" class="form-control" id="to-process-id" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="from-amount">From Amount:</label>
-                                        <input type="number" class="form-control" id="from-amount" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="to-amount">To Amount:</label>
-                                        <input type="number" class="form-control" id="to-amount" required>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <h5>Home Country</h5>
+                                            <div id="homeProcesses">
+                                                <!-- Home processes inputs will be added here -->
+                                            </div>
+                                            <button type="button" class="btn btn-secondary mb-2" onclick="tradesAddProcess('home')">Add Home Process</button>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h5>Foreign Country</h5>
+                                            <input id="trade-initiate-foreign-country-uri" />
+                                            <div id="foreignProcesses">
+                                                <!-- Foreign processes inputs will be added here -->
+                                            </div>
+                                            <button type="button" class="btn btn-secondary mb-2" onclick="tradesAddProcess('foreign')">Add Foreign Process</button>
+                                        </div>
                                     </div>
                                 </form>
                             </div>
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                                <button type="button" class="btn btn-primary" onclick="initiateTrade()">Initiate Trade</button>
+                                <button type="button" class="btn btn-primary" onclick="submitTrade()">Initiate Trade</button>
                             </div>
                         </div>
                     </div>
                 </div> 
-            </div>           
+            </div>                      
         </div>
         <hr>
 

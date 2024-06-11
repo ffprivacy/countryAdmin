@@ -49,9 +49,9 @@ class Processes {
         return total;
     }
 
-    static async delete(processId) {
+    static async delete(process_id) {
         try {
-            const response = await fetch(`/api/delete_process/${processId}`, { method: 'POST' });
+            const response = await fetch(`/api/delete_process/${process_id}`, { method: 'POST' });
             const data = await response.json();
             if (data.success) {
                 fetchProcesses();
@@ -85,9 +85,9 @@ class Processes {
         }
     }
 
-    static async addComment(processId, comment) {
+    static async addComment(process_id, comment) {
         try {
-            const response = await fetch(`/api/add_comment/${processId}`, {
+            const response = await fetch(`/api/add_comment/${process_id}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ comment: comment })
@@ -103,8 +103,8 @@ class Processes {
             console.error('Error adding comment:', error);
         }
     }
-    static dislike(processId) {
-        fetch(`/api/dislike_process/${processId}`, {
+    static dislike(process_id) {
+        fetch(`/api/dislike_process/${process_id}`, {
             method: 'POST'
         }).then(response => response.json())
         .then(data => {
@@ -116,8 +116,8 @@ class Processes {
         });
     }
 
-    static like(processId) {
-            fetch(`/api/like_process/${processId}`, {
+    static like(process_id) {
+            fetch(`/api/like_process/${process_id}`, {
                 method: 'POST'
             }).then(response => response.json())
             .then(data => {
@@ -129,8 +129,8 @@ class Processes {
             }).catch(error => console.error('Error liking process:', error));
     }
 
-    static compositionUpdate(processId, composition) {
-        fetch(`/api/update_composition/${processId}`, {
+    static compositionUpdate(process_id, composition) {
+        fetch(`/api/update_composition/${process_id}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -148,8 +148,8 @@ class Processes {
         .catch(error => console.error('Error updating composition:', error));
     }
     
-    static compositionDelete(processId, compositionId) {
-        fetch(`/api/delete_composition/${processId}/${compositionId}`, {
+    static compositionDelete(process_id, compositionId) {
+        fetch(`/api/delete_composition/${process_id}/${compositionId}`, {
             method: 'POST'
         })
         .then(response => response.json())
