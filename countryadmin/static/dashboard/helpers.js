@@ -1,6 +1,6 @@
 function setupExportDatabaseElement(e) {
     e.addEventListener('click', function() {
-        window.location.href = '/export_database';
+        window.location.href = '/api/export_database';
     });
 }
 function setupImportDatabaseElement(e) {

@@ -530,7 +530,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         db.session.commit()
         return jsonify({'success': True}), 200
 
-    @app.route('/api/logout')
+    @app.route('/logout')
     @login_required
     def logout():
         session.pop('user_id', None)
