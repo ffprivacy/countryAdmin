@@ -226,18 +226,16 @@ function fetchProcesses() {
 						}
 					}
 					
-					const getTimeToDepletion = (resourceAmount, renewRate, usage) => {
+					const getTimeToDepletion = (resourceAmount, renewRate, usageBalance) => {
 						let resourceRenewAmount = resourceAmount * renewRate;
-						if (usage <= resourceRenewAmount) {
+						let netUsage = resourceRenewAmount + usageBalance;
+					
+						if (netUsage >= 0) { // Renewal rate and balance are enough to sustain or increase the resource
 							return "∞";
-						} else {
-							if ( 0 < usage ) {
-								return (((resourceAmount + resourceRenewAmount) / usage)).toFixed(2);
-							} else {
-								return Math.abs(resourceAmount / resourceRenewAmount).toFixed(2);
-							}
+						} else { // Resource is being depleted
+							return (Math.abs(resourceAmount / netUsage)).toFixed(2); // Calculate years until depletion
 						}
-					};
+					}
 
 					const container = document.getElementById("country-resource-depletion");
 					for(let metric of Processes.metricsGetList()) {

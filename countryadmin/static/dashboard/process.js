@@ -48,9 +48,9 @@ function processCompositionElement(process, composition) {
 
 	return compositionDiv;
 }
-function processCreateElement(allProcesses,process,usage) {
-	const process_selected = usage != undefined && 0 < usage.usage_count;
-	const process_amount = usage == undefined ? 0 : usage.usage_count;
+function processCreateElement(allProcesses,process) {
+	const process_selected = 0 < process.amount;
+	const process_amount = process.amount;
 	const li = document.createElement('li');
 	li.classList.add("list-group-item");
 	li.setAttribute("process-id", process.id);
