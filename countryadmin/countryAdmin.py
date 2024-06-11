@@ -502,31 +502,13 @@ def create_app(db_name="country",name=None,description=None):
         data = request.json
         return jsonify(set_country_data(data))
 
-    def processMetricsGetList():
-        return [
-            {'id': 'social', 'label': 'Social', 'icon': 'human.png', 'unit': ''},
-            {'id': 'economic', 'label': 'Economic', 'icon': 'economic.png', 'unit': '$'},
-            {'id': 'envEmissions', 'label': 'GES emissions in kgCO2eq', 'icon': 'carbon.png', 'unit': 'kgCO2eq'},
-            {'id': 'human', 'label': 'Human', 'icon': 'human.png', 'unit': 'people'},
-            {'id': 'ground', 'label': 'Ground', 'icon': 'land.png', 'unit': 'km2'},
-            {'id': 'ores', 'label': 'Ores', 'icon': 'ore2.png', 'unit': 'tonnes'},
-            {'id': 'water', 'label': 'Water', 'icon': 'water_drop.png', 'unit': 'L'},
-            {'id': 'oil', 'label': 'Oil', 'icon': 'oil.png', 'unit': 'L'},
-            {'id': 'gas', 'label': 'Gas', 'icon': 'gas.png', 'unit': 'L'},
-            {'id': 'pm25', 'label': 'PM2.5', 'icon': 'smoke.png', 'unit': 'µg/m3'}
-        ]
-
     def set_country_data(data):
         country_resources = data.get('resources', {})
-        for metric in processMetricsGetList():
-            resource = country_resources.get(metric['id'], None)
-            if resource is None:
-                country_resources[metric['id']] = {'amount': 0, 'renew_rate': 0}
-            else:
-                if 'amount' not in resource or resource['amount'] is None:
-                    resource['amount'] = 0
-                if 'renew_rate' not in resource or resource['renew_rate'] is None:
-                    resource['renew_rate'] = 0
+        for key, resource in country_resources.items():
+            if 'amount' not in resource or resource['amount'] is None:
+                resource['amount'] = 0
+            if 'renew_rate' not in resource or resource['renew_rate'] is None:
+                resource['renew_rate'] = 0
 
         country_name = data.get('name', 'Default Country')
         country_description = data.get('description', 'No description provided')
@@ -549,13 +531,10 @@ def create_app(db_name="country",name=None,description=None):
         country = Country.query.first()
 
         if not country:
-            resources = {}
-            for metric in processMetricsGetList():
-                resources[metric] = {'amount': 0, 'renew_rate': 0}
             return jsonify({
                 'name': 'Default name',
                 'description': 'Default description',
-                'resources': resources
+                'resources': {}
             })
 
         processes = [{

@@ -351,7 +351,10 @@ function fetchProcesses() {
 						}
 						element.innerHTML = `<p>${metric.label}: 
 												<span id="country-resources-depletion-time-${metric.id}">
-													${getTimeToDepletion(countryResources[metric.id].amount, countryResources[metric.id].renew_rate, selectedProcessMetrics['output'][metric.id] - selectedProcessMetrics['input'][metric.id])}
+													${getTimeToDepletion(
+														countryResources[metric.id] ? countryResources[metric.id].amount || 0 : 0,
+														countryResources[metric.id] ? countryResources[metric.id].renew_rate || 0 : 0,
+														selectedProcessMetrics['output'][metric.id] - selectedProcessMetrics['input'][metric.id])}
 												</span>
 											</p>`;
 					}
@@ -601,8 +604,8 @@ document.addEventListener('DOMContentLoaded', function () {
 		.then(country => {
 			const data = country.resources;
 			for(let metric of processMetricsIdsGetList()) {
-				document.getElementById(`${countryResourcesPrefix}-${metric}-amount`).value = data[metric].amount;
-				document.getElementById(`${countryResourcesPrefix}-${metric}-renew-rate`).value = data[metric].renew_rate;
+				document.getElementById(`${countryResourcesPrefix}-${metric}-amount`).value = data[metric] ? data[metric].amount || 0 : 0;
+				document.getElementById(`${countryResourcesPrefix}-${metric}-renew-rate`).value = data[metric] ? data[metric].renew_rate || 0 : 0;
 			}
 		});
 
