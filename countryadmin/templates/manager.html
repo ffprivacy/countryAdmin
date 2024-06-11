@@ -19,11 +19,7 @@
 
     <div>
         <h2>Start New Instance</h2>
-        <label for="name">Instance Name:</label>
-        <input type="text" id="name" placeholder="Enter instance name" value="france">
-        <label for="port">Port:</label>
-        <input type="number" id="port" placeholder="Enter port number" value="5001">
-        <button onclick="startInstance()">Start Instance</button>
+        <button onclick="prepareInstance()">Start Random Instance</button>
     </div>
 
     <div>
@@ -33,9 +29,26 @@
     </div>
 
     <script>
-        function startInstance() {
-            const name = document.getElementById('name').value;
-            const port = document.getElementById('port').value;
+        let lastPort = 3000; // Default start port
+
+        function generateRandomString(length = 6) {
+            const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let result = '';
+            for (let i = 0; i < length; i++) {
+                result += characters.charAt(Math.floor(Math.random() * characters.length));
+            }
+            return result;
+        }
+
+        function prepareInstance() {
+            const name = generateRandomString();
+            const port = lastPort + 1; // Increment last used port
+            lastPort = port; // Update last used port
+
+            startInstance(name, port);
+        }
+
+        function startInstance(name, port) {
             fetch('/start', {
                 method: 'POST',
                 headers: {
@@ -59,9 +72,12 @@
                 list.innerHTML = ''; // Clear existing list
                 data.forEach(instance => {
                     const item = document.createElement('li');
-                    item.innerHTML = `${instance.name} - URL: <a href="${instance.url}" target="_blank">${instance.url}</a> - Port: ${instance.port}`;
+                    item.innerHTML = `<a href="${instance.url}" target="_blank">${instance.name}</a>`;
                     list.appendChild(item);
                 });
+                if (data.length > 0) {
+                    lastPort = data[data.length - 1].port; // Update last port from the last item in the list
+                }
             })
             .catch(error => console.error('Error listing instances:', error));
         }
