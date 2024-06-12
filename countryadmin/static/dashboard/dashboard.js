@@ -360,7 +360,7 @@ function fetchTrades() {
                         <div class="col-md-6">
                             <h6>Home Country Processes</h6>
                             <div id="trade-${trade.id}-home-processes"></div>
-                            <button class="btn btn-outline-secondary btn-sm" onclick="tradeAddProcess(${trade.id},'home')">Add Process</button>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="tradeHomeAddProcess(${trade.id})">Add Process</button>
                         </div>
                         <div class="col-md-6">
                             <h6>Foreign Country Processes</h6>
