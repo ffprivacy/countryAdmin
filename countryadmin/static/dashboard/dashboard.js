@@ -456,10 +456,14 @@ document.addEventListener('DOMContentLoaded', function () {
 		};
 		
 		processForm.querySelectorAll('.composition-process-group').forEach(group => {
-			process.composition.push({ 
-				id: parseInt(group.querySelector('input[name="composition-process-id"]').value), 
-				amount: parseInt(group.querySelector('input[name="composition-process-amount"]').value)
-			});
+			const process_id = group.querySelector('input[name="composition-process-id"]').value;
+			const amount = group.querySelector('input[name="composition-process-amount"]').value;
+			if ( process_id != null && process_id != null ) {
+				process.composition.push({ 
+					id: parseInt(process_id), 
+					amount: parseInt(amount)
+				});
+			}
 		});
 		
 		Processes.set(process)

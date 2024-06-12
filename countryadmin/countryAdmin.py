@@ -70,7 +70,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         metrics = db.Column(db.JSON)
         interactions = db.relationship('ProcessInteraction', back_populates='process', lazy=True)
         comments = db.relationship('ProcessComment', back_populates='process', lazy=True)
-        countries = db.relationship('ProcessUsage', back_populates='process', cascade='delete')
+        usages = db.relationship('ProcessUsage', back_populates='process', cascade='delete')
 
     class ProcessInteraction(db.Model):
         id = db.Column(db.Integer, primary_key=True)
@@ -103,7 +103,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         usage_count = db.Column(db.Integer, default=0)
 
         country = db.relationship('Country', back_populates='process_usages')
-        process = db.relationship('Process', back_populates='countries')
+        process = db.relationship('Process', back_populates='usages')
 
         def __repr__(self):
             return f"<ProcessUsage country_id={self.country_id} process_id={self.process_id} usage_count={self.usage_count}>"
@@ -517,14 +517,15 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         country = Country.query.first()
         if not country:
             return jsonify({'error': 'Country not found'}), 404
-        process_usage = next((pu for pu in process.countries if pu.country_id == country.id), None)
-        selected = 0 < process_usage.usage_count if process_usage else 0
+        process_usage = next((pu for pu in process.usages if pu.country_id == country.id), None)
+        amount = process_usage.usage_count if process_usage else 0
+        selected = 0 < amount
 
         return {
             'id': process.id,
             'title': process.title,
             'selected': selected,
-            'amount': process_usage.usage_count,
+            'amount': amount,
             'metrics': process.metrics,
             'tags': [tag.tag.name for tag in process.tags],
             'composition': [{
