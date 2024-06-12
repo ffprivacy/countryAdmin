@@ -361,7 +361,7 @@ function fetchTrades() {
 									<label class="form-check-label" for="trade-status-${trade.id}">${trade.home_confirm ? 'Validated' : 'Pending'}</label>
 								</div>
 								<div id="trade-${trade.id}-home-processes" class="mb-2"></div>
-								<button class="btn btn-outline-secondary btn-sm" onclick="tradeHomeAddProcess(${trade.id})">Add Process</button>
+								<button class="btn btn-outline-secondary btn-sm" onclick="tradeHomeAddProcess(${trade.id})" ${trade.home_confirm ? 'hidden' : ''} >Add Process</button>
 							</div>
 							<div class="col-md-6">
 								<h6>Foreign Country Processes</h6>
@@ -403,19 +403,19 @@ function generateForeignProcessInput(tradeId,process_id='',process_amount=1) {
 }
 function renderTradeHomeProcesses(trade) {
     const container = document.getElementById(`trade-${trade.id}-home-processes`);
-    container.innerHTML = trade.home_trades.map(p => generateHomeProcessInput(trade.id,p.process_id,p.amount)).join('');
+    container.innerHTML = trade.home_trades.map(p => generateHomeProcessInput(trade.id,p.process_id,p.amount,trade.home_confirm)).join('');
 }
 function tradeHomeAddProcess(tradeId) {
     const homeTradesContainer = document.getElementById(`trade-${tradeId}-home-processes`);
     homeTradesContainer.insertAdjacentHTML('beforeend', generateHomeProcessInput(tradeId));
 }
-function generateHomeProcessInput(tradeId,process_id='',process_amount=1) {
+function generateHomeProcessInput(tradeId,process_id='',process_amount=1,home_confirm=false) {
 	const uniqueId = `trade-${tradeId}-home-${Math.random()}${Math.random()}${Math.random()}${Math.random()}`;
 	return `
 		<div class="input-group mb-2 trade-${tradeId}-home-process" id="${uniqueId}">
-			<input type="number" class="form-control" id="process-id" placeholder="Process ID" value="${process_id}">
-			<input type="number" class="form-control" id="process-amount" placeholder="Amount" value="${process_amount}">
-			<div class="input-group-append">
+			<input type="number" class="form-control" id="process-id" placeholder="Process ID" value="${process_id}" ${home_confirm ? 'disabled' : ''} >
+			<input type="number" class="form-control" id="process-amount" placeholder="Amount" value="${process_amount}" ${home_confirm ? 'disabled' : ''} >
+			<div class="input-group-append" ${home_confirm ? 'hidden' : ''} >
 				<button class="btn btn-danger" onclick="document.getElementById('${uniqueId}').remove();updateTrade(${tradeId})">Delete</button>
 			</div>
 		</div>
