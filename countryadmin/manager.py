@@ -36,7 +36,7 @@ def start_instance():
     except Exception as e:
         return jsonify({'success': False, 'error': f'Failed to import database: {str(e)}'}), 500
 
-    thread = threading.Thread(target=run_app, args=(name, port, destination_path), daemon=True)
+    thread = threading.Thread(target=run_app, args=(name, port), daemon=True)
     thread.start()
     instances[name] = {'thread': thread, 'port': port}
     status = f'Instance {name} started on port {port}'

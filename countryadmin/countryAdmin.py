@@ -123,7 +123,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         id = db.Column(db.Integer, primary_key=True)
         home_country_id = db.Column(db.Integer, db.ForeignKey('country.id'), nullable=False)
         to_country_uri = db.Column(db.String(255), nullable=False)
-        to_country_trade_id = db.Column(db.Integer, nullable=False)
+        to_country_trade_id = db.Column(db.Integer, nullable=True)
         home_trades = db.Column(db.JSON)
         foreign_trades = db.Column(db.JSON)
         status = db.Column(db.String(50), default='pending')
@@ -133,8 +133,21 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         def __repr__(self):
             return f"<Trade country_id={self.home_country_id} trade id={self.id}>"
 
+    def tradeToJson(trade):
+        return {
+            'id': trade.id,
+            'home_country_id': trade.home_country_id,
+            'to_country_uri': trade.to_country_uri,
+            'to_country_trade_id': trade.to_country_trade_id,
+            'home_trades': trade.home_trades,
+            'foreign_trades': trade.foreign_trades,
+            'status': trade.status
+        }
+
     def tradeSend(trade):
-        response = requests.post(f"{trade.to_country_uri}/api/trade/receive", json=jsonify(trade))
+        tradeJSON = tradeToJson(trade)
+        tradeJSON['uri'] = f'http://127.0.0.1:{app.config["SERVING_PORT"]}'
+        response = requests.post(f"{trade.to_country_uri}/api/trade/receive", json=tradeJSON)
         return jsonify(response.json())
 
     def tradeRemoteDelete(trade):
@@ -166,22 +179,17 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             return jsonify({'error': 'Country not found'}), 404
 
         data = request.get_json()
-        
+
         temp = data['home_trades']
         data['home_trades'] = data['foreign_trades']
         data['foreign_trades'] = temp
 
         to_country_trade_id = data['id']
-        
-        if 'REMOTE_PORT' in request.environ and request.environ['REMOTE_PORT']:
-            to_country_uri = f"http://{request.remote_addr}:{request.environ['REMOTE_PORT']}/"
-        else:
-            to_country_uri = f"http://{request.remote_addr}/"
-
-        trade = Trade.query.filter_by(to_country_trade_id=to_country_trade_id).first()
+        to_country_uri = data['uri']
+        trade = Trade.query.filter_by(id=to_country_trade_id).first()
 
         if trade:
-            trade.to_country_trade_id=to_country_trade_id,
+            trade.to_country_trade_id=to_country_trade_id
             trade.home_trades = data['home_trades']
             trade.foreign_trades = data['foreign_trades']
             trade.status = data['status']
@@ -202,6 +210,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             return jsonify({'success': True, 'message': 'Trade received and saved successfully'}), 201
         except Exception as e:
             db.session.rollback()
+            print(str(e))
             return jsonify({'success': False, 'error': str(e)}), 500
     
     @app.route('/api/trade/update/<int:trade_id>', methods=['POST'])
@@ -700,6 +709,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
 def run_app(db_name=DEFAULT_DB_NAME,port=DEFAULT_PORT,name=DEFAULT_COUNTRY_NAME,description=DEFAULT_COUNTRY_DESCRIPTION,cli=False):
     app, db = create_app(db_name,name,description)
+    app.config['SERVING_PORT'] = port
     app.run(host='127.0.0.1', port=port, debug=True,use_reloader=cli)
 
 def main(cli=False):
@@ -708,7 +718,6 @@ def main(cli=False):
     name = DEFAULT_COUNTRY_NAME
     description = DEFAULT_COUNTRY_DESCRIPTION
     
-    # Update with command line arguments if provided
     if len(sys.argv) > 1:
         db_name = sys.argv[1]
     if len(sys.argv) > 2:

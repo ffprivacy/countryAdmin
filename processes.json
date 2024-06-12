@@ -1,0 +1,74 @@
+[
+  {
+    "amount": 1,
+    "comments": [],
+    "composition": [],
+    "id": 1,
+    "like_count": 0,
+    "metrics": {
+      "input": {
+        "economic": 10,
+        "envEmissions": 0,
+        "gas": 0,
+        "ground": 0,
+        "human": 0,
+        "oil": 0,
+        "ores": 10,
+        "pm25": 0,
+        "social": 0,
+        "water": 0
+      },
+      "output": {
+        "economic": 0,
+        "envEmissions": 50,
+        "gas": 0,
+        "ground": 0,
+        "human": 0,
+        "oil": 0,
+        "ores": 0,
+        "pm25": 0,
+        "social": 0,
+        "water": 0
+      }
+    },
+    "selected": true,
+    "tags": [],
+    "title": "Faire une voiture thermique"
+  },
+  {
+    "amount": 1,
+    "comments": [],
+    "composition": [],
+    "id": 2,
+    "like_count": 0,
+    "metrics": {
+      "input": {
+        "economic": 10,
+        "envEmissions": 0,
+        "gas": 0,
+        "ground": 0,
+        "human": 0,
+        "oil": 10,
+        "ores": 0,
+        "pm25": 0,
+        "social": 0,
+        "water": 0
+      },
+      "output": {
+        "economic": 0,
+        "envEmissions": 100,
+        "gas": 0,
+        "ground": 0,
+        "human": 0,
+        "oil": 0,
+        "ores": 0,
+        "pm25": 2,
+        "social": 0,
+        "water": 0
+      }
+    },
+    "selected": true,
+    "tags": [],
+    "title": "Rouler en voiture thermique"
+  }
+]
