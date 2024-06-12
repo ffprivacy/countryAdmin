@@ -44,7 +44,7 @@ function processCreateElement(allProcesses,process) {
 					<input type="hidden" name="id" value="${process.id}">
 					<input type="hidden" name="selected" value="${process_selected ? 1 : 0}">
 				</form>	
-				<strong>${process.title}</strong> (ID: ${process.id})
+				<strong>${process.title} (ID: ${process.id})</strong>
 				<button class="btn btn-danger btn-sm" onclick="Processes.delete(${process.id})">Delete</button>
 			</div>
 			
