@@ -349,31 +349,34 @@ function fetchTrades() {
         trades.forEach(trade => {
             const listItem = document.createElement('div');
             listItem.className = 'list-group-item';
-            listItem.innerHTML = `
-                <div class="mb-3">
-                    <h5>Trade with <a href="${trade.to_country_uri}" target="_blank">${trade.to_country_uri}</a></h5>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6>Home Country Processes</h6>
-							<div class="form-check form-switch">
-								<label class="form-check-label" for="trade-status-${trade.id}">${trade.home_confirm ? 'validated' : 'pending'}</label>
-								<input class="form-check-input" type="checkbox" id="trade-status-${trade.id}" ${trade.home_confirm ? 'checked' : ''}>
+			listItem.innerHTML = `
+				<div class="mb-3 card">
+					<div class="card-body">
+						<h5 class="card-title">Trade with <a href="${trade.to_country_uri}" target="_blank">${trade.to_country_uri}</a></h5>
+						<div class="row">
+							<div class="col-md-6">
+								<h6>Home Country Processes</h6>
+								<div class="form-check form-switch">
+									<input class="form-check-input" type="checkbox" id="trade-status-${trade.id}" ${trade.home_confirm ? 'checked' : ''}>
+									<label class="form-check-label" for="trade-status-${trade.id}">${trade.home_confirm ? 'Validated' : 'Pending'}</label>
+								</div>
+								<div id="trade-${trade.id}-home-processes" class="mb-2"></div>
+								<button class="btn btn-outline-secondary btn-sm" onclick="tradeHomeAddProcess(${trade.id})">Add Process</button>
 							</div>
-                            <div id="trade-${trade.id}-home-processes"></div>
-                            <button class="btn btn-outline-secondary btn-sm" onclick="tradeHomeAddProcess(${trade.id})">Add Process</button>
-                        </div>
-                        <div class="col-md-6">
-                            <h6>Foreign Country Processes</h6>
-							<p>${trade.foreign_confirm ? 'validated' : 'pending'}
-                            <div id="trade-${trade.id}-foreign-processes"></div>
-                        </div>
-                    </div>
-                    <div class="mt-3">
-                        <button class="btn btn-primary" onclick="updateTrade(${trade.id})">Update</button>
-                        <button class="btn btn-danger" onclick="deleteTrade(${trade.id})">Delete</button>
-                    </div>
-                </div>
-            `;
+							<div class="col-md-6">
+								<h6>Foreign Country Processes</h6>
+								<p class="badge ${trade.foreign_confirm ? 'bg-success' : 'bg-warning'}">${trade.foreign_confirm ? 'Validated' : 'Pending'}</p>
+								<div id="trade-${trade.id}-foreign-processes" class="mb-2"></div>
+							</div>
+						</div>
+						<div class="d-flex justify-content-end mt-3">
+							<button class="btn btn-primary me-2" onclick="updateTrade(${trade.id})">Update</button>
+							<button class="btn btn-danger" onclick="deleteTrade(${trade.id})">Delete</button>
+						</div>
+					</div>
+				</div>
+			`;
+	
             tradesList.appendChild(listItem);
 			renderTrade(trade);
         });
