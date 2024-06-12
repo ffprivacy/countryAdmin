@@ -364,7 +364,6 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                     for sens in ['input','output']:
                         flow[sens][metric] += Processes.retrieve_metric(processes, process, sens, metric) * usage.usage_count
 
-
             for trade in trades:
                 for home_process in trade.home_processes:
                     for metric in Processes.metrics_get_ids_list():
@@ -714,29 +713,32 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             total = 0
             composition = []
             metricValue = 0
+
             if isinstance(process, Process):
                 composition = process.composition
-                if hasattr(process.metrics[sens], metric):
-                    metricValue = process.metrics[sens][metric]
+                metricValue = process.metrics.get(sens, {}).get(metric, 0)
             elif isinstance(process, dict):
-                composition = process['composition']
-                metricValue = process['metrics'][sens].get(metric, 0)
-
+                composition = process.get('composition', [])
+                metricValue = process.get('metrics', {}).get(sens, {}).get(metric, 0)
+            
             for compo in composition:
-                compo_process_id = 0
+                child_process_id = None
                 compo_amount = 0
+
                 if isinstance(compo, Composition):
-                    compo_process_id = compo.component_process_id
+                    child_process_id = compo.component_process_id
                     compo_amount = compo.amount
                 elif isinstance(compo, dict):
-                    compo_process_id = compo['id']
-                    compo_amount = compo['amount']
+                    child_process_id = compo.get('id')
+                    compo_amount = compo.get('amount', 0)
 
-                compo_process = Processes.get_by_id(all_processes, compo_process_id)
-                if compo_process:
-                    total += Processes.retrieve_metric(all_processes, compo_process, sens, metric) * compo_amount
-                else:
-                    print(f"Process with id {compo_process_id} is not in the retrieved processes.")
+                if child_process_id is not None:
+                    compo_process = Processes.get_by_id(all_processes, child_process_id)
+                    if compo_process:
+                        total += Processes.retrieve_metric(all_processes, compo_process, sens, metric) * compo_amount
+                    else:
+                        print(f"Process with id {child_process_id} is not in the retrieved processes.")
+
             return total + metricValue
 
         @staticmethod
