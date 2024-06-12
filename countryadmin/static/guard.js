@@ -9,6 +9,21 @@ document.getElementById('search-country').addEventListener('keyup', function() {
 
 const countryURIs = ["http://127.0.0.1:5000/api/country"];
 
+// Event listener for adding a new country URI
+document.getElementById('add-country-btn').addEventListener('click', function() {
+    const newUri = document.getElementById('new-country-uri').value.trim();
+    if (newUri) {
+        countryURIs.push(newUri); // Add new URI to the list
+        document.getElementById('new-country-uri').value = ''; // Clear input field
+        fetchCountryData(); // Fetch all country data including the new URI
+    }
+});
+
+// Event listener for manual refresh
+document.getElementById('refresh-btn').addEventListener('click', function() {
+    fetchCountryData(); // Re-fetch all country data
+});
+
 const fetchCountryData = async () => {
     const countryData = await Promise.all(countryURIs.map(uri => fetch(uri, {
         method: 'GET',
@@ -82,6 +97,9 @@ const updateCharts = (countryData) => {
             }]
         }
     });
+
+    updateGraph(countryData, 'tradeVolume'); // Assuming 'tradeVolume' is the default metric for the graph
+
 };
 
 document.addEventListener('DOMContentLoaded', fetchCountryData);
@@ -90,7 +108,7 @@ document.getElementById('metric-select').addEventListener('change', function() {
     const selectedMetric = this.value;
     updateGraph(selectedMetric);
 });
-const updateGraph = (metric) => {
+const updateGraph = (countryData, metric) => {
     const svg = d3.select('#graphSvg');
     svg.selectAll('*').remove();
 
@@ -103,7 +121,7 @@ const updateGraph = (metric) => {
     }));
 
     const links = countryData.map((country, index) => {
-        return {source: country.name, target: "AnotherCountry", value: calculateMetric(country, metric)};
+        return {source: country.name, target: country.name, value: calculateMetric(country, metric)};
     });
 
     const simulation = d3.forceSimulation(nodes)
