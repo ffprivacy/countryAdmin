@@ -627,6 +627,11 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         db.session.commit()
         return jsonify({'success': True}), 200
 
+    @app.route('/guard')
+    @login_required
+    def guard():
+        return render_template('guard.html')
+
     @app.route('/login', methods=['GET', 'POST'])
     def login():
         if request.method == 'POST':

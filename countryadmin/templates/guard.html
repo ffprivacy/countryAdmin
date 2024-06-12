@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Guard Dashboard</title>
+    <link href="/static/cache/bootstrap.min.css" rel="stylesheet">
+    <script src="/static/cache/bootstrap.bundle.min.js"></script>
+    <script src="/static/cache/chart.js"></script>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-3">World Fair Checking</h1>
+
+        <div class="mb-3">
+            <input type="text" id="search-country" class="form-control" placeholder="Search country...">
+        </div>
+
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Country</th>
+                        <th scope="col">Total Metric</th>
+                        <th scope="col">Depletion Time</th>
+                        <th scope="col">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="country-table">
+                </tbody>
+            </table>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <h3>Metrics Puzzle Graph</h3>
+                <canvas id="puzzleChart"></canvas>
+            </div>
+            <div class="col-md-6">
+                <h3>Trade Flow Chart</h3>
+                <canvas id="tradeChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/guard.js"></script>
+</body>
+</html>
