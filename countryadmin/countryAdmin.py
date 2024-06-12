@@ -227,7 +227,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             if 'home_trades' in data:
                 trade.home_trades = data['home_trades']
             if 'foreign_trades' in data:
-                trade.foreign_trades = data['foreign_trades']
+                return jsonify({'success': False, 'error': 'This is reserved to the other side'}), 400
             if 'status' in data:
                 trade.status = data['status']
 
@@ -240,9 +240,9 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
     @app.route('/api/trade/init', methods=['POST'])
     @login_required
-    def initiate_trade():
+    def trade_init():
         data = request.get_json()
-        if not data or 'home' not in data or 'foreign' not in data:
+        if not data or 'home' not in data:
             return jsonify({'success': False, 'error': 'Incomplete data provided'}), 400
 
         country = Country.query.first()
@@ -254,7 +254,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 home_country_id=country.id,
                 to_country_uri=data['to_country_uri'],
                 home_trades=data['home'],
-                foreign_trades=data['foreign'],
+                foreign_trades=[],
                 status='pending'
             )
             db.session.add(new_trade)

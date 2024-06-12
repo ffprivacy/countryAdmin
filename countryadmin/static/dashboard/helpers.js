@@ -112,7 +112,6 @@ function countryResourcesSetup(prefix) {
 function updateTrade(tradeId) {
     const data = {
         home_trades: getTradeDetails('home', tradeId),
-        foreign_trades: getTradeDetails('foreign', tradeId),
         status: document.getElementById(`trade-status-${tradeId}`).checked ? 'active' : 'pending'
     };
 

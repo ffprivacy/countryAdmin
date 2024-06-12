@@ -310,12 +310,9 @@ function tradesAddProcess(country) {
 function submitTrade() {
     const homeProcessIds = document.querySelectorAll('input[name="homeProcessId[]"]');
     const homeAmounts = document.querySelectorAll('input[name="homeAmount[]"]');
-    const foreignProcessIds = document.querySelectorAll('input[name="foreignProcessId[]"]');
-    const foreignAmounts = document.querySelectorAll('input[name="foreignAmount[]"]');
 	const foreignCountryUri = document.getElementById('trade-initiate-foreign-country-uri').value;
     const tradeData = {
         home: [],
-        foreign: [],
 		to_country_uri: foreignCountryUri
     };
 
@@ -323,13 +320,6 @@ function submitTrade() {
         tradeData.home.push({
             process_id: parseInt(input.value),
             amount: parseInt(homeAmounts[index].value)
-        });
-    });
-
-    foreignProcessIds.forEach((input, index) => {
-        tradeData.foreign.push({
-            process_id: parseInt(input.value),
-            amount: parseInt(foreignAmounts[index].value)
         });
     });
 
@@ -375,7 +365,6 @@ function fetchTrades() {
                         <div class="col-md-6">
                             <h6>Foreign Country Processes</h6>
                             <div id="trade-${trade.id}-foreign-processes"></div>
-                            <button class="btn btn-outline-secondary btn-sm" onclick="tradeAddProcess(${trade.id},'foreign')">Add Process</button>
                         </div>
                     </div>
                     <div class="mt-3">
@@ -385,25 +374,39 @@ function fetchTrades() {
                 </div>
             `;
             tradesList.appendChild(listItem);
-            renderTradeProcesses(trade.id, 'home', trade.home_trades);
-            renderTradeProcesses(trade.id, 'foreign', trade.foreign_trades);
+            renderTradeHomeProcesses(trade.id, trade.home_trades);
+            renderTradeForeignProcesses(trade.id, trade.foreign_trades);
         });
     })
     .catch(error => console.error('Error fetching trades:', error));
 }
-function renderTradeProcesses(tradeId, type, processes) {
-    const container = document.getElementById(`trade-${tradeId}-${type}-processes`);
-    container.innerHTML = processes.map(p => generateProcessInput(tradeId,type,p.process_id,p.amount)).join('');
+function renderTradeForeignProcesses(tradeId, processes) {
+	const container = document.getElementById(`trade-${tradeId}-foreign-processes`);
+    container.innerHTML = processes.map(p => generateForeignProcessInput(tradeId,p.process_id,p.amount)).join('');
 }
-function tradeAddProcess(tradeId, type) {
-    const homeTradesContainer = document.getElementById(`trade-${tradeId}-${type}-processes`);
-    homeTradesContainer.insertAdjacentHTML('beforeend', generateProcessInput(tradeId,type));
-}
-function generateProcessInput(tradeId,type,process_id='',process_amount=1) {
-	const uniqueId = `trade-${tradeId}-${type}-${Math.random()}${Math.random()}${Math.random()}${Math.random()}`;
+function generateForeignProcessInput(tradeId,process_id='',process_amount=1) {
+	const uniqueId = `trade-${tradeId}-foreign-${Math.random()}${Math.random()}${Math.random()}${Math.random()}`;
 
 	return `
-		<div class="input-group mb-2 trade-${tradeId}-${type}-process" id="${uniqueId}">
+		<div class="input-group mb-2 trade-${tradeId}-foreign-process" id="${uniqueId}">
+			<p>Process ID: ${process_id}</p>
+			<p>amount: ${process_amount}</p>
+		</div>
+    `
+}
+function renderTradeHomeProcesses(tradeId, processes) {
+    const container = document.getElementById(`trade-${tradeId}-home-processes`);
+    container.innerHTML = processes.map(p => generateHomeProcessInput(tradeId,p.process_id,p.amount)).join('');
+}
+function tradeHomeAddProcess(tradeId) {
+    const homeTradesContainer = document.getElementById(`trade-${tradeId}-home-processes`);
+    homeTradesContainer.insertAdjacentHTML('beforeend', generateHomeProcessInput(tradeId));
+}
+function generateHomeProcessInput(tradeId,process_id='',process_amount=1) {
+	const uniqueId = `trade-${tradeId}-home-${Math.random()}${Math.random()}${Math.random()}${Math.random()}`;
+
+	return `
+		<div class="input-group mb-2 trade-${tradeId}-home-process" id="${uniqueId}">
 			<input type="number" class="form-control" id="process-id" placeholder="Process ID" value="${process_id}">
             <input type="number" class="form-control" id="process-amount" placeholder="Amount" value="${process_amount}">
             <div class="input-group-append">
