@@ -6,7 +6,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.ext.associationproxy import association_proxy
 from functools import wraps
 from datetime import datetime
-import requests, inspect
+import requests
 from flask_cors import CORS
 
 DEFAULT_DB_NAME = "country"
@@ -335,30 +335,28 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 flow['input'][metric] = 0
                 flow['output'][metric] = 0
             
-            for process in processes:
+            for usage in country.process_usages:
+                process = usage.process
                 for metric in Processes.metrics_get_ids_list():
                     for sens in ['input','output']:
-                        metric_value = Processes.retrieve_metric(processes, process, sens, metric) * Process.get_usage(process)
-                        flow[sens][metric] += metric_value
-            
+                        flow[sens][metric] += Processes.retrieve_metric(processes, process, sens, metric) * usage.usage_count
+
+
             for trade in trades:
                 for home_process in trade.home_processes:
                     for metric in Processes.metrics_get_ids_list():
-                        metric_value = Processes.retrieve_metric(processes, Processes.get_by_id(processes, home_process['process_id']), 'output', metric) * home_process['amount']
-                        flow['output'][metric] -= metric_value
+                        flow['output'][metric] -= Processes.retrieve_metric(processes, Processes.get_by_id(processes, home_process['process_id']), 'output', metric) * home_process['amount']
                 
                 response = requests.get(f"{trade.to_country_uri}/api/processes")
                 response.raise_for_status()
                 foreign_processes = response.json()
                 for foreign_trade_process in trade.foreign_processes:
                     for metric in Processes.metrics_get_ids_list():
-                        metric_value = Processes.retrieve_metric(foreign_processes, Processes.get_by_id(foreign_processes, foreign_trade_process['process_id']), 'output', metric) * foreign_trade_process['amount']
-                        flow['output'][metric] += metric_value
+                        flow['output'][metric] += Processes.retrieve_metric(foreign_processes, Processes.get_by_id(foreign_processes, foreign_trade_process['process_id']), 'output', metric) * foreign_trade_process['amount']
             
             resources_depletion = {}
             for metric in Processes.metrics_get_ids_list():
                 usage_balance = flow['output'][metric] - flow['input'][metric]
-                print(usage_balance)
                 if country_resources.get(metric):
                     resources_depletion[metric] = Country.get_time_to_depletion(country_resources[metric]['amount'], country_resources[metric]['renew_rate'], usage_balance)
                 else:
@@ -679,7 +677,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         def get_by_id(processes, process_id):
             return next(
                 (process for process in processes if 
-                    (inspect.isclass(process) and process.id == process_id) or
+                    (isinstance(process, Process) and process.id == process_id) or
                     (isinstance(process, dict) and 'id' in process and process['id'] == process_id)
             ), None)
 
@@ -688,7 +686,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             total = 0
             composition = []
             metricValue = 0
-            if inspect.isclass(process):
+            if isinstance(process, Process):
                 composition = process.composition
                 metricValue = process.metrics[sens][metric]
             elif isinstance(process, dict):
@@ -696,21 +694,20 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 metricValue = process['metrics'][sens].get(metric, 0)
 
             for compo in composition:
-                compo_id = 0
+                compo_process_id = 0
                 compo_amount = 0
-                if inspect.isclass(compo):
-                    compo_id = compo.id
+                if isinstance(compo, Composition):
+                    compo_process_id = compo.component_process_id
                     compo_amount = compo.amount
                 elif isinstance(compo, dict):
-                    compo_id = process['id']
-                    compo_amount = process['amount']
+                    compo_process_id = compo['id']
+                    compo_amount = compo['amount']
 
-                compo_process = Processes.get_by_id(all_processes, compo_id)
+                compo_process = Processes.get_by_id(all_processes, compo_process_id)
                 if compo_process:
-                    metric_value = Processes.retrieve_metric(all_processes, compo_process, sens, metric)
-                    total += metric_value * compo_amount
+                    total += Processes.retrieve_metric(all_processes, compo_process, sens, metric) * compo_amount
                 else:
-                    print(f"Process with id {compo_id} is not in the retrieved processes.")
+                    print(f"Process with id {compo_process_id} is not in the retrieved processes.")
             return total + metricValue
 
         @staticmethod
