@@ -13,35 +13,35 @@
 				<img src="/static/logo_2_24x24.png" width="30" height="30" class="d-inline-block align-top" alt="Logo">
 				CountryAdmin
 			</a>
-			<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
 				<span class="navbar-toggler-icon"></span>
 			</button>
 			<div class="collapse navbar-collapse" id="navbarNav">
-				<ul class="navbar-nav ml-auto">
+				<ul class="navbar-nav ms-auto">
 					{% if 'user_id' in session %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="/logout">Logout</a>
-                    </li>
-                    {% else %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="/login">Login</a>
-                    </li>
-                    {% endif %}
 					<li class="nav-item">
-						<a class="nav-link" href="/dashboard">dashboard</a>
+						<a class="nav-link" href="/logout">Logout</a>
+					</li>
+					{% else %}
+					<li class="nav-item">
+						<a class="nav-link" href="/login">Login</a>
+					</li>
+					{% endif %}
+					<li class="nav-item">
+						<a class="nav-link" href="/dashboard">Dashboard</a>
 					</li>
 				</ul>
 			</div>
 		</nav>
 		<div class="container mt-4">
-		Le but de countryAdmin est de donner un moyen d'estimer, non de contrôler, d'estimer à quel point notre manière de produire est efficace  (intéressante économoquement), impactante écologiquement et viable socialement.<br />
-		En aucun cas il ne s'agit d'optimiser un des critères par rapport aux autres, le but reste à définir, il existe plusieurs scénarios.<br />
-		Les scénarios en moyenne:<br />
-			Le sénario actuel: max economie, min environement, min social.<br />
-			Un scénario de compensation: balancé economie, balancé environement, min social.<br />
-			Le scénario à l'équilibre: balancé economie, balancé environement, balancé social.<br />
-			Un autre scénario "rester sur terre": min economie, min necessaire environement, max social.<br />
-		Une version plus primitive: https://politicalcompass.org/analysis2?ec=3.63&soc=-0.92<br />
-	 	</div>
+			Le but de countryAdmin est de donner un moyen d'estimer, non de contrôler, d'estimer à quel point notre manière de produire est efficace  (intéressante économoquement), impactante écologiquement et viable socialement.<br />
+			En aucun cas il ne s'agit d'optimiser un des critères par rapport aux autres, le but reste à définir, il existe plusieurs scénarios.<br />
+			Les scénarios en moyenne:<br />
+				Le sénario actuel: max economie, min environement, min social.<br />
+				Un scénario de compensation: balancé economie, balancé environement, min social.<br />
+				Le scénario à l'équilibre: balancé economie, balancé environement, balancé social.<br />
+				Un autre scénario "rester sur terre": min economie, min necessaire environement, max social.<br />
+			Une version plus primitive: https://politicalcompass.org/analysis2?ec=3.63&soc=-0.92<br />
+		</div>
 	</body>
 </html>
