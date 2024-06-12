@@ -112,7 +112,7 @@ function countryResourcesSetup(prefix) {
 function updateTrade(tradeId) {
     const data = {
         home_trades: getTradeDetails('home', tradeId),
-        status: document.getElementById(`trade-status-${tradeId}`).checked ? 'active' : 'pending'
+        home_confirm: document.getElementById(`trade-status-${tradeId}`).checked
     };
 
     fetch(`/api/trade/update/${tradeId}`, {

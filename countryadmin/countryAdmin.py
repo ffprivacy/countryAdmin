@@ -126,7 +126,8 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         to_country_trade_id = db.Column(db.Integer, nullable=True)
         home_trades = db.Column(db.JSON)
         foreign_trades = db.Column(db.JSON)
-        status = db.Column(db.String(50), default='pending')
+        home_confirm = db.Column(db.Boolean, default=False)
+        foreign_confirm = db.Column(db.Boolean, default=False)
 
         home_country = db.relationship('Country', foreign_keys=[home_country_id], back_populates='trades')
 
@@ -141,7 +142,8 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             'to_country_trade_id': trade.to_country_trade_id,
             'home_trades': trade.home_trades,
             'foreign_trades': trade.foreign_trades,
-            'status': trade.status
+            'home_confirm': trade.home_confirm,
+            'foreign_confirm': trade.foreign_confirm
         }
 
     def tradeSend(trade):
@@ -180,9 +182,8 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
         data = request.get_json()
 
-        temp = data['home_trades']
-        data['home_trades'] = data['foreign_trades']
-        data['foreign_trades'] = temp
+        data['foreign_trades'] = data['home_trades']        
+        data['foreign_confirm'] = data['home_confirm']
 
         to_country_trade_id = data['id']
         to_country_uri = data['uri']
@@ -190,17 +191,16 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
         if trade:
             trade.to_country_trade_id=to_country_trade_id
-            trade.home_trades = data['home_trades']
             trade.foreign_trades = data['foreign_trades']
-            trade.status = data['status']
+            trade.foreign_confirm = data['foreign_confirm']
         else:
             new_trade = Trade(
                 home_country_id=country.id,
                 to_country_uri=to_country_uri,
-                home_trades=data['home_trades'],
+                home_trades=[],
                 foreign_trades=data['foreign_trades'],
                 to_country_trade_id=to_country_trade_id,
-                status=data['status']
+                foreign_confirm=data['foreign_confirm']
             )
             db.session.add(new_trade)
     
@@ -228,8 +228,10 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 trade.home_trades = data['home_trades']
             if 'foreign_trades' in data:
                 return jsonify({'success': False, 'error': 'This is reserved to the other side'}), 400
-            if 'status' in data:
-                trade.status = data['status']
+            if 'foreign_confirm' in data:
+                return jsonify({'success': False, 'error': 'This is reserved to the other side'}), 400
+            if 'home_confirm' in data:
+                trade.home_confirm = data['home_confirm']
 
             db.session.commit()
             tradeSend(trade)
@@ -254,8 +256,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 home_country_id=country.id,
                 to_country_uri=data['to_country_uri'],
                 home_trades=data['home'],
-                foreign_trades=[],
-                status='pending'
+                foreign_trades=[]
             )
             db.session.add(new_trade)
             db.session.commit()
@@ -277,7 +278,8 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             'to_country_uri': trade.to_country_uri,
             'home_trades': trade.home_trades,
             'foreign_trades': trade.foreign_trades,
-            'status': trade.status
+            'foreign_confirm': trade.foreign_confirm,
+            'home_confirm': trade.home_confirm
         } for trade in country.trades]
 
         return jsonify(trades_data)
