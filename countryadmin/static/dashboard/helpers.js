@@ -34,9 +34,6 @@ function setupImportDatabaseElement(e) {
     });
 }
 function tradesSetup() {
-	document.getElementById('show-trade-modal').addEventListener('click', function() {
-		$('#tradeModal').modal('show');
-	});
 	fetchTrades();
 }
 function countryResourcesFillDefault() {

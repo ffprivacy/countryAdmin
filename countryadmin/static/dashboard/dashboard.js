@@ -360,7 +360,6 @@ function submitTrade() {
 			alert(data.error);
 		}
 		fetchTrades();
-        $('#tradeModal').modal('hide');
     })
     .catch(error => console.error('Error submitting trade:', error));
 }
