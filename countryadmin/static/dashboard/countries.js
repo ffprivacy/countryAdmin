@@ -9,7 +9,7 @@ const countryResourcesDefaults = {
         envEmissions: { amount: 1000000, renew_rate: -0.01 },
         pm25: { amount: 12, renew_rate: -0.001 },
         social: { amount: 50, renew_rate: 0.002 },
-        economic: { amount: 250000000, renew_rate: 0.03 }
+        economic: { amount: 250000000, renew_rate: 0 }
     },
     usa: {
         human: { amount: 331000000, renew_rate: 0.015 },
@@ -21,7 +21,7 @@ const countryResourcesDefaults = {
         envEmissions: { amount: 5000000, renew_rate: -0.02 },
         pm25: { amount: 15, renew_rate: -0.002 },
         social: { amount: 100, renew_rate: 0.003 },
-        economic: { amount: 1800000000, renew_rate: 0.04 }
+        economic: { amount: 1800000000, renew_rate: 0 }
     }
 };
 
