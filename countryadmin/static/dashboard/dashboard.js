@@ -347,7 +347,7 @@ function submitTrade() {
         });
     });
 
-    fetch('/api/trade/-1', {
+    fetch('/api/trade', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'

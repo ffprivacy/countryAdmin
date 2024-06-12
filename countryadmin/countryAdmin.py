@@ -209,57 +209,61 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             print(str(e))
             return jsonify({'success': False, 'error': str(e)}), 500
 
+    @app.route('/api/trade', methods=['POST'])
+    @auth_required
+    def initiate_trade():
+        country = Country.query.first()
+        if not country:
+            return jsonify({'error': 'Home country not found'}), 404
+        
+        data = request.get_json()
+        if not data or 'home_processes' not in data or 'to_country_uri' not in data:
+            return jsonify({'success': False, 'error': 'Incomplete data provided'}), 400
+
+        try:
+            trade = Trade(
+                home_country_id=country.id,
+                to_country_uri=data['to_country_uri'],
+                home_processes=data['home_processes'],
+                foreign_processes=[]
+            )
+            db.session.add(trade)
+            db.session.commit()
+            tradeSend(trade)
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': True, 'message': 'Trade setup successfully'}), 200
+
     @app.route('/api/trade/<int:trade_id>', methods=['POST','DELETE'])
     @auth_required
     def handle_trade(trade_id):
+        trade = Trade.query.get(trade_id)
+        if not trade:
+            return jsonify({'error': 'Trade not found'}), 404
+    
         if request.method == 'POST':
             data = request.get_json()
-            trade = Trade.query.get(trade_id)
-            if trade:
-                try:
-                    if 'to_country_uri' in data:
-                        trade.to_country_uri = data['to_country_uri']
-                    if 'home_processes' in data:
-                        trade.home_processes = data['home_processes']
-                    if 'foreign_processes' in data:
-                        return jsonify({'success': False, 'error': 'This is reserved to the other side'}), 400
-                    if 'foreign_confirm' in data:
-                        return jsonify({'success': False, 'error': 'This is reserved to the other side'}), 400
-                    if 'home_confirm' in data:
-                        trade.home_confirm = data['home_confirm']
+            try:
+                if 'to_country_uri' in data:
+                    trade.to_country_uri = data['to_country_uri']
+                if 'home_processes' in data:
+                    trade.home_processes = data['home_processes']
+                if 'foreign_processes' in data:
+                    return jsonify({'success': False, 'error': 'This is reserved to the other side'}), 400
+                if 'foreign_confirm' in data:
+                    return jsonify({'success': False, 'error': 'This is reserved to the other side'}), 400
+                if 'home_confirm' in data:
+                    trade.home_confirm = data['home_confirm']
 
-                    db.session.commit()
-                except Exception as e:
-                    db.session.rollback()
-                    return jsonify({'success': False, 'error': str(e)}), 500
-            else:
-                country = Country.query.first()
-                if not country:
-                    return jsonify({'error': 'Home country not found'}), 404
+                db.session.commit()
+                tradeSend(trade)
+            except Exception as e:
+                db.session.rollback()
+                return jsonify({'success': False, 'error': str(e)}), 500
                 
-                if not data or 'home' not in data or 'to_country_uri' not in data:
-                    return jsonify({'success': False, 'error': 'Incomplete data provided'}), 400
-
-                try:
-                    trade = Trade(
-                        home_country_id=country.id,
-                        to_country_uri=data['to_country_uri'],
-                        home_processes=data['home_processes'],
-                        foreign_processes=[]
-                    )
-                    db.session.add(trade)
-                    db.session.commit()
-                except Exception as e:
-                    db.session.rollback()
-                    return jsonify({'success': False, 'error': str(e)}), 500
-                
-            tradeSend(trade)
             return jsonify({'success': True, 'message': 'Trade setup successfully'}), 200
         elif request.method == 'DELETE':
-            trade = Trade.query.get(trade_id)
-            if not trade:
-                return jsonify({'error': 'Trade not found'}), 404
-
             try:
                 tradeRemoteDelete(trade)
                 db.session.delete(trade)
@@ -496,7 +500,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             process_data = process_wrap_for_response(process)
             return jsonify(process_data)
         elif request.method == 'DELETE':
-            Composition.query.filter_by(composed_process_id=id).delete()
+            Composition.query.filter_by(composed_process_id=process_id).delete()
             ProcessInteraction.query.filter_by(process_id=process.id).delete()
             ProcessComment.query.filter_by(process_id=process.id).delete()
             ProcessUsage.query.filter_by(process_id=process.id).delete()
