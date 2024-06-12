@@ -187,76 +187,104 @@ function fetchProcesses() {
 			fetch('/api/get_country')
 				.then(response => response.json())
 				.then(country => {
-					const countryResources = country.resources;
-					let selectedProcessMetrics = {};
-					for(let sens of ['input','output']) {
-						selectedProcessMetrics[sens] = {};
-						for(let metric of Processes.metricsGetIdsList()) {
-							selectedProcessMetrics[sens][metric] = 0;
-						}
-					}
-
-					allProcesses.forEach(process => {
-						for(let sens of ['input','output']) {
-							if ( ! selectedProcessMetrics[sens] ) {
-								selectedProcessMetrics[sens] = {};
-							}
-							for(let metric of Processes.metricsGetIdsList()) {
-								if ( ! selectedProcessMetrics[sens][metric] ) {
-									selectedProcessMetrics[sens][metric] = 0;
+					fetch('/api/get_trades')
+					.then(response => response.json())
+					.then(async function (trades) {
+						const countryResources = country.resources;
+						let countryMetrics = {};
+						for(let scope of ['local','global']) {
+							countryMetrics[scope] = {};
+							for(let sens of ['input','output']) {
+								countryMetrics[scope][sens] = {};
+								for(let metric of Processes.metricsGetIdsList()) {
+									countryMetrics[scope][sens][metric] = 0;
 								}
-								selectedProcessMetrics[sens][metric] += Processes.retrieveMetric(allProcesses, process, sens, metric) * process.amount || 0;
 							}
 						}
-						processList.appendChild(processCreateElement(allProcesses,process));
-					});
-
-					for(let sens of ['input','output']) {
-						const container = document.getElementById(`country-resource-total-${sens}`);
+	
+						allProcesses.forEach(process => {
+							for(let sens of ['input','output']) {
+								for(let metric of Processes.metricsGetIdsList()) {
+									let metric_value = Processes.retrieveMetric(allProcesses, process, sens, metric) * process.amount || 0;
+									countryMetrics['local'][sens][metric] += metric_value;
+									countryMetrics['global'][sens][metric] += metric_value;
+								}
+							}
+							processList.appendChild(processCreateElement(allProcesses,process));
+						});
+	
+						for(let trade of trades) {
+							for (let process of trade.home_processes) {
+								let processObj = Processes.getById(allProcesses,process.process_id);
+								for(let metric of Processes.metricsGetIdsList()) {
+									let metric_value = Processes.retrieveMetric(allProcesses, processObj, 'output', metric) * process.amount || 0;
+									countryMetrics['global']['output'][metric] -= metric_value;
+								}
+							}
+							let allForeignProcesses = await fetch(`${trade.to_country_uri}/api/get_processes`)
+																.then(response => response.json())
+																.catch(error => {
+																	console.error('There was a problem fetching foreign processes:', error.message);
+																});
+							for (let process of trade.foreign_processes) {
+								let processObj = Processes.getById(allForeignProcesses,process.process_id);
+								for(let metric of Processes.metricsGetIdsList()) {
+									let metric_value = Processes.retrieveMetric(allForeignProcesses, processObj, 'output', metric) * process.amount || 0;
+									countryMetrics['global']['output'][metric] += metric_value;
+								}
+							}
+						}
+	
+						for(let sens of ['input','output']) {
+							const container = document.getElementById(`country-resource-total-${sens}`);
+							for(let metric of Processes.metricsGetList()) {
+								const id = `country-resource-total-${sens}-${metric.id}`;
+								let element = document.getElementById(id);
+								if ( !element ) {
+									element = document.createElement('div');
+									element.className = "col-6 col-md-6 card card-body";
+									element.id = id;
+									container.appendChild(element);
+								}
+								element.innerHTML = `<p>${metric.label}: <span>${countryMetrics['global'][sens][metric.id]}</span> ${metric.unit}</p>`;
+							}
+						}
+						
+						const getTimeToDepletion = (resourceAmount, renewRate, usageBalance) => {
+							let resourceRenewAmount = resourceAmount * renewRate;
+							let netUsage = resourceRenewAmount + usageBalance;
+						
+							if (netUsage >= 0) { 
+								return "∞";
+							} else { 
+								return (Math.abs(resourceAmount / netUsage)).toFixed(2);
+							}
+						}
+	
+						const container = document.getElementById("country-resource-depletion");
 						for(let metric of Processes.metricsGetList()) {
-							const id = `country-resource-total-${sens}-${metric.id}`;
+							const id = `country-resources-depletion-time-${metric.id}-container`
 							let element = document.getElementById(id);
-							if ( !element ) {
+							if (!element) {
 								element = document.createElement('div');
 								element.className = "col-6 col-md-6 card card-body";
 								element.id = id;
 								container.appendChild(element);
 							}
-							element.innerHTML = `<p>${metric.label}: <span>${selectedProcessMetrics[sens][metric.id]}</span> ${metric.unit}</p>`;
+							element.innerHTML = `<p>${metric.label}: 
+													<span id="country-resources-depletion-time-${metric.id}">
+														${getTimeToDepletion(
+															countryResources[metric.id] ? countryResources[metric.id].amount || 0 : 0,
+															countryResources[metric.id] ? countryResources[metric.id].renew_rate || 0 : 0,
+															countryMetrics['local']['output'][metric.id] - countryMetrics['local']['input'][metric.id])}
+													</span>
+												</p>`;
 						}
-					}
-					
-					const getTimeToDepletion = (resourceAmount, renewRate, usageBalance) => {
-						let resourceRenewAmount = resourceAmount * renewRate;
-						let netUsage = resourceRenewAmount + usageBalance;
-					
-						if (netUsage >= 0) { // Renewal rate and balance are enough to sustain or increase the resource
-							return "∞";
-						} else { // Resource is being depleted
-							return (Math.abs(resourceAmount / netUsage)).toFixed(2); // Calculate years until depletion
-						}
-					}
-
-					const container = document.getElementById("country-resource-depletion");
-					for(let metric of Processes.metricsGetList()) {
-						const id = `country-resources-depletion-time-${metric.id}-container`
-						let element = document.getElementById(id);
-						if (!element) {
-							element = document.createElement('div');
-							element.className = "col-6 col-md-6 card card-body";
-							element.id = id;
-							container.appendChild(element);
-						}
-						element.innerHTML = `<p>${metric.label}: 
-												<span id="country-resources-depletion-time-${metric.id}">
-													${getTimeToDepletion(
-														countryResources[metric.id] ? countryResources[metric.id].amount || 0 : 0,
-														countryResources[metric.id] ? countryResources[metric.id].renew_rate || 0 : 0,
-														selectedProcessMetrics['output'][metric.id] - selectedProcessMetrics['input'][metric.id])}
-												</span>
-											</p>`;
-					}
-					updateRadarChart(selectedProcessMetrics['output'].economic, selectedProcessMetrics['input'].envEmissions-selectedProcessMetrics['output'].envEmissions, selectedProcessMetrics['output'].social);
+						updateRadarChart(countryMetrics['local']['output'].economic, countryMetrics['local']['input'].envEmissions-countryMetrics['local']['output'].envEmissions, countryMetrics['local']['output'].social);
+					})
+					.catch(error => {
+						console.error('There was a problem fetching trades:', error.message);
+					});
 				});
 		})
 		.catch(error => {
@@ -389,7 +417,7 @@ function renderTrade(trade) {
 }
 function renderTradeForeignProcesses(trade) {
 	const container = document.getElementById(`trade-${trade.id}-foreign-processes`);
-    container.innerHTML = trade.foreign_trades.map(p => generateForeignProcessInput(trade.id,p.process_id,p.amount)).join('');
+    container.innerHTML = trade.foreign_processes.map(p => generateForeignProcessInput(trade.id,p.process_id,p.amount)).join('');
 }
 function generateForeignProcessInput(tradeId,process_id='',process_amount=1) {
 	const uniqueId = `trade-${tradeId}-foreign-${Math.random()}${Math.random()}${Math.random()}${Math.random()}`;
@@ -403,7 +431,7 @@ function generateForeignProcessInput(tradeId,process_id='',process_amount=1) {
 }
 function renderTradeHomeProcesses(trade) {
     const container = document.getElementById(`trade-${trade.id}-home-processes`);
-    container.innerHTML = trade.home_trades.map(p => generateHomeProcessInput(trade.id,p.process_id,p.amount,trade.home_confirm)).join('');
+    container.innerHTML = trade.home_processes.map(p => generateHomeProcessInput(trade.id,p.process_id,p.amount,trade.home_confirm)).join('');
 }
 function tradeHomeAddProcess(tradeId) {
     const homeTradesContainer = document.getElementById(`trade-${tradeId}-home-processes`);

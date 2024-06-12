@@ -111,7 +111,7 @@ function countryResourcesSetup(prefix) {
 }
 function updateTrade(tradeId) {
     const data = {
-        home_trades: getTradeDetails('home', tradeId),
+        home_processes: getTradeDetails('home', tradeId),
         home_confirm: document.getElementById(`trade-status-${tradeId}`).checked
     };
 

@@ -124,8 +124,8 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         home_country_id = db.Column(db.Integer, db.ForeignKey('country.id'), nullable=False)
         to_country_uri = db.Column(db.String(255), nullable=False)
         to_country_trade_id = db.Column(db.Integer, nullable=True)
-        home_trades = db.Column(db.JSON)
-        foreign_trades = db.Column(db.JSON)
+        home_processes = db.Column(db.JSON)
+        foreign_processes = db.Column(db.JSON)
         home_confirm = db.Column(db.Boolean, default=False)
         foreign_confirm = db.Column(db.Boolean, default=False)
 
@@ -140,8 +140,8 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             'home_country_id': trade.home_country_id,
             'to_country_uri': trade.to_country_uri,
             'to_country_trade_id': trade.to_country_trade_id,
-            'home_trades': trade.home_trades,
-            'foreign_trades': trade.foreign_trades,
+            'home_processes': trade.home_processes,
+            'foreign_processes': trade.foreign_processes,
             'home_confirm': trade.home_confirm,
             'foreign_confirm': trade.foreign_confirm
         }
@@ -182,7 +182,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
         data = request.get_json()
 
-        data['foreign_trades'] = data['home_trades']        
+        data['foreign_processes'] = data['home_processes']        
         data['foreign_confirm'] = data['home_confirm']
 
         to_country_trade_id = data['id']
@@ -191,14 +191,14 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
         if trade:
             trade.to_country_trade_id=to_country_trade_id
-            trade.foreign_trades = data['foreign_trades']
+            trade.foreign_processes = data['foreign_processes']
             trade.foreign_confirm = data['foreign_confirm']
         else:
             new_trade = Trade(
                 home_country_id=country.id,
                 to_country_uri=to_country_uri,
-                home_trades=[],
-                foreign_trades=data['foreign_trades'],
+                home_processes=[],
+                foreign_processes=data['foreign_processes'],
                 to_country_trade_id=to_country_trade_id,
                 foreign_confirm=data['foreign_confirm']
             )
@@ -224,9 +224,9 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         try:
             if 'to_country_uri' in data:
                 trade.to_country_uri = data['to_country_uri']
-            if 'home_trades' in data:
-                trade.home_trades = data['home_trades']
-            if 'foreign_trades' in data:
+            if 'home_processes' in data:
+                trade.home_processes = data['home_processes']
+            if 'foreign_processes' in data:
                 return jsonify({'success': False, 'error': 'This is reserved to the other side'}), 400
             if 'foreign_confirm' in data:
                 return jsonify({'success': False, 'error': 'This is reserved to the other side'}), 400
@@ -255,8 +255,8 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             new_trade = Trade(
                 home_country_id=country.id,
                 to_country_uri=data['to_country_uri'],
-                home_trades=data['home'],
-                foreign_trades=[]
+                home_processes=data['home'],
+                foreign_processes=[]
             )
             db.session.add(new_trade)
             db.session.commit()
@@ -276,8 +276,8 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         trades_data = [{
             'id': trade.id,
             'to_country_uri': trade.to_country_uri,
-            'home_trades': trade.home_trades,
-            'foreign_trades': trade.foreign_trades,
+            'home_processes': trade.home_processes,
+            'foreign_processes': trade.foreign_processes,
             'foreign_confirm': trade.foreign_confirm,
             'home_confirm': trade.home_confirm
         } for trade in country.trades]
