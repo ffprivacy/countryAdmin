@@ -116,7 +116,7 @@ function updateTrade(tradeId) {
         status: document.getElementById(`trade-status-${tradeId}`).checked ? 'active' : 'pending'
     };
 
-    fetch(`/api/update_trade/${tradeId}`, {
+    fetch(`/api/trade/update/${tradeId}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -133,7 +133,7 @@ function updateTrade(tradeId) {
     .catch(error => console.error('Error updating trade:', error));
 }
 function deleteTrade(tradeId) {
-    fetch(`/api/delete_trade/${tradeId}`, {
+    fetch(`/api/trade/${tradeId}`, {
         method: 'DELETE'
     })
     .then(response => response.json())

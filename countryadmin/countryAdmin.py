@@ -6,6 +6,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.ext.associationproxy import association_proxy
 from functools import wraps
 from datetime import datetime
+import requests
 
 DEFAULT_DB_NAME = "country"
 DEFAULT_PORT = 5000
@@ -122,6 +123,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         id = db.Column(db.Integer, primary_key=True)
         home_country_id = db.Column(db.Integer, db.ForeignKey('country.id'), nullable=False)
         to_country_uri = db.Column(db.String(255), nullable=False)
+        to_country_trade_id = db.Column(db.Integer, nullable=False)
         home_trades = db.Column(db.JSON)
         foreign_trades = db.Column(db.JSON)
         status = db.Column(db.String(50), default='pending')
@@ -131,19 +133,78 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         def __repr__(self):
             return f"<Trade country_id={self.home_country_id} trade id={self.id}>"
 
-    class Country(db.Model):
-        id = db.Column(db.Integer, primary_key=True)
-        name = db.Column(db.String(100))
-        description = db.Column(db.String(100))
-        resources = db.Column(db.JSON)
-        process_usages = db.relationship('ProcessUsage', back_populates='country')
-        trades = db.relationship('Trade', foreign_keys='Trade.home_country_id', back_populates='home_country')
+    def tradeSend(trade):
+        response = requests.post(f"{trade.to_country_uri}/api/trade/receive", json=jsonify(trade))
+        return jsonify(response.json())
 
-    @app.route('/')
-    def index():
-        return render_template('index.html')
+    def tradeRemoteDelete(trade):
+        if trade.to_country_trade_id:
+            response = requests.delete(f"{trade.to_country_uri}/api/trade/${trade.id}")
+            return jsonify(response.json())
+        else:
+            return jsonify({'success': True, 'message': 'No foreign trade to delete'}), 200
+      
+    @app.route('/api/trade/<int:trade_id>', methods=['DELETE'])
+    def delete_trade(trade_id):
+        trade = Trade.query.get(trade_id)
+        if not trade:
+            return jsonify({'error': 'Trade not found'}), 404
 
-    @app.route('/api/update_trade/<int:trade_id>', methods=['POST'])
+        try:
+            tradeRemoteDelete(trade)
+            db.session.delete(trade)
+            db.session.commit()
+            return jsonify({'success': True, 'message': 'Trade deleted successfully'}), 200
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'success': False, 'error': str(e)}), 500
+        
+    @app.route('/api/trade/receive', methods=['POST'])
+    def trade_receive():
+        country = Country.query.first()
+        if not country:
+            return jsonify({'error': 'Country not found'}), 404
+
+        data = request.get_json()
+        
+        temp = data['home_trades']
+        data['home_trades'] = data['foreign_trades']
+        data['foreign_trades'] = temp
+
+        to_country_trade_id = data['id']
+        
+        if 'REMOTE_PORT' in request.environ and request.environ['REMOTE_PORT']:
+            to_country_uri = f"http://{request.remote_addr}:{request.environ['REMOTE_PORT']}/"
+        else:
+            to_country_uri = f"http://{request.remote_addr}/"
+
+        trade = Trade.query.filter_by(to_country_trade_id=to_country_trade_id).first()
+
+        if trade:
+            trade.to_country_trade_id=to_country_trade_id,
+            trade.home_trades = data['home_trades']
+            trade.foreign_trades = data['foreign_trades']
+            trade.status = data['status']
+        else:
+            new_trade = Trade(
+                home_country_id=country.id,
+                to_country_uri=to_country_uri,
+                home_trades=data['home_trades'],
+                foreign_trades=data['foreign_trades'],
+                to_country_trade_id=to_country_trade_id,
+                status=data['status']
+            )
+            db.session.add(new_trade)
+    
+        try:
+            db.session.commit()
+            # TODO notify the client
+            return jsonify({'success': True, 'message': 'Trade received and saved successfully'}), 201
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'success': False, 'error': str(e)}), 500
+    
+    @app.route('/api/trade/update/<int:trade_id>', methods=['POST'])
     @login_required
     def update_trade(trade_id):
         data = request.get_json()
@@ -162,27 +223,13 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 trade.status = data['status']
 
             db.session.commit()
+            tradeSend(trade)
             return jsonify({'success': True, 'message': 'Trade updated successfully'}), 200
         except Exception as e:
             db.session.rollback()
             return jsonify({'success': False, 'error': str(e)}), 500
 
-    @app.route('/api/delete_trade/<int:trade_id>', methods=['DELETE'])
-    @login_required
-    def delete_trade(trade_id):
-        trade = Trade.query.get(trade_id)
-        if not trade:
-            return jsonify({'error': 'Trade not found'}), 404
-
-        try:
-            db.session.delete(trade)
-            db.session.commit()
-            return jsonify({'success': True, 'message': 'Trade deleted successfully'}), 200
-        except Exception as e:
-            db.session.rollback()
-            return jsonify({'success': False, 'error': str(e)}), 500
-
-    @app.route('/api/initiate_trade', methods=['POST'])
+    @app.route('/api/trade/init', methods=['POST'])
     @login_required
     def initiate_trade():
         data = request.get_json()
@@ -203,6 +250,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             )
             db.session.add(new_trade)
             db.session.commit()
+            tradeSend(new_trade)
             return jsonify({'success': True, 'message': 'Trade initiated successfully'}), 201
         except Exception as e:
             db.session.rollback()
@@ -224,6 +272,18 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         } for trade in country.trades]
 
         return jsonify(trades_data)
+    
+    class Country(db.Model):
+        id = db.Column(db.Integer, primary_key=True)
+        name = db.Column(db.String(100))
+        description = db.Column(db.String(100))
+        resources = db.Column(db.JSON)
+        process_usages = db.relationship('ProcessUsage', back_populates='country')
+        trades = db.relationship('Trade', foreign_keys='Trade.home_country_id', back_populates='home_country')
+
+    @app.route('/')
+    def index():
+        return render_template('index.html')
 
     @app.route('/api/reset_database', methods=['POST'])
     @login_required
