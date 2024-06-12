@@ -34,8 +34,8 @@ def fetch_tutorials(url):
         tutorial_links = soup.select('.searchresults a[href*="/wiki/"]')
 
         for link in tutorial_links:
-            #title = link.text.split("\n")[0].strip()
             title = link.text.strip()
+            title = title.split("\n")[0]
             href = link.get('href')
             if href and title:
                 tutorial_url = f'https://wiki.lowtechlab.org{href}'
