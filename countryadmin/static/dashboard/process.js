@@ -38,7 +38,7 @@ function processCreateElement(allProcesses,process) {
 
 	e.innerHTML = `
 		<div class="accordion-header" id="process-list-process-${process.id}-title">
-			<div class="accordion-button d-flex justify-content-between align-items-center p-3" type="button" data-bs-toggle="collapse" data-bs-target="#process-list-process-${process.id}-body" aria-expanded="true" aria-controls="process-list-process-${process.id}-body">
+			<div class="accordion-button d-flex justify-content-between align-items-center p-3 collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#process-list-process-${process.id}-body" aria-expanded="true" aria-controls="process-list-process-${process.id}-body">
 				<form action="/api/select_process" method="POST" class="me-3">
 					<input type="checkbox" ${process_selected ? "checked" : ""}>
 					<input type="hidden" name="id" value="${process.id}">
