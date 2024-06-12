@@ -375,15 +375,18 @@ function fetchTrades() {
                 </div>
             `;
             tradesList.appendChild(listItem);
-            renderTradeHomeProcesses(trade.id, trade.home_trades);
-            renderTradeForeignProcesses(trade.id, trade.foreign_trades);
+			renderTrade(trade);
         });
     })
     .catch(error => console.error('Error fetching trades:', error));
 }
-function renderTradeForeignProcesses(tradeId, processes) {
-	const container = document.getElementById(`trade-${tradeId}-foreign-processes`);
-    container.innerHTML = processes.map(p => generateForeignProcessInput(tradeId,p.process_id,p.amount)).join('');
+function renderTrade(trade) {
+	renderTradeHomeProcesses(trade);
+	renderTradeForeignProcesses(trade);
+}
+function renderTradeForeignProcesses(trade) {
+	const container = document.getElementById(`trade-${trade.id}-foreign-processes`);
+    container.innerHTML = trade.foreign_trades.map(p => generateForeignProcessInput(trade.id,p.process_id,p.amount)).join('');
 }
 function generateForeignProcessInput(tradeId,process_id='',process_amount=1) {
 	const uniqueId = `trade-${tradeId}-foreign-${Math.random()}${Math.random()}${Math.random()}${Math.random()}`;
@@ -395,9 +398,9 @@ function generateForeignProcessInput(tradeId,process_id='',process_amount=1) {
 		</div>
     `
 }
-function renderTradeHomeProcesses(tradeId, processes) {
-    const container = document.getElementById(`trade-${tradeId}-home-processes`);
-    container.innerHTML = processes.map(p => generateHomeProcessInput(tradeId,p.process_id,p.amount)).join('');
+function renderTradeHomeProcesses(trade) {
+    const container = document.getElementById(`trade-${trade.id}-home-processes`);
+    container.innerHTML = trade.home_trades.map(p => generateHomeProcessInput(trade.id,p.process_id,p.amount)).join('');
 }
 function tradeHomeAddProcess(tradeId) {
     const homeTradesContainer = document.getElementById(`trade-${tradeId}-home-processes`);
@@ -405,16 +408,15 @@ function tradeHomeAddProcess(tradeId) {
 }
 function generateHomeProcessInput(tradeId,process_id='',process_amount=1) {
 	const uniqueId = `trade-${tradeId}-home-${Math.random()}${Math.random()}${Math.random()}${Math.random()}`;
-
 	return `
 		<div class="input-group mb-2 trade-${tradeId}-home-process" id="${uniqueId}">
 			<input type="number" class="form-control" id="process-id" placeholder="Process ID" value="${process_id}">
-            <input type="number" class="form-control" id="process-amount" placeholder="Amount" value="${process_amount}">
-            <div class="input-group-append">
-                <button class="btn btn-danger" onclick="document.getElementById('${uniqueId}').remove();updateTrade(${tradeId})">Delete</button>
-            </div>
+			<input type="number" class="form-control" id="process-amount" placeholder="Amount" value="${process_amount}">
+			<div class="input-group-append">
+				<button class="btn btn-danger" onclick="document.getElementById('${uniqueId}').remove();updateTrade(${tradeId})">Delete</button>
+			</div>
 		</div>
-    `
+	`
 }
 document.addEventListener('DOMContentLoaded', function () {
 
