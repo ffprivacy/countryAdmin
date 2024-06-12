@@ -172,7 +172,7 @@ function selectProcesses() {
 		});
 }
 function dashboardRefresh() {
-	return fetch('/api/get_processes')
+	return fetch('/api/processes')
 		.then(response => {
 			if (!response.ok) {
 				throw new Error('Network response was not ok');
@@ -184,10 +184,10 @@ function dashboardRefresh() {
 			const allProcesses = data;
 			processList.innerHTML = '';
 
-			fetch('/api/get_country')
+			fetch('/api/country')
 				.then(response => response.json())
 				.then(country => {
-					fetch('/api/get_trades')
+					fetch('/api/trades')
 					.then(response => response.json())
 					.then(async function (trades) {
 						const countryResources = country.resources;
@@ -217,7 +217,7 @@ function dashboardRefresh() {
 									countryMetrics['output'][metric] -= metric_value;
 								}
 							}
-							let allForeignProcesses = await fetch(`${trade.to_country_uri}/api/get_processes`)
+							let allForeignProcesses = await fetch(`${trade.to_country_uri}/api/processes`)
 																.then(response => response.json())
 																.catch(error => {
 																	console.error('There was a problem fetching foreign processes:', error.message);
@@ -364,7 +364,7 @@ function submitTrade() {
     .catch(error => console.error('Error submitting trade:', error));
 }
 function fetchTrades() {
-    fetch('/api/get_trades')
+    fetch('/api/trades')
     .then(response => response.json())
     .then(trades => {
         const tradesList = document.getElementById('trades-list');
@@ -505,7 +505,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	});	
 		
 	document.getElementById('export-btn').addEventListener('click', function() {
-		fetch('/api/get_processes')
+		fetch('/api/processes')
 		.then(response => {
 		if (!response.ok) {
 			throw new Error('Network response was not ok');

@@ -51,7 +51,7 @@ class Processes {
 
     static async delete(process_id) {
         try {
-            const response = await fetch(`/api/delete_process/${process_id}`, { method: 'POST' });
+            const response = await fetch(`/api/process/${process_id}`, { method: 'DELETE' });
             const data = await response.json();
             if (data.success) {
                 dashboardRefresh();
@@ -87,7 +87,7 @@ class Processes {
 
     static async addComment(process_id, comment) {
         try {
-            const response = await fetch(`/api/add_comment/${process_id}`, {
+            const response = await fetch(`/api/process/${process_id}/add_comment`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ comment: comment })
@@ -104,7 +104,7 @@ class Processes {
         }
     }
     static dislike(process_id) {
-        fetch(`/api/dislike_process/${process_id}`, {
+        fetch(`/api/process/${process_id}/dislike`, {
             method: 'POST'
         }).then(response => response.json())
         .then(data => {
@@ -117,7 +117,7 @@ class Processes {
     }
 
     static like(process_id) {
-            fetch(`/api/like_process/${process_id}`, {
+            fetch(`/api/process/${process_id}/like`, {
                 method: 'POST'
             }).then(response => response.json())
             .then(data => {

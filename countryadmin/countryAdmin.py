@@ -209,7 +209,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             print(str(e))
             return jsonify({'success': False, 'error': str(e)}), 500
 
-    @app.route('/api/trade/<int:trade_id>', methods=['POST'])
+    @app.route('/api/trade/<int:trade_id>', methods=['POST','DELETE'])
     @auth_required
     def handle_trade(trade_id):
         if request.method == 'POST':
@@ -269,7 +269,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 db.session.rollback()
                 return jsonify({'success': False, 'error': str(e)}), 500
 
-    @app.route('/api/get_trades', methods=['GET'])
+    @app.route('/api/trades', methods=['GET'])
     @auth_required
     def get_trades():
         country = Country.query.first()
@@ -316,7 +316,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         set_country_data({})
         return redirect(url_for('logout'))
 
-    @app.route('/api/like_process/<int:process_id>', methods=['POST'])
+    @app.route('/api/process/<int:process_id>/like', methods=['POST'])
     @auth_required
     def like_process(process_id):
         if 'user_id' not in session:
@@ -341,7 +341,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         db.session.commit()
         return jsonify({'success': True})
 
-    @app.route('/api/dislike_process/<int:process_id>', methods=['POST'])
+    @app.route('/api/process/<int:process_id>/dislike', methods=['POST'])
     @auth_required
     def dislike_process(process_id):
         if 'user_id' not in session:
@@ -366,9 +366,9 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         db.session.commit()
         return jsonify({'success': True})
 
-    @app.route('/api/add_comment/<int:process_id>', methods=['POST'])
+    @app.route('/api/process/<int:process_id>/add_comment', methods=['POST'])
     @auth_required
-    def add_comment(process_id):
+    def comment_process(process_id):
         if 'user_id' not in session:
             return jsonify({'success': False, 'error': 'User not logged in'}), 403
 
@@ -385,38 +385,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         db.session.add(comment)
         db.session.commit()
         return jsonify({'success': True})
-
-    @app.route('/login', methods=['GET', 'POST'])
-    def login():
-        if request.method == 'POST':
-            username = request.form['username']
-            password = request.form['password']
-            user = User.query.filter_by(username=username).first()
-            if user:
-                if user.check_password(password):
-                    session['user_id'] = user.id
-                    return redirect(url_for('dashboard'))
-            else:
-                # Create new user if not in database
-                new_user = User(username=username)
-                new_user.set_password(password)
-                db.session.add(new_user)
-                db.session.commit()
-                session['user_id'] = new_user.id
-                return redirect(url_for('dashboard'))
-        return render_template('login.html')
-
-    def country_process_usage(country,process,state):
-        process_usage = ProcessUsage.query.filter_by(country_id=country.id, process_id=process.id).first()
-        if state:
-            if not process_usage:
-                new_process_usage = ProcessUsage(country_id=country.id, process_id=process.id, usage_count=1)
-                db.session.add(new_process_usage)
-        else:
-            if process_usage:
-                db.session.delete(process_usage)
-        return process_usage
-
+    
     @app.route('/api/select_process', methods=['POST'])
     @auth_required
     def select_process():
@@ -510,6 +479,89 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
         db.session.commit()
         return jsonify({'success': True})
+    @app.route('/api/processes', methods=['GET'])
+    @auth_required
+    def get_processes():
+        processes = Process.query.all()
+        process_list = [process_wrap_for_response(process) for process in processes]
+        return jsonify(process_list)
+
+    @app.route('/api/process/<int:process_id>', methods=['GET','DELETE'])
+    @auth_required
+    def handle_process(process_id):
+        process = Process.query.get(process_id)
+        if not process:
+            return jsonify({'error': 'Process not found'}), 404
+        if request.method == 'GET':
+            process_data = process_wrap_for_response(process)
+            return jsonify(process_data)
+        elif request.method == 'DELETE':
+            Composition.query.filter_by(composed_process_id=id).delete()
+            ProcessInteraction.query.filter_by(process_id=process.id).delete()
+            ProcessComment.query.filter_by(process_id=process.id).delete()
+            ProcessUsage.query.filter_by(process_id=process.id).delete()
+            ProcessTag.query.filter_by(process_id=process.id).delete()
+        
+            db.session.delete(process)
+            db.session.commit()
+            return jsonify({'success': True}), 200
+
+    @app.route('/api/update_composition/<int:process_id>', methods=['POST'])
+    @auth_required
+    def update_composition(process_id):
+        data = request.json
+        component_process_id = data.get('id')
+        amount = data.get('amount')
+
+        composition = Composition.query.filter_by(composed_process_id=process_id, component_process_id=component_process_id).first()
+        if not composition:
+            return jsonify({'error': 'Composition not found'}), 404
+
+        composition.amount = amount
+        db.session.commit()
+        return jsonify({'success': True}), 200
+
+    @app.route('/api/delete_composition/<int:process_id>/<int:component_process_id>', methods=['POST'])
+    @auth_required
+    def delete_composition(process_id, component_process_id):
+        composition = Composition.query.filter_by(composed_process_id=process_id, component_process_id=component_process_id).first()
+        if not composition:
+            return jsonify({'error': 'Composition not found'}), 404
+
+        db.session.delete(composition)
+        db.session.commit()
+        return jsonify({'success': True}), 200
+
+    @app.route('/login', methods=['GET', 'POST'])
+    def login():
+        if request.method == 'POST':
+            username = request.form['username']
+            password = request.form['password']
+            user = User.query.filter_by(username=username).first()
+            if user:
+                if user.check_password(password):
+                    session['user_id'] = user.id
+                    return redirect(url_for('dashboard'))
+            else:
+                # Create new user if not in database
+                new_user = User(username=username)
+                new_user.set_password(password)
+                db.session.add(new_user)
+                db.session.commit()
+                session['user_id'] = new_user.id
+                return redirect(url_for('dashboard'))
+        return render_template('login.html')
+
+    def country_process_usage(country,process,state):
+        process_usage = ProcessUsage.query.filter_by(country_id=country.id, process_id=process.id).first()
+        if state:
+            if not process_usage:
+                new_process_usage = ProcessUsage(country_id=country.id, process_id=process.id, usage_count=1)
+                db.session.add(new_process_usage)
+        else:
+            if process_usage:
+                db.session.delete(process_usage)
+        return process_usage
 
     @app.route('/dashboard', methods=['GET'])
     @login_required
@@ -546,76 +598,40 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             } for comment in process.comments if comment.user]
         }
 
-    @app.route('/api/get_processes', methods=['GET'])
-    @auth_required
-    def get_processes():
-        processes = Process.query.all()
-        process_list = [process_wrap_for_response(process) for process in processes]
-        return jsonify(process_list)
-
-    @app.route('/api/get_process/<int:process_id>', methods=['GET'])
-    @auth_required
-    def get_process(process_id):
-        process = Process.query.get(process_id)
-        if not process:
-            return jsonify({'error': 'Process not found'}), 404
-        process_data = process_wrap_for_response(process)
-        return jsonify(process_data)
-
-    @app.route('/api/delete_process/<int:id>', methods=['POST'])
-    @auth_required
-    def delete_process(id):
-        process = Process.query.get(id)
-        if not process:
-            return jsonify({'error': 'Process not found'}), 404
-
-        Composition.query.filter_by(composed_process_id=id).delete()
-        ProcessInteraction.query.filter_by(process_id=process.id).delete()
-        ProcessComment.query.filter_by(process_id=process.id).delete()
-        ProcessUsage.query.filter_by(process_id=process.id).delete()
-        ProcessTag.query.filter_by(process_id=process.id).delete()
-      
-        db.session.delete(process)
-        db.session.commit()
-        return jsonify({'success': True}), 200
-
-    @app.route('/api/update_composition/<int:process_id>', methods=['POST'])
-    @auth_required
-    def update_composition(process_id):
-        data = request.json
-        component_process_id = data.get('id')
-        amount = data.get('amount')
-
-        composition = Composition.query.filter_by(composed_process_id=process_id, component_process_id=component_process_id).first()
-        if not composition:
-            return jsonify({'error': 'Composition not found'}), 404
-
-        composition.amount = amount
-        db.session.commit()
-        return jsonify({'success': True}), 200
-
-    @app.route('/api/delete_composition/<int:process_id>/<int:component_process_id>', methods=['POST'])
-    @auth_required
-    def delete_composition(process_id, component_process_id):
-        composition = Composition.query.filter_by(composed_process_id=process_id, component_process_id=component_process_id).first()
-        if not composition:
-            return jsonify({'error': 'Composition not found'}), 404
-
-        db.session.delete(composition)
-        db.session.commit()
-        return jsonify({'success': True}), 200
-
     @app.route('/logout')
     @login_required
     def logout():
         session.pop('user_id', None)
         return redirect(url_for('index'))
 
-    @app.route('/api/set_country', methods=['POST'])
+    @app.route('/api/country', methods=['POST','GET'])
     @auth_required
-    def set_country():
-        data = request.json
-        return jsonify(set_country_data(data))
+    def handle_country():
+        if request.method == 'POST':
+            data = request.json
+            return jsonify(set_country_data(data))
+        elif request.method == 'GET':
+            country = Country.query.first()
+
+            if not country:
+                return jsonify({
+                    'name': 'Default name',
+                    'description': 'Default description',
+                    'resources': {}
+                })
+
+            processes = [{
+                'id': pu.process_id,
+                'title': pu.process.title,
+                'usage_count': pu.usage_count
+            } for pu in country.process_usages]
+
+            return jsonify({
+                'name': country.name,
+                'description': country.description,
+                'resources': country.resources,
+                'processes': processes
+            })
 
     def set_country_data(data):
         country_resources = data.get('resources', {})
@@ -640,47 +656,20 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         db.session.commit()
         return {'success': True}
 
-    @app.route('/api/get_country', methods=['GET'])
+    @app.route('/api/database', methods=['GET','POST'])
     @auth_required
-    def get_country():
-        country = Country.query.first()
-
-        if not country:
-            return jsonify({
-                'name': 'Default name',
-                'description': 'Default description',
-                'resources': {}
-            })
-
-        processes = [{
-            'id': pu.process_id,
-            'title': pu.process.title,
-            'usage_count': pu.usage_count
-        } for pu in country.process_usages]
-
-        return jsonify({
-            'name': country.name,
-            'description': country.description,
-            'resources': country.resources,
-            'processes': processes
-        })
-
-    @app.route('/api/export_database', methods=['GET'])
-    @auth_required
-    def export_database():
-        db_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), '../instance/' + db_name_fname)
-        return send_file(db_path, as_attachment=True, download_name=db_name_fname)
-
-    @app.route('/api/import_database', methods=['POST'])
-    @auth_required
-    def import_database():
-        file = request.files['file']
-        if file:
-            file_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), '../instance/' + db_name_fname)
-            file.save(file_path)
-            db.create_all()
-            return jsonify({'success': True})
-        return jsonify({'success': False}), 400
+    def handle_database():
+        if request.method == 'GET':
+            db_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), '../instance/' + db_name_fname)
+            return send_file(db_path, as_attachment=True, download_name=db_name_fname)
+        elif request.method == 'POST':
+            file = request.files['file']
+            if file:
+                file_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), '../instance/' + db_name_fname)
+                file.save(file_path)
+                db.create_all()
+                return jsonify({'success': True})
+            return jsonify({'success': False}), 400
 
     @app.route('/api/update_process_usage/<int:process_id>', methods=['POST'])
     @auth_required

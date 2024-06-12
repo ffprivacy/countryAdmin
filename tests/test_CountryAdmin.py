@@ -35,10 +35,10 @@ def test_login_logout(client):
     response = logout(client)
     assert b'Login' in response.data
 
-def test_get_processes(client):
+def test_processes(client):
     """Test retrieving all processes."""
     login(client, 'testuser', 'testpass')
-    response = client.get('/get_processes')
+    response = client.get('/processes')
     assert response.status_code == 200
     assert b'[]' in response.data  # Expecting an empty list initially
 
@@ -130,7 +130,7 @@ def test_dislike_process(client):
 
 def test_unauthorized_access(client):
     """Test access to a protected endpoint without logging in."""
-    response = client.get('/get_processes')
+    response = client.get('/processes')
     assert response.status_code == 302  # Expecting redirect to login page
     assert '/login' in response.headers['Location']
 
@@ -145,17 +145,17 @@ def test_add_comment(client):
     assert response.status_code == 200
     assert b'success' in response.data
 
-def test_export_database(client):
+def test_database(client):
     """Test exporting the database."""
     login(client, 'testuser', 'testpass')
-    response = client.get('/export_database')
+    response = client.get('/database')
     assert response.status_code == 200
     assert 'application/octet-stream' in response.content_type
 
-def test_import_database(client):
+def test_database(client):
     """Test importing a database file."""
     login(client, 'testuser', 'testpass')
     data = {'file': (BytesIO(b'test data'), 'test.db')}
-    response = client.post('/import_database', data=data, content_type='multipart/form-data')
+    response = client.post('/database', data=data, content_type='multipart/form-data')
     assert response.status_code == 200
     assert b'success' in response.data

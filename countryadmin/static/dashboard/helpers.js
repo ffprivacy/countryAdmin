@@ -1,6 +1,6 @@
 function setupExportDatabaseElement(e) {
     e.addEventListener('click', function() {
-        window.location.href = '/api/export_database';
+        window.location.href = '/api/database';
     });
 }
 function setupImportDatabaseElement(e) {
@@ -10,7 +10,7 @@ function setupImportDatabaseElement(e) {
             const formData = new FormData();
             formData.append('file', file);
     
-            fetch('/api/import_database', {
+            fetch('/api/database', {
                 method: 'POST',
                 body: formData
             })
@@ -72,7 +72,7 @@ function countryResourcesSetup(prefix) {
                                 <hr>`;
     }
 
-    fetch('/api/get_country')
+    fetch('/api/country')
     .then(response => response.json())
     .then(country => {
         const data = country.resources;
@@ -90,7 +90,7 @@ function countryResourcesSetup(prefix) {
                 renew_rate: document.getElementById(`${prefix}-${metric}-renew-rate`).value || 0
             };
         }
-        fetch('/api/set_country', {
+        fetch('/api/country', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
