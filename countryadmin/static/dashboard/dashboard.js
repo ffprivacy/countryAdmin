@@ -171,121 +171,78 @@ function selectProcesses() {
 			console.warn(e);
 		});
 }
+function JSON_parse(response) {
+	return response.text().then(text => {
+		console.warn(text);
+        return JSON.parse(text, (key, value) => {
+            if (value === "Infinity") return Infinity;
+            if (value === "-Infinity") return -Infinity;
+            if (value === "NaN") return NaN;
+            return value;
+        });
+    });
+}
 function dashboardRefresh() {
-	return fetch('/api/processes')
-		.then(response => {
-			if (!response.ok) {
-				throw new Error('Network response was not ok');
-			}
-			return response.json();
-		})
-		.then(async function (data) {
-			const processList = document.getElementById('process-list');
-			const allProcesses = data;
-			processList.innerHTML = '';
+    return fetch('/api/processes')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return JSON_parse(response);
+        })
+        .then(async function (data) {
+            const processList = document.getElementById('process-list');
+            const allProcesses = data;
+            processList.innerHTML = '';
 
-			fetch('/api/country')
-				.then(response => response.json())
-				.then(country => {
-					fetch('/api/trades')
-					.then(response => response.json())
-					.then(async function (trades) {
-						const countryResources = country.resources;
-						let countryMetrics = {};
-						for(let sens of ['input','output']) {
-							countryMetrics[sens] = {};
-							for(let metric of Processes.metricsGetIdsList()) {
-								countryMetrics[sens][metric] = 0;
-							}
-						}
-	
-						allProcesses.forEach(process => {
-							for(let sens of ['input','output']) {
-								for(let metric of Processes.metricsGetIdsList()) {
-									let metric_value = Processes.retrieveMetric(allProcesses, process, sens, metric) * process.amount || 0;
-									countryMetrics[sens][metric] += metric_value;
-								}
-							}
-							processList.appendChild(processCreateElement(allProcesses,process));
-						});
-	
-						for(let trade of trades) {
-							for (let process of trade.home_processes) {
-								let processObj = Processes.getById(allProcesses,process.process_id);
-								for(let metric of Processes.metricsGetIdsList()) {
-									let metric_value = Processes.retrieveMetric(allProcesses, processObj, 'output', metric) * process.amount || 0;
-									countryMetrics['output'][metric] -= metric_value;
-								}
-							}
-							let allForeignProcesses = await fetch(`${trade.to_country_uri}/api/processes`)
-																.then(response => response.json())
-																.catch(error => {
-																	console.error('There was a problem fetching foreign processes:', error.message);
-																});
-							for (let process of trade.foreign_processes) {
-								let processObj = Processes.getById(allForeignProcesses,process.process_id);
-								for(let metric of Processes.metricsGetIdsList()) {
-									let metric_value = Processes.retrieveMetric(allForeignProcesses, processObj, 'output', metric) * process.amount || 0;
-									countryMetrics['output'][metric] += metric_value;
-								}
-							}
-						}
-	
-						for(let sens of ['input','output']) {
-							const container = document.getElementById(`country-resource-total-${sens}`);
-							for(let metric of Processes.metricsGetList()) {
-								const id = `country-resource-total-${sens}-${metric.id}`;
-								let element = document.getElementById(id);
-								if ( !element ) {
-									element = document.createElement('div');
-									element.className = "col-6 col-md-6 card card-body";
-									element.id = id;
-									container.appendChild(element);
-								}
-								element.innerHTML = `<p>${metric.label}: <span>${countryMetrics[sens][metric.id]}</span> ${metric.unit}</p>`;
-							}
-						}
-						
-						const getTimeToDepletion = (resourceAmount, renewRate, usageBalance) => {
-							let resourceRenewAmount = resourceAmount * renewRate;
-							let netUsage = resourceRenewAmount + usageBalance;
-						
-							if (netUsage >= 0) { 
-								return "∞";
-							} else { 
-								return (Math.abs(resourceAmount / netUsage)).toFixed(2);
-							}
-						}
-	
-						const container = document.getElementById("country-resource-depletion");
-						for(let metric of Processes.metricsGetList()) {
-							const id = `country-resources-depletion-time-${metric.id}-container`
-							let element = document.getElementById(id);
-							if (!element) {
-								element = document.createElement('div');
-								element.className = "col-6 col-md-6 card card-body";
-								element.id = id;
-								container.appendChild(element);
-							}
-							element.innerHTML = `<p>${metric.label}: 
-													<span id="country-resources-depletion-time-${metric.id}">
-														${getTimeToDepletion(
-															countryResources[metric.id] ? countryResources[metric.id].amount || 0 : 0,
-															countryResources[metric.id] ? countryResources[metric.id].renew_rate || 0 : 0,
-															countryMetrics['output'][metric.id] - countryMetrics['input'][metric.id])}
-													</span>
-												</p>`;
-						}
-						updateRadarChart(countryMetrics['output'].economic, countryMetrics['input'].envEmissions-countryMetrics['output'].envEmissions, countryMetrics['output'].social);
-					})
-					.catch(error => {
-						console.error('There was a problem fetching trades:', error.message);
-					});
-				});
-		})
-		.catch(error => {
-			console.error('There was a problem fetching processes:', error.message);
-		});
+            fetch('/api/country/metrics')
+            .then(response => JSON_parse(response))
+            .then(metrics => {
+                const countryMetrics = metrics.flow;
+                const resourcesDepletion = metrics.resources_depletion;
+
+                allProcesses.forEach(process => {
+                    processList.appendChild(processCreateElement(allProcesses,process));
+                });
+
+                for (let sens of ['input', 'output']) {
+                    const container = document.getElementById(`country-resource-total-${sens}`);
+                    Processes.metricsGetList().forEach(metric => {
+                        const id = `country-resource-total-${sens}-${metric.id}`;
+                        let element = document.getElementById(id);
+                        if (!element) {
+                            element = document.createElement('div');
+                            element.className = "col-6 col-md-6 card card-body";
+                            element.id = id;
+                            container.appendChild(element);
+                        }
+                        element.innerHTML = `<p>${metric.label}: <span>${countryMetrics[sens][metric.id]}</span> ${metric.unit}</p>`;
+                    });
+                }
+
+                const containerDepletion = document.getElementById("country-resource-depletion");
+                Processes.metricsGetList().forEach(metric => {
+                    const id = `country-resources-depletion-time-${metric.id}-container`;
+                    let element = document.getElementById(id);
+                    if (!element) {
+                        element = document.createElement('div');
+                        element.className = "col-6 col-md-6 card card-body";
+                        element.id = id;
+                        containerDepletion.appendChild(element);
+                    }
+                    element.innerHTML = `<p>${metric.label}: <span>${resourcesDepletion[metric.id] == Infinity ? "∞" : resourcesDepletion[metric.id]}</span></p>`;
+                });
+
+                updateRadarChart(countryMetrics['output'].economic, countryMetrics['input'].envEmissions - countryMetrics['output'].envEmissions, countryMetrics['output'].social);
+            })
+            .catch(error => {
+                console.error('There was a problem fetching country metrics:', error.message);
+            });
+
+        })
+        .catch(error => {
+            console.error('There was a problem fetching processes:', error.message);
+        });
 }
 
 function attachSelectedEvent() {
@@ -354,7 +311,7 @@ function submitTrade() {
         },
         body: JSON.stringify(tradeData)
     })
-    .then(response => response.json())
+    .then(response => JSON_parse(response))
     .then(data => {
 		if ( ! data.message ) {
 			alert(data.error);
@@ -365,7 +322,7 @@ function submitTrade() {
 }
 function fetchTrades() {
     fetch('/api/trades')
-    .then(response => response.json())
+    .then(response => JSON_parse(response))
     .then(trades => {
         const tradesList = document.getElementById('trades-list');
         tradesList.innerHTML = '';
@@ -510,7 +467,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		if (!response.ok) {
 			throw new Error('Network response was not ok');
 		}
-		return response.json();
+		return JSON_parse(response);
 		})
 		.then(data => {
 			const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
