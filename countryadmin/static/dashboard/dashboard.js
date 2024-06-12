@@ -192,13 +192,10 @@ function dashboardRefresh() {
 					.then(async function (trades) {
 						const countryResources = country.resources;
 						let countryMetrics = {};
-						for(let scope of ['local','global']) {
-							countryMetrics[scope] = {};
-							for(let sens of ['input','output']) {
-								countryMetrics[scope][sens] = {};
-								for(let metric of Processes.metricsGetIdsList()) {
-									countryMetrics[scope][sens][metric] = 0;
-								}
+						for(let sens of ['input','output']) {
+							countryMetrics[sens] = {};
+							for(let metric of Processes.metricsGetIdsList()) {
+								countryMetrics[sens][metric] = 0;
 							}
 						}
 	
@@ -206,8 +203,7 @@ function dashboardRefresh() {
 							for(let sens of ['input','output']) {
 								for(let metric of Processes.metricsGetIdsList()) {
 									let metric_value = Processes.retrieveMetric(allProcesses, process, sens, metric) * process.amount || 0;
-									countryMetrics['local'][sens][metric] += metric_value;
-									countryMetrics['global'][sens][metric] += metric_value;
+									countryMetrics[sens][metric] += metric_value;
 								}
 							}
 							processList.appendChild(processCreateElement(allProcesses,process));
@@ -218,7 +214,7 @@ function dashboardRefresh() {
 								let processObj = Processes.getById(allProcesses,process.process_id);
 								for(let metric of Processes.metricsGetIdsList()) {
 									let metric_value = Processes.retrieveMetric(allProcesses, processObj, 'output', metric) * process.amount || 0;
-									countryMetrics['global']['output'][metric] -= metric_value;
+									countryMetrics['output'][metric] -= metric_value;
 								}
 							}
 							let allForeignProcesses = await fetch(`${trade.to_country_uri}/api/get_processes`)
@@ -230,7 +226,7 @@ function dashboardRefresh() {
 								let processObj = Processes.getById(allForeignProcesses,process.process_id);
 								for(let metric of Processes.metricsGetIdsList()) {
 									let metric_value = Processes.retrieveMetric(allForeignProcesses, processObj, 'output', metric) * process.amount || 0;
-									countryMetrics['global']['output'][metric] += metric_value;
+									countryMetrics['output'][metric] += metric_value;
 								}
 							}
 						}
@@ -246,7 +242,7 @@ function dashboardRefresh() {
 									element.id = id;
 									container.appendChild(element);
 								}
-								element.innerHTML = `<p>${metric.label}: <span>${countryMetrics['global'][sens][metric.id]}</span> ${metric.unit}</p>`;
+								element.innerHTML = `<p>${metric.label}: <span>${countryMetrics[sens][metric.id]}</span> ${metric.unit}</p>`;
 							}
 						}
 						
@@ -276,11 +272,11 @@ function dashboardRefresh() {
 														${getTimeToDepletion(
 															countryResources[metric.id] ? countryResources[metric.id].amount || 0 : 0,
 															countryResources[metric.id] ? countryResources[metric.id].renew_rate || 0 : 0,
-															countryMetrics['local']['output'][metric.id] - countryMetrics['local']['input'][metric.id])}
+															countryMetrics['output'][metric.id] - countryMetrics['input'][metric.id])}
 													</span>
 												</p>`;
 						}
-						updateRadarChart(countryMetrics['local']['output'].economic, countryMetrics['local']['input'].envEmissions-countryMetrics['local']['output'].envEmissions, countryMetrics['local']['output'].social);
+						updateRadarChart(countryMetrics['output'].economic, countryMetrics['input'].envEmissions-countryMetrics['output'].envEmissions, countryMetrics['output'].social);
 					})
 					.catch(error => {
 						console.error('There was a problem fetching trades:', error.message);
