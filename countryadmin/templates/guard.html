@@ -64,6 +64,17 @@
                 <h3>Trade Flow Chart</h3>
                 <canvas id="tradeChart"></canvas>
             </div>
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label for="metric-select" class="form-label">Select Metric:</label>
+                    <select id="metric-select" class="form-control">
+                        <option value="tradeVolume">Trade Volume</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <svg id="graphSvg" width="960" height="600"></svg>
+                </div>
+            </div>
         </div>
     </div>
 

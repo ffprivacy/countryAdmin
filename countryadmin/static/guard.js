@@ -39,14 +39,17 @@ const updateTable = (countryData) => {
 };
 
 const calculateTotalMetric = (processes) => {
-    return processes.reduce((total, process) => total + process.usage_count, 0);
+    return 100; //return processes.reduce((total, process) => total + process.usage_count, 0);
 };
 
 const calculateDepletionTime = (resources) => {
-    return Object.values(resources).reduce((minTime, resource) => {
+    return 100; /* return Object.values(resources).reduce((minTime, resource) => {
         const time = resource.amount / (resource.usage || 1);
         return time < minTime ? time : minTime;
-    }, Infinity);
+    }, Infinity);*/
+};
+const calculateMetric = (country, metric) => {
+    return 100; //country.resources[metric] || 10;
 };
 
 const updateCharts = (countryData) => {
@@ -82,3 +85,87 @@ const updateCharts = (countryData) => {
 };
 
 document.addEventListener('DOMContentLoaded', fetchCountryData);
+
+document.getElementById('metric-select').addEventListener('change', function() {
+    const selectedMetric = this.value;
+    updateGraph(selectedMetric);
+});
+const updateGraph = (metric) => {
+    const svg = d3.select('#graphSvg');
+    svg.selectAll('*').remove();
+
+    const width = +svg.attr('width');
+    const height = +svg.attr('height');
+
+    const nodes = countryData.map((country, index) => ({
+        id: country.name,
+        radius: calculateMetric(country, metric)
+    }));
+
+    const links = countryData.map((country, index) => {
+        return {source: country.name, target: "AnotherCountry", value: calculateMetric(country, metric)};
+    });
+
+    const simulation = d3.forceSimulation(nodes)
+        .force('link', d3.forceLink(links).id(d => d.id).distance(200))
+        .force('charge', d3.forceManyBody().strength(-400))
+        .force('center', d3.forceCenter(width / 2, height / 2));
+
+    const link = svg.append('g')
+        .attr('stroke', '#999')
+        .selectAll('line')
+        .data(links)
+        .join('line')
+        .attr('stroke-width', d => d.value * 0.1);
+
+    const node = svg.append('g')
+        .attr('stroke', '#fff')
+        .attr('stroke-width', 1.5)
+        .selectAll('circle')
+        .data(nodes)
+        .join('circle')
+        .attr('r', d => d.radius)
+        .attr('fill', colorNode)
+        .call(drag(simulation));
+
+    node.append('title')
+        .text(d => d.id);
+
+    simulation.on('tick', () => {
+        link
+            .attr('x1', d => d.source.x)
+            .attr('y1', d => d.source.y)
+            .attr('x2', d => d.target.x)
+            .attr('y2', d => d.target.y);
+
+        node
+            .attr('cx', d => d.x)
+            .attr('cy', d => d.y);
+    });
+};
+const colorNode = (d) => {
+    return d.radius > 20 ? '#ff7f0e' : '#1f77b4';
+};
+const drag = (simulation) => {
+    function dragstarted(event) {
+        if (!event.active) simulation.alphaTarget(0.3).restart();
+        event.subject.fx = event.subject.x;
+        event.subject.fy = event.subject.y;
+    }
+
+    function dragged(event) {
+        event.subject.fx = event.x;
+        event.subject.fy = event.y;
+    }
+
+    function dragended(event) {
+        if (!event.active) simulation.alphaTarget(0);
+        event.subject.fx = null;
+        event.subject.fy = null;
+    }
+
+    return d3.drag()
+        .on('start', dragstarted)
+        .on('drag', dragged)
+        .on('end', dragended);
+};
