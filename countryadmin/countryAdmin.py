@@ -7,6 +7,7 @@ from sqlalchemy.ext.associationproxy import association_proxy
 from functools import wraps
 from datetime import datetime
 import requests
+from flask_cors import CORS
 
 DEFAULT_DB_NAME = "country"
 DEFAULT_PORT = 5000
@@ -20,6 +21,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
     app.secret_key = 'your_secret_key'
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + db_name_fname
     db = SQLAlchemy(app)
+    CORS(app)
 
     def debug_print(obj, indent=0):
         indent_str = '  ' * indent
@@ -47,6 +49,14 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         def decorated_function(*args, **kwargs):
             if 'user_id' not in session:
                 return redirect(url_for('login'))
+            return f(*args, **kwargs)
+        return decorated_function
+
+    # For API not intented for users
+    def auth_required(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            # TODO
             return f(*args, **kwargs)
         return decorated_function
 
@@ -158,8 +168,9 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             return jsonify(response.json())
         else:
             return jsonify({'success': True, 'message': 'No foreign trade to delete'}), 200
-      
+
     @app.route('/api/trade/<int:trade_id>', methods=['DELETE'])
+    @auth_required
     def delete_trade(trade_id):
         trade = Trade.query.get(trade_id)
         if not trade:
@@ -175,6 +186,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             return jsonify({'success': False, 'error': str(e)}), 500
         
     @app.route('/api/trade/receive', methods=['POST'])
+    @auth_required
     def trade_receive():
         country = Country.query.first()
         if not country:
@@ -214,7 +226,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             return jsonify({'success': False, 'error': str(e)}), 500
     
     @app.route('/api/trade/update/<int:trade_id>', methods=['POST'])
-    @login_required
+    @auth_required
     def update_trade(trade_id):
         data = request.get_json()
         trade = Trade.query.get(trade_id)
@@ -241,7 +253,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             return jsonify({'success': False, 'error': str(e)}), 500
 
     @app.route('/api/trade/init', methods=['POST'])
-    @login_required
+    @auth_required
     def trade_init():
         data = request.get_json()
         if not data or 'home' not in data:
@@ -267,7 +279,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             return jsonify({'success': False, 'error': str(e)}), 500
 
     @app.route('/api/get_trades', methods=['GET'])
-    @login_required
+    @auth_required
     def get_trades():
         country = Country.query.first()
         if not country:
@@ -314,7 +326,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         return redirect(url_for('logout'))
 
     @app.route('/api/like_process/<int:process_id>', methods=['POST'])
-    @login_required
+    @auth_required
     def like_process(process_id):
         if 'user_id' not in session:
             return jsonify({'success': False, 'error': 'User not logged in'}), 403
@@ -339,7 +351,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         return jsonify({'success': True})
 
     @app.route('/api/dislike_process/<int:process_id>', methods=['POST'])
-    @login_required
+    @auth_required
     def dislike_process(process_id):
         if 'user_id' not in session:
             return jsonify({'success': False, 'error': 'User not logged in'}), 403
@@ -364,7 +376,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         return jsonify({'success': True})
 
     @app.route('/api/add_comment/<int:process_id>', methods=['POST'])
-    @login_required
+    @auth_required
     def add_comment(process_id):
         if 'user_id' not in session:
             return jsonify({'success': False, 'error': 'User not logged in'}), 403
@@ -415,7 +427,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         return process_usage
 
     @app.route('/api/select_process', methods=['POST'])
-    @login_required
+    @auth_required
     def select_process():
         ids = []
         states = []
@@ -439,10 +451,10 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
             db.session.commit()
 
-        return redirect(url_for('dashboard'))
+        return jsonify({'success': True})
 
     @app.route('/api/set_process', methods=['POST'])
-    @login_required
+    @auth_required
     def set_process():
         data = request.json
         if not data:
@@ -544,14 +556,14 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         }
 
     @app.route('/api/get_processes', methods=['GET'])
-    @login_required
+    @auth_required
     def get_processes():
         processes = Process.query.all()
         process_list = [process_wrap_for_response(process) for process in processes]
         return jsonify(process_list)
 
     @app.route('/api/get_process/<int:process_id>', methods=['GET'])
-    @login_required
+    @auth_required
     def get_process(process_id):
         process = Process.query.get(process_id)
         if not process:
@@ -560,7 +572,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         return jsonify(process_data)
 
     @app.route('/api/delete_process/<int:id>', methods=['POST'])
-    @login_required
+    @auth_required
     def delete_process(id):
         process = Process.query.get(id)
         if not process:
@@ -577,7 +589,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         return jsonify({'success': True}), 200
 
     @app.route('/api/update_composition/<int:process_id>', methods=['POST'])
-    @login_required
+    @auth_required
     def update_composition(process_id):
         data = request.json
         component_process_id = data.get('id')
@@ -592,7 +604,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         return jsonify({'success': True}), 200
 
     @app.route('/api/delete_composition/<int:process_id>/<int:component_process_id>', methods=['POST'])
-    @login_required
+    @auth_required
     def delete_composition(process_id, component_process_id):
         composition = Composition.query.filter_by(composed_process_id=process_id, component_process_id=component_process_id).first()
         if not composition:
@@ -609,8 +621,8 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         return redirect(url_for('index'))
 
     @app.route('/api/set_country', methods=['POST'])
-    @login_required
-    def set_country_endpoint():
+    @auth_required
+    def set_country():
         data = request.json
         return jsonify(set_country_data(data))
 
@@ -638,7 +650,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         return {'success': True}
 
     @app.route('/api/get_country', methods=['GET'])
-    @login_required
+    @auth_required
     def get_country():
         country = Country.query.first()
 
@@ -663,13 +675,13 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         })
 
     @app.route('/api/export_database', methods=['GET'])
-    @login_required
+    @auth_required
     def export_database():
         db_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), '../instance/' + db_name_fname)
         return send_file(db_path, as_attachment=True, download_name=db_name_fname)
 
     @app.route('/api/import_database', methods=['POST'])
-    @login_required
+    @auth_required
     def import_database():
         file = request.files['file']
         if file:
@@ -680,7 +692,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         return jsonify({'success': False}), 400
 
     @app.route('/api/update_process_usage/<int:process_id>', methods=['POST'])
-    @login_required
+    @auth_required
     def update_process_usage(process_id):
         data = request.json
         new_usage_count = data.get('usage_count')

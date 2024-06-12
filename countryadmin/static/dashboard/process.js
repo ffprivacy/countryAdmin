@@ -145,18 +145,30 @@ function processCreateElement(allProcesses,process) {
 		.then(response => response.json())
 		.then(updatedProcess => {
 			console.log(`Process ${updatedProcess.id} amount updated to ${newAmount}`);
-			fetchProcesses();
+			dashboardRefresh();
 		})
 		.catch(error => console.error('Error updating process amount:', error));
 	});
 
 	const form = li.querySelector('form');
 	const checkbox = form.querySelector('input[type="checkbox"]');
-	const checkboxS = form.querySelector('input[type="hidden"][name="selected"]');
+	const processState = form.querySelector('input[type="hidden"][name="selected"]');
+	const processId = form.querySelector('input[type="hidden"][name="id"]');
+
 
 	checkbox.addEventListener('click', function (e) {
-		checkboxS.value = checkbox.checked ? 1 : 0;
-		form.submit();
+		processState.value = checkbox.checked ? 1 : 0;
+		const formData = new FormData();
+		formData.append('id', processId.value);
+		formData.append('selected', processState.value);
+		fetch('/api/select_process', {
+			method: 'POST',
+			body: formData
+		})
+			.then(() => dashboardRefresh())
+			.catch(function (e) {
+				console.warn(e);
+			});
 	});
 	return li;
 }

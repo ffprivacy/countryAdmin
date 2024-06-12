@@ -166,12 +166,12 @@ function selectProcesses() {
 		method: 'POST',
 		body: formData
 	})
-		.then(() => fetchProcesses())
+		.then(() => dashboardRefresh())
 		.catch(function (e) {
 			console.warn(e);
 		});
 }
-function fetchProcesses() {
+function dashboardRefresh() {
 	return fetch('/api/get_processes')
 		.then(response => {
 			if (!response.ok) {
@@ -306,7 +306,7 @@ function attachSelectedEvent() {
 			})
 			.then(response => {
 				if (response.ok) {
-					  fetchProcesses();
+					  dashboardRefresh();
 				  return response.text();
 				}
 				throw new Error('Network response was not ok.');
@@ -398,8 +398,8 @@ function fetchTrades() {
 							</div>
 						</div>
 						<div class="d-flex justify-content-end mt-3">
-							<button class="btn btn-primary me-2" onclick="updateTrade(${trade.id})">Update</button>
-							<button class="btn btn-danger" onclick="deleteTrade(${trade.id})">Delete</button>
+							<button class="btn btn-primary me-2" onclick="updateTrade(${trade.id});dashboardRefresh()">Update</button>
+							<button class="btn btn-danger" onclick="deleteTrade(${trade.id});dashboardRefresh()">Delete</button>
 						</div>
 					</div>
 				</div>
@@ -463,7 +463,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	document.getElementById("btn-adjust").addEventListener("click", selectProcesses);
 
 	// Fetch processes when the page loads
-	fetchProcesses();
+	dashboardRefresh();
 
 	attachSelectedEvent();
 
@@ -502,7 +502,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		
 		Processes.set(process)
 			.then(() => {
-				fetchProcesses();
+				dashboardRefresh();
 			})
 			.catch(error => {
 				console.error('There was a problem with the process submission:', error.message);
@@ -537,7 +537,7 @@ document.addEventListener('DOMContentLoaded', function () {
 			reader.onload = function(event) {
 				Processes.set(JSON.parse(event.target.result))
 				.then(() => {
-					fetchProcesses();
+					dashboardRefresh();
 				})
 				.catch(error => {
 					console.error('There was a problem with the process submission:', error.message);

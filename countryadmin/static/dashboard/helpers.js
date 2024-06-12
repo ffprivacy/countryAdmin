@@ -102,7 +102,7 @@ function countryResourcesSetup(prefix) {
         }).then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    fetchProcesses();
+                    dashboardRefresh();
                 }
             });
     });

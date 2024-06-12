@@ -54,7 +54,7 @@ class Processes {
             const response = await fetch(`/api/delete_process/${process_id}`, { method: 'POST' });
             const data = await response.json();
             if (data.success) {
-                fetchProcesses();
+                dashboardRefresh();
                 console.log('Process deleted successfully.');
             } else {
                 console.error('Error deleting process:', data.error);
@@ -94,7 +94,7 @@ class Processes {
             });
             const data = await response.json();
             if (data.success) {
-                fetchProcesses();
+                dashboardRefresh();
                 console.log('Comment added successfully.');
             } else {
                 console.error('Error adding comment:', data.error);
@@ -109,7 +109,7 @@ class Processes {
         }).then(response => response.json())
         .then(data => {
             if (data.success) {
-                fetchProcesses();
+                dashboardRefresh();
             } else {
                 console.error('Error disliking process:', data.error);
             }
@@ -122,7 +122,7 @@ class Processes {
             }).then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    fetchProcesses();
+                    dashboardRefresh();
                 } else {
                     console.error('Error liking process:', data.error);
                 }
@@ -140,7 +140,7 @@ class Processes {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                fetchProcesses();
+                dashboardRefresh();
             } else {
                 console.error('Error updating composition:', data.error);
             }
@@ -155,7 +155,7 @@ class Processes {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                fetchProcesses();
+                dashboardRefresh();
             } else {
                 console.error('Error deleting composition:', data.error);
             }
