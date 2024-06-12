@@ -168,22 +168,6 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             return jsonify(response.json())
         else:
             return jsonify({'success': True, 'message': 'No foreign trade to delete'}), 200
-
-    @app.route('/api/trade/<int:trade_id>', methods=['DELETE'])
-    @auth_required
-    def delete_trade(trade_id):
-        trade = Trade.query.get(trade_id)
-        if not trade:
-            return jsonify({'error': 'Trade not found'}), 404
-
-        try:
-            tradeRemoteDelete(trade)
-            db.session.delete(trade)
-            db.session.commit()
-            return jsonify({'success': True, 'message': 'Trade deleted successfully'}), 200
-        except Exception as e:
-            db.session.rollback()
-            return jsonify({'success': False, 'error': str(e)}), 500
         
     @app.route('/api/trade/receive', methods=['POST'])
     @auth_required
@@ -224,59 +208,66 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             db.session.rollback()
             print(str(e))
             return jsonify({'success': False, 'error': str(e)}), 500
-    
-    @app.route('/api/trade/update/<int:trade_id>', methods=['POST'])
+
+    @app.route('/api/trade/<int:trade_id>', methods=['POST'])
     @auth_required
-    def update_trade(trade_id):
-        data = request.get_json()
-        trade = Trade.query.get(trade_id)
-        if not trade:
-            return jsonify({'error': 'Trade not found'}), 404
+    def handle_trade(trade_id):
+        if request.method == 'POST':
+            data = request.get_json()
+            trade = Trade.query.get(trade_id)
+            if trade:
+                try:
+                    if 'to_country_uri' in data:
+                        trade.to_country_uri = data['to_country_uri']
+                    if 'home_processes' in data:
+                        trade.home_processes = data['home_processes']
+                    if 'foreign_processes' in data:
+                        return jsonify({'success': False, 'error': 'This is reserved to the other side'}), 400
+                    if 'foreign_confirm' in data:
+                        return jsonify({'success': False, 'error': 'This is reserved to the other side'}), 400
+                    if 'home_confirm' in data:
+                        trade.home_confirm = data['home_confirm']
 
-        try:
-            if 'to_country_uri' in data:
-                trade.to_country_uri = data['to_country_uri']
-            if 'home_processes' in data:
-                trade.home_processes = data['home_processes']
-            if 'foreign_processes' in data:
-                return jsonify({'success': False, 'error': 'This is reserved to the other side'}), 400
-            if 'foreign_confirm' in data:
-                return jsonify({'success': False, 'error': 'This is reserved to the other side'}), 400
-            if 'home_confirm' in data:
-                trade.home_confirm = data['home_confirm']
+                    db.session.commit()
+                except Exception as e:
+                    db.session.rollback()
+                    return jsonify({'success': False, 'error': str(e)}), 500
+            else:
+                country = Country.query.first()
+                if not country:
+                    return jsonify({'error': 'Home country not found'}), 404
+                
+                if not data or 'home' not in data or 'to_country_uri' not in data:
+                    return jsonify({'success': False, 'error': 'Incomplete data provided'}), 400
 
-            db.session.commit()
+                try:
+                    trade = Trade(
+                        home_country_id=country.id,
+                        to_country_uri=data['to_country_uri'],
+                        home_processes=data['home_processes'],
+                        foreign_processes=[]
+                    )
+                    db.session.add(trade)
+                    db.session.commit()
+                except Exception as e:
+                    db.session.rollback()
+                    return jsonify({'success': False, 'error': str(e)}), 500
+                
             tradeSend(trade)
-            return jsonify({'success': True, 'message': 'Trade updated successfully'}), 200
-        except Exception as e:
-            db.session.rollback()
-            return jsonify({'success': False, 'error': str(e)}), 500
+            return jsonify({'success': True, 'message': 'Trade setup successfully'}), 200
+        elif request.method == 'DELETE':
+            trade = Trade.query.get(trade_id)
+            if not trade:
+                return jsonify({'error': 'Trade not found'}), 404
 
-    @app.route('/api/trade/init', methods=['POST'])
-    @auth_required
-    def trade_init():
-        data = request.get_json()
-        if not data or 'home' not in data:
-            return jsonify({'success': False, 'error': 'Incomplete data provided'}), 400
-
-        country = Country.query.first()
-        if not country:
-            return jsonify({'error': 'Home country not found'}), 404
-
-        try:
-            new_trade = Trade(
-                home_country_id=country.id,
-                to_country_uri=data['to_country_uri'],
-                home_processes=data['home'],
-                foreign_processes=[]
-            )
-            db.session.add(new_trade)
-            db.session.commit()
-            tradeSend(new_trade)
-            return jsonify({'success': True, 'message': 'Trade initiated successfully'}), 201
-        except Exception as e:
-            db.session.rollback()
-            return jsonify({'success': False, 'error': str(e)}), 500
+            try:
+                tradeRemoteDelete(trade)
+                db.session.delete(trade)
+                db.session.commit()
+                return jsonify({'success': True, 'message': 'Trade deleted successfully'}), 200
+            except Exception as e:
+                db.session.rollback()
+                return jsonify({'success': False, 'error': str(e)}), 500
 
     @app.route('/api/get_trades', methods=['GET'])
     @auth_required

@@ -336,18 +336,18 @@ function submitTrade() {
     const homeAmounts = document.querySelectorAll('input[name="homeAmount[]"]');
 	const foreignCountryUri = document.getElementById('trade-initiate-foreign-country-uri').value;
     const tradeData = {
-        home: [],
+        home_processes: [],
 		to_country_uri: foreignCountryUri
     };
 
     homeProcessIds.forEach((input, index) => {
-        tradeData.home.push({
+        tradeData.home_processes.push({
             process_id: parseInt(input.value),
             amount: parseInt(homeAmounts[index].value)
         });
     });
 
-    fetch('/api/trade/init', {
+    fetch('/api/trade/-1', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'

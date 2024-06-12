@@ -112,7 +112,7 @@ function updateTrade(tradeId) {
         home_confirm: document.getElementById(`trade-status-${tradeId}`).checked
     };
 
-    fetch(`/api/trade/update/${tradeId}`, {
+    fetch(`/api/trade/${tradeId}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
