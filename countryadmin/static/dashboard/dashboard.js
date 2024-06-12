@@ -173,7 +173,6 @@ function selectProcesses() {
 }
 function JSON_parse(response) {
 	return response.text().then(text => {
-		console.warn(text);
         return JSON.parse(text, (key, value) => {
             if (value === "Infinity") return Infinity;
             if (value === "-Infinity") return -Infinity;

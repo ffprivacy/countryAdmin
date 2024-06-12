@@ -113,14 +113,23 @@ function processCreateElement(allProcesses,process) {
 		const metricsElement = e.querySelector(`#process-view-metrics-${sens}`);
 		for(let metric of Processes.metricsGetIdsList()) {
 			const metricElement = document.createElement('li');
-			metricElement.textContent = `${metric}: ${process.metrics[sens][metric]}`;
-			metricsElement.appendChild(metricElement);
+			const metricValue = process.metrics[sens][metric] ? process.metrics[sens][metric] : 0;
+			if ( 0 < metricValue ) {
+				metricElement.textContent = `${metric}: ${metricValue}`;
+				metricsElement.appendChild(metricElement);
+			}
 		}
 		const cumulativeMetricsElement = e.querySelector(`#process-view-cumulative-metrics-${sens}`);
 		for(let metric of Processes.metricsGetIdsList()) {
 			const cumulativeMetricElement = document.createElement('li');
-			cumulativeMetricElement.textContent = `${metric}: ${Processes.retrieveMetric(allProcesses, process, sens, metric)}`;
-			cumulativeMetricsElement.appendChild(cumulativeMetricElement);
+			let metricValue = Processes.retrieveMetric(allProcesses, process, sens, metric);
+			if ( isNaN(metricValue) ) {
+				metricValue = 0;
+			}
+			if ( 0 < metricValue ) {
+				cumulativeMetricElement.textContent = `${metric}: ${metricValue}`;
+				cumulativeMetricsElement.appendChild(cumulativeMetricElement);
+			}
 		}
 	}
 	const compositionContainer = e.querySelector(`#composition-container-${process.id}`);

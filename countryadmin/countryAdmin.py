@@ -716,7 +716,8 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             metricValue = 0
             if isinstance(process, Process):
                 composition = process.composition
-                metricValue = process.metrics[sens][metric]
+                if hasattr(process.metrics[sens], metric):
+                    metricValue = process.metrics[sens][metric]
             elif isinstance(process, dict):
                 composition = process['composition']
                 metricValue = process['metrics'][sens].get(metric, 0)
