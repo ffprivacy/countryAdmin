@@ -82,6 +82,14 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         comments = db.relationship('ProcessComment', back_populates='process', lazy=True)
         usages = db.relationship('ProcessUsage', back_populates='process', cascade='delete')
 
+        @staticmethod
+        def get_usage(process):
+            country = Country.query.first()
+            if not country:
+                return jsonify({'error': 'Country not found'}), 404
+            process_usage = next((pu for pu in process.usages if pu.country_id == country.id), None)
+            return process_usage.usage_count if process_usage else 0
+
     class ProcessInteraction(db.Model):
         id = db.Column(db.Integer, primary_key=True)
         process_id = db.Column(db.Integer, db.ForeignKey('process.id'), nullable=False)
@@ -298,6 +306,69 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         resources = db.Column(db.JSON)
         process_usages = db.relationship('ProcessUsage', back_populates='country')
         trades = db.relationship('Trade', foreign_keys='Trade.home_country_id', back_populates='home_country')
+
+        @staticmethod
+        def get_time_to_depletion(resource_amount, renew_rate, usage_balance):
+            resource_renew_amount = resource_amount * renew_rate
+            net_usage = resource_renew_amount + usage_balance
+
+            if net_usage >= 0:
+                if net_usage == 0 and resource_amount == 0:
+                    return 0
+                else:
+                    return float('inf')
+            else:
+                return abs(resource_amount / net_usage) 
+            
+        @staticmethod
+        def metrics():
+            country = Country.query.first()
+            if not country:
+                return jsonify({'error': 'Country not found'}), 404
+
+            country_resources = country.resources
+            debug_print(country_resources)
+            processes = Process.query.all()
+            trades = Trade.query.all()
+            flow = {'input': {}, 'output': {}}
+            
+            for metric in Processes.metrics_get_ids_list():
+                flow['input'][metric] = 0
+                flow['output'][metric] = 0
+            
+            for process in processes:
+                for metric in Processes.metrics_get_ids_list():
+                    metric_value = Processes.retrieve_metric(processes, process, 'output', metric) * Process.get_usage(process)
+                    flow['output'][metric] += metric_value
+            
+            debug_print(flow)
+
+            for trade in trades:
+                for home_process in trade.home_processes:
+                    for metric in Processes.metrics_get_ids_list():
+                        metric_value = Processes.retrieve_metric(processes, home_process, 'output', metric) * Process.get_usage(home_process)
+                        flow['output'][metric] -= metric_value
+                #for foreign_process in trade.foreign_processes:
+                #    for metric in Processes.metrics_get_ids_list():
+                #        metric_value = Processes.retrieve_metric(foreign_process, 'output', metric) * foreign_process.amount
+                #        flow['output'][metric] += metric_value
+            
+            debug_print(flow)
+            resources_depletion = {}
+            for metric in Processes.metrics_get_ids_list():
+                usage_balance = flow['output'][metric] - flow['input'][metric]
+                print(usage_balance)
+                if country_resources.get(metric):
+                    resources_depletion[metric] = Country.get_time_to_depletion(country_resources[metric]['amount'], country_resources[metric]['renew_rate'], usage_balance)
+                else:
+                    resources_depletion[metric] = float('inf') if usage_balance > 0 else 0
+
+            debug_print(resources_depletion)
+
+            return {
+                'flow': flow,
+                'resources_depletion': resources_depletion
+            }
 
     @app.route('/')
     def index():
@@ -575,11 +646,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
     def process_wrap_for_response(process):
         """Helper function to format the process data for JSON response."""
-        country = Country.query.first()
-        if not country:
-            return jsonify({'error': 'Country not found'}), 404
-        process_usage = next((pu for pu in process.usages if pu.country_id == country.id), None)
-        amount = process_usage.usage_count if process_usage else 0
+        amount = Process.get_usage(process)
         selected = 0 < amount
 
         return {
@@ -607,6 +674,48 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
     def logout():
         session.pop('user_id', None)
         return redirect(url_for('index'))
+
+    class Processes:
+        @staticmethod
+        def get_by_id(processes, process_id):
+            return next((process for process in processes if process.id == process_id), None)
+
+        @staticmethod
+        def retrieve_metric(all_processes, process, sens, metric):
+            total = 0
+            for compo in process.composition:
+                compo_process = Processes.get_by_id(all_processes, compo['id'])
+                if compo_process:
+                    metric_value = Processes.retrieve_metric(all_processes, compo_process, sens, metric)
+                    total += metric_value * compo['amount']
+                else:
+                    print(f"Process with id {compo['id']} is not in the retrieved processes.")
+            return total + process.metrics[sens].get(metric, 0)
+
+        @staticmethod
+        def metrics_get_list():
+            return [
+                {'id': 'social', 'label': 'Social', 'icon': 'human.png', 'unit': ''},
+                {'id': 'economic', 'label': 'Economic', 'icon': 'economic.png', 'unit': '$'},
+                {'id': 'envEmissions', 'label': 'GES emissions in kgCO2eq', 'icon': 'carbon.png', 'unit': 'kgCO2eq'},
+                {'id': 'human', 'label': 'Human', 'icon': 'human.png', 'unit': 'people'},
+                {'id': 'ground', 'label': 'Ground', 'icon': 'land.png', 'unit': 'km2'},
+                {'id': 'ores', 'label': 'Ores', 'icon': 'ore2.png', 'unit': 'tonnes'},
+                {'id': 'water', 'label': 'Water', 'icon': 'water_drop.png', 'unit': 'L'},
+                {'id': 'oil', 'label': 'Oil', 'icon': 'oil.png', 'unit': 'L'},
+                {'id': 'gas', 'label': 'Gas', 'icon': 'gas.png', 'unit': 'L'},
+                {'id': 'pm25', 'label': 'PM2.5', 'icon': 'smoke.png', 'unit': 'µg/m3'}
+            ]
+
+        @staticmethod
+        def metrics_get_ids_list():
+            return [metric['id'] for metric in Processes.metrics_get_list()]
+
+    @app.route('/api/country/metrics', methods=['GET'])
+    @login_required
+    def get_flow():
+        metrics = Country.metrics()
+        return jsonify(metrics)
 
     @app.route('/api/country', methods=['POST','GET'])
     @auth_required

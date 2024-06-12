@@ -86,8 +86,8 @@ function countryResourcesSetup(prefix) {
         const resources = {};
         for(let metric of Processes.metricsGetIdsList()) {
             resources[metric] = {
-                amount: document.getElementById(`${prefix}-${metric}-amount`).value || 0,
-                renew_rate: document.getElementById(`${prefix}-${metric}-renew-rate`).value || 0
+                amount: parseInt(document.getElementById(`${prefix}-${metric}-amount`).value) || 0,
+                renew_rate: parseInt(document.getElementById(`${prefix}-${metric}-renew-rate`).value) || 0
             };
         }
         fetch('/api/country', {
