@@ -573,6 +573,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
         db.session.commit()
         return jsonify({'success': True})
+
     @app.route('/api/processes', methods=['GET'])
     @auth_required
     def get_processes():
