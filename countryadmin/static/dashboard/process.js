@@ -24,6 +24,19 @@ function processCompositionUpdate(process_id, compositionDiv) {
     };
     Processes.compositionUpdate(process_id, updatedComposition);
 }
+function addProcessCompositionGuess() {
+	const processTitle = document.getElementById("add-process-title");
+	const contextInput = document.getElementById("add-process-composition-guess-context");
+	/**
+	 * plain text describing country, etc contextInput.value
+	 * Depuis des informations comme le pays le type de process que l'on veut créer,
+	 * un guess de la composition est fait, par exemple "Administrer mon village x" va probablement
+	 * utiliser les mêmes processus que les autres sur les routes, la signalisation mais veut ajouter certains
+	 * process plus spécialement pour être au plus près du territoire
+	 */
+	console.warn("plain text describing country: " + contextInput.value + " for process '" + processTitle.value + "'");
+	addProcessAddComposition(id=1,amount=2);
+}
 function processCreateElement(allProcesses,process) {
 	const process_selected = 0 < process.amount;
 	const process_amount = process.amount;
@@ -179,22 +192,25 @@ function processCreateElement(allProcesses,process) {
 	});
 	return e;
 }
+function addProcessAddComposition(id='',amount='') {
+	const compositionContainer = document.getElementById('add-process-composition-container');
+	const compositionDiv = document.createElement('div');
+	compositionDiv.className = 'composition-process-group';
+	compositionDiv.innerHTML = `
+		<label>Process ID:</label>
+		<input type="number" name="composition-process-id" value=${id}>
+		<label> Amount:</label>
+		<input type="number" name="composition-process-amount" value=${amount}>
+	`;
+	compositionContainer.appendChild(compositionDiv);
+}
 function addProcessSetup() {
 	addProcessMetricsForm('input');
 	addProcessMetricsForm('output');
 
 	const addCompositionBtn = document.getElementById('add-process-add-composition');
 	addCompositionBtn.addEventListener('click', () => {
-		const compositionContainer = document.getElementById('add-process-composition-container');
-		const compositionDiv = document.createElement('div');
-		compositionDiv.className = 'composition-process-group';
-		compositionDiv.innerHTML = `
-			<label>Process ID:</label>
-			<input type="number" name="composition-process-id">
-			<label> Amount:</label>
-			<input type="number" name="composition-process-amount">
-		`;
-		compositionContainer.appendChild(compositionDiv);
+		addProcessAddComposition();
 	});
 }
 function addProcessMetricsForm(sens='input') {
