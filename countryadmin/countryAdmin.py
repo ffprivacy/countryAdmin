@@ -685,12 +685,13 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         
         @staticmethod
         def guard_daemon_loop():
-            while True:
-                guard = Guard.get()
-                for uri in guard.country_uris:
-                    print(f"Checking {uri} ...")
-                guard.checked_update()
-                time.sleep(60)
+            with app.app_context():
+                while True:
+                    guard = Guard.get()
+                    for uri in guard.country_uris:
+                        print(f"Checking {uri} ...")
+                    guard.checked_update()
+                    time.sleep(30)
 
         @staticmethod
         def guard_daemon():
@@ -927,6 +928,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         db.create_all()
         if not Country.query.first():
             set_country_data({'name': name, 'description': description})
+        Guard.guard_daemon()
 
     return app, db
 
