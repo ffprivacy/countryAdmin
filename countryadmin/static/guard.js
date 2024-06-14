@@ -7,13 +7,13 @@ document.getElementById('search-country').addEventListener('keyup', function() {
     });
 });
 
-let countryURIs = [];
+let guard = null;
 
-function fetchCountryList() {
+function fetchGuardState() {
     return fetch('/api/guard')
             .then(response => response.json())
             .then(data => {
-                countryURIs = data.country_uris;
+                guard = data;
             })
 }
 
@@ -37,7 +37,7 @@ document.getElementById('add-country-btn').addEventListener('click', function() 
 });
 
 function fetchCountries() {
-    fetchCountryList().then(data => {
+    fetchGuardState().then(data => {
         fetchCountryData();
     })
 }
@@ -47,7 +47,7 @@ document.getElementById('refresh-btn').addEventListener('click', function() {
 
 const fetchCountryData = async () => {
     let countryData = [];
-    for(let uri of countryURIs) {
+    for(let uri of guard.country_uris) {
         countryData.push(await fetch(`${uri}/api/country`, {
             method: 'GET',
             headers: {

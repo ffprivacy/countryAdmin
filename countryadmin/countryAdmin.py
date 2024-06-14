@@ -681,8 +681,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         @login_required
         @staticmethod
         def guard():
-            guard = Guard.get()
-            return render_template('guard.html', country_uris=guard.country_uris)
+            return render_template('guard.html')
         
         @staticmethod
         def guard_daemon_loop():
