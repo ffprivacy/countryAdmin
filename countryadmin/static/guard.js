@@ -7,31 +7,52 @@ document.getElementById('search-country').addEventListener('keyup', function() {
     });
 });
 
-const countryURIs = ["http://127.0.0.1:5000/api/country"];
+let countryURIs = [];
 
-// Event listener for adding a new country URI
+function fetchCountryList() {
+    return fetch('/api/guard')
+            .then(response => response.json())
+            .then(data => {
+                countryURIs = data.country_uris;
+            })
+}
+
 document.getElementById('add-country-btn').addEventListener('click', function() {
     const newUri = document.getElementById('new-country-uri').value.trim();
     if (newUri) {
-        countryURIs.push(newUri); // Add new URI to the list
-        document.getElementById('new-country-uri').value = ''; // Clear input field
-        fetchCountryData(); // Fetch all country data including the new URI
+        document.getElementById('new-country-uri').value = '';
+
+        fetch(`/api/guard/subscribe`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({
+				uri: newUri
+			})
+		}).then(response => {
+            fetchCountryList().then(data => {
+                fetchCountryData();
+            })
+        })
     }
 });
 
-// Event listener for manual refresh
 document.getElementById('refresh-btn').addEventListener('click', function() {
-    fetchCountryData(); // Re-fetch all country data
+    fetchCountryData();
 });
 
 const fetchCountryData = async () => {
-    const countryData = await Promise.all(countryURIs.map(uri => fetch(uri, {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer your_access_token'
-        }
-    }).then(response => response.json())));
+    let countryData = [];
+    for(let uri of countryURIs) {
+        countryData.append(await fetch(`${uri}/api/country`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer your_access_token'
+            }
+        }).then(response => response.json()));
+    }
 
     updateTable(countryData);
     updateCharts(countryData);
@@ -98,11 +119,15 @@ const updateCharts = (countryData) => {
         }
     });
 
-    updateGraph(countryData, 'tradeVolume'); // Assuming 'tradeVolume' is the default metric for the graph
+    updateGraph(countryData, 'tradeVolume');
 
 };
 
-document.addEventListener('DOMContentLoaded', fetchCountryData);
+document.addEventListener('DOMContentLoaded', () => {
+    fetchCountryList().then(data => {
+        fetchCountryData();
+    })
+});
 
 document.getElementById('metric-select').addEventListener('change', function() {
     const selectedMetric = this.value;

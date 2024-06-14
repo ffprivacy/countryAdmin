@@ -9,6 +9,7 @@ from datetime import datetime
 import requests
 from flask_cors import CORS
 import flask, json
+import threading, time
 
 DEFAULT_DB_NAME = "country"
 DEFAULT_PORT = 5000
@@ -406,6 +407,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         db.session.query(ProcessComment).delete()
         db.session.query(ProcessInteraction).delete()
         db.session.query(Trade).delete()
+        db.session.query(Guard).delete()
         db.session.commit()
         set_country_data({})
         return redirect(url_for('logout'))
@@ -627,10 +629,74 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         db.session.commit()
         return jsonify({'success': True}), 200
 
-    @app.route('/guard')
-    @login_required
-    def guard():
-        return render_template('guard.html')
+    class Guard(db.Model):
+        id = db.Column(db.Integer, primary_key=True)
+        country_uris = db.Column(db.JSON, default=[])
+        last_check_date = db.Column(db.DateTime, default=datetime.utcnow)
+
+        @staticmethod
+        def get():
+            guard = Guard.query.first()
+            if not guard:
+                guard = Guard()
+                db.session.add(guard)
+                db.session.commit()
+            return guard
+        
+        def checked_update(self):
+            self.last_check_date = datetime.utcnow()
+            db.session.commit()
+
+        @app.route('/api/guard/subscribe', methods=['POST'])
+        @login_required
+        @staticmethod
+        def guard_subsribe():
+            guard = Guard.get()
+            uris = request.json.get('uri')
+            
+            if not uris:
+                return jsonify({'error': 'Missing parameter "uri"'}), 400
+            
+            if not isinstance(uris,list):
+                uris = [uris]
+
+            oldURIs = guard.country_uris
+            guard.country_uris = []
+            guard.country_uris.extend(uris)
+            guard.country_uris.extend(oldURIs)
+            db.session.commit()
+            return {'success': True}
+
+        @app.route('/api/guard', methods=['GET'])
+        @login_required
+        @staticmethod
+        def guard_list():
+            guard = Guard.get()
+            return jsonify({
+                'country_uris': guard.country_uris,
+                'last_check_date': guard.last_check_date
+            })
+
+        @app.route('/guard')
+        @login_required
+        @staticmethod
+        def guard():
+            guard = Guard.get()
+            return render_template('guard.html', country_uris=guard.country_uris)
+        
+        @staticmethod
+        def guard_daemon_loop():
+            while True:
+                guard = Guard.get()
+                for uri in guard.country_uris:
+                    print(f"Checking {uri} ...")
+                guard.checked_update()
+                time.sleep(60)
+
+        @staticmethod
+        def guard_daemon():
+            thread = threading.Thread(target=Guard.guard_daemon_loop, daemon=True)
+            thread.start()
 
     @app.route('/login', methods=['GET', 'POST'])
     def login():
