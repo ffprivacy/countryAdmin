@@ -14,6 +14,7 @@ function fetchGuardState() {
             .then(response => response.json())
             .then(data => {
                 guard = data;
+                document.getElementById("guard-last-seen").innerText = data.last_check_date;
             })
 }
 

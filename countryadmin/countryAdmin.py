@@ -632,7 +632,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
     class Guard(db.Model):
         id = db.Column(db.Integer, primary_key=True)
         country_uris = db.Column(db.JSON, default=[])
-        last_check_date = db.Column(db.DateTime, default=datetime.utcnow)
+        last_check_date = db.Column(db.DateTime, default=datetime.now)
 
         @staticmethod
         def get():
@@ -644,7 +644,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             return guard
         
         def checked_update(self):
-            self.last_check_date = datetime.utcnow()
+            self.last_check_date = datetime.now()
             db.session.commit()
 
         @app.route('/api/guard/subscribe', methods=['POST'])
