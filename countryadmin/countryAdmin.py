@@ -13,8 +13,8 @@ import threading, time
 
 DEFAULT_DB_NAME = "country"
 DEFAULT_PORT = 5000
-DEFAULT_COUNTRY_NAME = None
-DEFAULT_COUNTRY_DESCRIPTION = None
+DEFAULT_COUNTRY_NAME = "Template name"
+DEFAULT_COUNTRY_DESCRIPTION = "Template description"
 
 def jsonify(data):
     def replace_special_floats(obj):
@@ -844,8 +844,8 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
             if not country:
                 return jsonify({
-                    'name': 'Default name',
-                    'description': 'Default description',
+                    'name': DEFAULT_COUNTRY_NAME,
+                    'description': DEFAULT_COUNTRY_DESCRIPTION,
                     'resources': {}
                 })
 
@@ -870,8 +870,8 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             if 'renew_rate' not in resource or resource['renew_rate'] is None:
                 resource['renew_rate'] = 0
 
-        country_name = data.get('name', 'Default Country')
-        country_description = data.get('description', 'No description provided')
+        country_name = data.get('name', DEFAULT_COUNTRY_NAME)
+        country_description = data.get('description', DEFAULT_COUNTRY_DESCRIPTION)
 
         country = Country.query.first()
         if not country:
