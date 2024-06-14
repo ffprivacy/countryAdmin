@@ -31,21 +31,24 @@ document.getElementById('add-country-btn').addEventListener('click', function() 
 				uri: newUri
 			})
 		}).then(response => {
-            fetchCountryList().then(data => {
-                fetchCountryData();
-            })
+            fetchCountries();
         })
     }
 });
 
+function fetchCountries() {
+    fetchCountryList().then(data => {
+        fetchCountryData();
+    })
+}
 document.getElementById('refresh-btn').addEventListener('click', function() {
-    fetchCountryData();
+    fetchCountries();
 });
 
 const fetchCountryData = async () => {
     let countryData = [];
     for(let uri of countryURIs) {
-        countryData.append(await fetch(`${uri}/api/country`, {
+        countryData.push(await fetch(`${uri}/api/country`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -56,7 +59,7 @@ const fetchCountryData = async () => {
 
     updateTable(countryData);
     updateCharts(countryData);
-};
+}
 
 const updateTable = (countryData) => {
     const tableBody = document.getElementById('country-table');
@@ -124,9 +127,7 @@ const updateCharts = (countryData) => {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-    fetchCountryList().then(data => {
-        fetchCountryData();
-    })
+    fetchCountries();
 });
 
 document.getElementById('metric-select').addEventListener('change', function() {
