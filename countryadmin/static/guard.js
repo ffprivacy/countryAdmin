@@ -22,7 +22,7 @@ function fetchGuardState() {
                 guardAlerts.innerHTML = '';
                 for(let alert of guard.alerts) {
                     let alertElement = document.createElement("div");
-                    alertElement.className = "guard-alert";
+                    alertElement.className = "guard-alert card card-body";
                     alertElement.innerHTML = `
                         <div class="guard-alert-title">${alert.title} - ${alert.time}</div>
                         <div class="guard-alert-description">${alert.description}</div>
