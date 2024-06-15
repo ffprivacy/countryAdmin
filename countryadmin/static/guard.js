@@ -14,6 +14,41 @@ function guardClearAlerts() {
         guardFrontRefresh()
     })
 }
+function clearPollutionDebt(uri, emissionEnv=90) {
+    const process = {
+        title: 'Propose country to absorbe its emissions',
+        description: 'Propose country to absorbe its emissions',
+        metrics: {
+            input: {
+                envEmissions: emissionEnv,
+                economic: 90
+            },
+            output: {
+                envEmissions: emissionEnv,
+                economic: 90
+            }
+        }
+    }
+    fetch('/api/set_process', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(process)
+    })
+    .then(response => response.json())
+    .then(response => {
+        const tradeData = {
+            to_country_uri: uri,
+            foreign_processes: response.processes,
+        };
+        fetch('/api/trade', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(tradeData)
+        })
+    })
+}
 function fetchGuardState() {
     return fetch('/api/guard')
             .then(response => response.json())
@@ -29,6 +64,11 @@ function fetchGuardState() {
                         <div class="guard-alert-title">${alert.title} - ${alert.time}</div>
                         <div class="guard-alert-description">${alert.description}</div>
                     `;
+                    if ( alert.title.match("pollution") ) {
+                        alertElement.innerHTML += `
+                            <button onclick="clearPollutionDebt('${alert.country}')" class="btn btn-primary mt-2">Clear the debt</div>
+                        `;
+                    }
                     guardAlerts.appendChild(alertElement);
                 }
             })

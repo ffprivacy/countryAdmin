@@ -298,7 +298,7 @@ function submitTrade() {
 
     homeProcessIds.forEach((input, index) => {
         tradeData.home_processes.push({
-            process_id: parseInt(input.value),
+            id: parseInt(input.value),
             amount: parseInt(homeAmounts[index].value)
         });
     });
@@ -368,7 +368,7 @@ function renderTrade(trade) {
 }
 function renderTradeForeignProcesses(trade) {
 	const container = document.getElementById(`trade-${trade.id}-foreign-processes`);
-    container.innerHTML = trade.foreign_processes.map(p => generateForeignProcessInput(trade.id,p.process_id,p.amount)).join('');
+    container.innerHTML = trade.foreign_processes.map(p => generateForeignProcessInput(trade.id,p.id,p.amount)).join('');
 }
 function generateForeignProcessInput(tradeId,process_id='',process_amount=1) {
 	const uniqueId = `trade-${tradeId}-foreign-${Math.random()}${Math.random()}${Math.random()}${Math.random()}`;
@@ -382,7 +382,7 @@ function generateForeignProcessInput(tradeId,process_id='',process_amount=1) {
 }
 function renderTradeHomeProcesses(trade) {
     const container = document.getElementById(`trade-${trade.id}-home-processes`);
-    container.innerHTML = trade.home_processes.map(p => generateHomeProcessInput(trade.id,p.process_id,p.amount,trade.home_confirm)).join('');
+    container.innerHTML = trade.home_processes.map(p => generateHomeProcessInput(trade.id,p.id,p.amount,trade.home_confirm)).join('');
 }
 function tradeHomeAddProcess(tradeId) {
     const homeTradesContainer = document.getElementById(`trade-${tradeId}-home-processes`);

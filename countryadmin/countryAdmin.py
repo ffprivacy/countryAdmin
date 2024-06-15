@@ -250,15 +250,15 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             return jsonify({'error': 'Home country not found'}), 404
         
         data = request.get_json()
-        if not data or 'home_processes' not in data or 'to_country_uri' not in data:
+        if 'to_country_uri' not in data:
             return jsonify({'success': False, 'error': 'Incomplete data provided'}), 400
 
         try:
             trade = Trade(
                 home_country_id=country.id,
                 to_country_uri=data['to_country_uri'],
-                home_processes=data['home_processes'],
-                foreign_processes=[]
+                home_processes=data.get('home_processes', []),
+                foreign_processes=data.get('foreign_processes', [])
             )
             db.session.add(trade)
             db.session.commit()
@@ -369,14 +369,14 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             for trade in trades:
                 for home_process in trade.home_processes:
                     for metric in Processes.metrics_get_ids_list():
-                        flow['output'][metric] -= Processes.retrieve_metric(processes, Processes.get_by_id(processes, home_process['process_id']), 'output', metric) * home_process['amount']
+                        flow['output'][metric] -= Processes.retrieve_metric(processes, Processes.get_by_id(processes, home_process['id']), 'output', metric) * home_process['amount']
                 
                 response = requests.get(f"{trade.to_country_uri}/api/processes")
                 response.raise_for_status()
                 foreign_processes = response.json()
                 for foreign_trade_process in trade.foreign_processes:
                     for metric in Processes.metrics_get_ids_list():
-                        flow['output'][metric] += Processes.retrieve_metric(foreign_processes, Processes.get_by_id(foreign_processes, foreign_trade_process['process_id']), 'output', metric) * foreign_trade_process['amount']
+                        flow['output'][metric] += Processes.retrieve_metric(foreign_processes, Processes.get_by_id(foreign_processes, foreign_trade_process['id']), 'output', metric) * foreign_trade_process['amount']
             
             resources_depletion = {}
             for metric in Processes.metrics_get_ids_list():
@@ -520,6 +520,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         if isinstance(data, dict):
             data = [data]
 
+        response_processes = []
         for process_data in data:
             id = process_data.get('id')
             if id is not None:
@@ -573,9 +574,10 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                     db.session.add(new_composition)
                 else:
                     return jsonify({'error': 'Wrong missing keys in composition'}), 400
+            response_processes.append(process_wrap_for_response(new_process))
 
         db.session.commit()
-        return jsonify({'success': True})
+        return jsonify({'success': True, 'processes': response_processes})
 
     @app.route('/api/processes', methods=['GET'])
     @auth_required
@@ -739,6 +741,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                             # Si il n'y a pas d'échanges avec d'autres pays l'alerte ne devrait pas être utilisée
                             guard.alerts.append({
                                 'title': 'Monopole detecté',
+                                'country': f"{processOffer['uri']}",
                                 'description': f"De la part de {processOffer['uri']} sur {processOffer['id']}",
                                 'time': f"{datetime.now()}"
                             })
@@ -755,6 +758,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                                         if sell_price < price:
                                             guard.alerts.append({
                                                 'title': 'Potentiel situation de vente à perte détectée',
+                                                'country': f"{processOffer['uri']}",
                                                 'description': f"De la part de {processOffer['uri']} sur {processOffer['id']} proposed price {sell_price} on previous {price}",
                                                 'time': f"{datetime.now()}"
                                             })
@@ -765,6 +769,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                         if random.random() <= 0.1:
                             guard.alerts.append({
                                 'title': 'Overpollution',
+                                'country': f"{processOffer['uri']}",
                                 'description': f"De la part de {processOffer['uri']} Pays eméttant plus de CO2 que ce que sa capacité d'absorption",
                                 'time': f"{datetime.now()}"
                             })
@@ -774,6 +779,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                         if random.random() <= 0.1:
                             guard.alerts.append({
                                 'title': 'Injustice social',
+                                'country': f"{processOffer['uri']}",
                                 'description': f"{processOffer['uri']} induit de la misère sociale via ses imports",
                                 'time': f"{datetime.now()}"
                             })
