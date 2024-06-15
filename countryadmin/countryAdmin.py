@@ -198,7 +198,10 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
     def tradeRemoteDelete(trade):
         if trade.to_country_trade_id:
             response = requests.delete(f"{trade.to_country_uri}/api/trade/${trade.id}")
-            return jsonify(response.json())
+            if response.status_code == 404:
+                return jsonify({'success': True, 'message': 'Remote seem already deleted'}), 200
+            else:
+                return jsonify(response.json())
         else:
             return jsonify({'success': True, 'message': 'No foreign trade to delete'}), 200
         
