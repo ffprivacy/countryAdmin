@@ -633,6 +633,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         id = db.Column(db.Integer, primary_key=True)
         country_uris = db.Column(db.JSON, default=[])
         last_check_date = db.Column(db.DateTime, default=datetime.now)
+        alerts = db.Column(db.JSON, default=[])
 
         @staticmethod
         def get():
@@ -647,6 +648,15 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             self.last_check_date = datetime.now()
             db.session.commit()
 
+        @app.route('/api/guard/alerts/clear')
+        @login_required
+        @staticmethod
+        def guard_alert_clear():
+            guard = Guard.get()
+            guard.alerts = []
+            db.session.commit()
+            return {'success': True}
+    
         @app.route('/api/guard/subscribe', methods=['POST'])
         @login_required
         @staticmethod
@@ -674,7 +684,8 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             guard = Guard.get()
             return jsonify({
                 'country_uris': guard.country_uris,
-                'last_check_date': guard.last_check_date
+                'last_check_date': guard.last_check_date,
+                'alerts': guard.alerts
             })
 
         @app.route('/guard')
@@ -688,9 +699,18 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             with app.app_context():
                 while True:
                     guard = Guard.get()
+                    oldAlerts = guard.alerts
+                    guard.alerts = []
                     for uri in guard.country_uris:
                         print(f"Checking {uri} ...")
+                        guard.alerts.append({
+                            'title': 'generic alert',
+                            'description': f"Checking {uri} ...",
+                            'time': f"{datetime.now()}"
+                        })
+                    guard.alerts.extend(oldAlerts)
                     guard.checked_update()
+                    db.session.commit()
                     time.sleep(30)
 
         @staticmethod

@@ -9,12 +9,26 @@ document.getElementById('search-country').addEventListener('keyup', function() {
 
 let guard = null;
 
+function guardClearAlerts() {
+    fetch('/api/guard/alerts/clear')
+}
 function fetchGuardState() {
     return fetch('/api/guard')
             .then(response => response.json())
             .then(data => {
                 guard = data;
                 document.getElementById("guard-last-seen").innerText = data.last_check_date;
+                let guardAlerts = document.getElementById("guard-alerts");
+                guardAlerts.innerHTML = '';
+                for(let alert of guard.alerts) {
+                    let alertElement = document.createElement("div");
+                    alertElement.className = "guard-alert";
+                    alertElement.innerHTML = `
+                        <div class="guard-alert-title">${alert.title} - ${alert.time}</div>
+                        <div class="guard-alert-description">${alert.description}</div>
+                    `;
+                    guardAlerts.appendChild(alertElement);
+                }
             })
 }
 
