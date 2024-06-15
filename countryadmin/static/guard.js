@@ -10,7 +10,9 @@ document.getElementById('search-country').addEventListener('keyup', function() {
 let guard = null;
 
 function guardClearAlerts() {
-    fetch('/api/guard/alerts/clear')
+    fetch('/api/guard/alerts/clear').then(response => {
+        guardFrontRefresh()
+    })
 }
 function fetchGuardState() {
     return fetch('/api/guard')
@@ -46,18 +48,18 @@ document.getElementById('add-country-btn').addEventListener('click', function() 
 				uri: newUri
 			})
 		}).then(response => {
-            fetchCountries();
+            guardFrontRefresh();
         })
     }
 });
 
-function fetchCountries() {
+function guardFrontRefresh() {
     fetchGuardState().then(data => {
         fetchCountryData();
     })
 }
 document.getElementById('refresh-btn').addEventListener('click', function() {
-    fetchCountries();
+    guardFrontRefresh();
 });
 
 const fetchCountryData = async () => {
@@ -142,7 +144,7 @@ const updateCharts = (countryData) => {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-    fetchCountries();
+    guardFrontRefresh();
 });
 
 document.getElementById('metric-select').addEventListener('change', function() {
