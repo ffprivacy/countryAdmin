@@ -10,6 +10,7 @@ import requests
 from flask_cors import CORS
 import flask, json
 import threading, time
+import random
 
 DEFAULT_DB_NAME = "country"
 DEFAULT_PORT = 5000
@@ -701,13 +702,80 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                     guard = Guard.get()
                     oldAlerts = guard.alerts
                     guard.alerts = []
+
+                    countries = []
                     for uri in guard.country_uris:
-                        print(f"Checking {uri} ...")
+                        response = requests.get(f"{uri}/api/country")
+                        response.raise_for_status()
+                        country = response.json()
+
+                        response = requests.get(f"{uri}/api/processes")
+                        response.raise_for_status()
+                        processes = response.json()
+
+                        countries.append({
+                            'uri': uri,
+                            'country': country,
+                            'processes': processes
+                        })
+
+                    # Ici on devrait déjà identifier les processus similaires dans un premier temps
+                    # exemple en comparant les input/ouput des process, + title desc
+                    # pour l'instant on utilise des ids (qui ne sont potentiellement pas les mêmes)
+                    processesOffers = {}
+                    for country in countries:
+                        for process_usage in country['country']['processes']:
+                            id = process_usage['id']
+                            processOffer = processesOffers.get(id, {
+                                'uri': country['uri'], 'count': 0, 'id': id
+                            })
+                            processOffer['count'] += 1;
+                    
+                    for processOffer in processesOffers:
+                        if processOffer['count'] == 1:
+                            # Une situation potentielle de monopole
+                            # Si il n'y a pas d'échanges avec d'autres pays l'alerte ne devrait pas être utilisée
+                            guard.alerts.append({
+                                'title': 'Monopole detecté',
+                                'description': f"De la part de {processOffer['uri']} sur {processOffer['id']}",
+                                'time': f"{datetime.now()}"
+                            })
+                        else:
+                            # Dans l'idéal estimer à quel point deux processus sont différents ou similaires
+                            # En regardant la composition de ces derniers (input/output)
+                            # Et on devrait regarder uniquement les processus impliqué dans des échanges (même indirecte)
+                            process_id = processOffer['id']
+                            price = -1
+                            for country in countries:
+                                for process in country['processes']:
+                                    if process.id == process_id:
+                                        sell_price = process.metrics['input'].get('economic', 0) - process.metrics['output'].get('economic', 0)
+                                        if sell_price < price:
+                                            guard.alerts.append({
+                                                'title': 'Potentiel situation de vente à perte détectée',
+                                                'description': f"De la part de {processOffer['uri']} sur {processOffer['id']} proposed price {sell_price} on previous {price}",
+                                                'time': f"{datetime.now()}"
+                                            })
+
+                    # Environmental check
+                    # Cette alerte n'est pas gênante tant que les autres pays sont d'accords et absorbent le CO2 du pays.
+                    #   Emissions + emissions importées
+                    if random.random() <= 0.1:
                         guard.alerts.append({
-                            'title': 'generic alert',
-                            'description': f"Checking {uri} ...",
+                            'title': 'Overpollution',
+                            'description': f"De la part de {processOffer['uri']} Pays eméttant plus de CO2 que ce que sa capacité d'absorption",
                             'time': f"{datetime.now()}"
                         })
+
+                    # Définit comme la valeur de sociale entre les bénéficiaires de tous les processus du pays cible (bénéficiaires de impors)
+                    # versus la valeur sociale du pays d'échange (d'ou on importe)
+                    if random.random() <= 0.1:
+                        guard.alerts.append({
+                            'title': 'Injustice social',
+                            'description': f"{processOffer['uri']} induit de la misère sociale via ses imports",
+                            'time': f"{datetime.now()}"
+                        })
+
                     guard.alerts.extend(oldAlerts)
                     guard.checked_update()
                     db.session.commit()
