@@ -146,7 +146,7 @@ function getTradeDetails(type, tradeId) {
     const tradeProcesses = document.querySelectorAll(`#trade-${tradeId}-${type}-processes > .trade-${tradeId}-${type}-process`);
     tradeProcesses.forEach(tradeProcess => {
         details.push({
-            process_id: parseInt(tradeProcess.querySelector(`#process-id`).value), 
+            id: parseInt(tradeProcess.querySelector(`#process-id`).value), 
             amount: parseInt(tradeProcess.querySelector(`#process-amount`).value)
         });
     });

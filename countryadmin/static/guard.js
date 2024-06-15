@@ -29,7 +29,7 @@ function clearPollutionDebt(uri, emissionEnv=90) {
             }
         }
     }
-    fetch('/api/set_process', {
+    fetch(`${uri}/api/set_process`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(process)

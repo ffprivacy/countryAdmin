@@ -211,7 +211,8 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
         data = request.get_json()
 
-        data['foreign_processes'] = data['home_processes']        
+        home_processes = data['foreign_processes']
+        foreign_processes = data['home_processes']        
         data['foreign_confirm'] = data['home_confirm']
 
         to_country_trade_id = data['id']
@@ -220,14 +221,15 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
         if trade:
             trade.to_country_trade_id=to_country_trade_id
-            trade.foreign_processes = data['foreign_processes']
+            trade.foreign_processes = foreign_processes
             trade.foreign_confirm = data['foreign_confirm']
+            trade.home_processes = home_processes
         else:
             new_trade = Trade(
                 home_country_id=country.id,
                 to_country_uri=to_country_uri,
-                home_processes=[],
-                foreign_processes=data['foreign_processes'],
+                home_processes=home_processes,
+                foreign_processes=foreign_processes,
                 to_country_trade_id=to_country_trade_id,
                 foreign_confirm=data['foreign_confirm']
             )
@@ -282,8 +284,6 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                     trade.to_country_uri = data['to_country_uri']
                 if 'home_processes' in data:
                     trade.home_processes = data['home_processes']
-                if 'foreign_processes' in data:
-                    return jsonify({'success': False, 'error': 'This is reserved to the other side'}), 400
                 if 'foreign_confirm' in data:
                     return jsonify({'success': False, 'error': 'This is reserved to the other side'}), 400
                 if 'home_confirm' in data:
@@ -369,14 +369,16 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             for trade in trades:
                 for home_process in trade.home_processes:
                     for metric in Processes.metrics_get_ids_list():
-                        flow['output'][metric] -= Processes.retrieve_metric(processes, Processes.get_by_id(processes, home_process['id']), 'output', metric) * home_process['amount']
+                        if 'id' in home_process and 'amount' in home_process:
+                            flow['output'][metric] -= Processes.retrieve_metric(processes, Processes.get_by_id(processes, home_process['id']), 'output', metric) * home_process['amount']
                 
                 response = requests.get(f"{trade.to_country_uri}/api/processes")
                 response.raise_for_status()
                 foreign_processes = response.json()
                 for foreign_trade_process in trade.foreign_processes:
                     for metric in Processes.metrics_get_ids_list():
-                        flow['output'][metric] += Processes.retrieve_metric(foreign_processes, Processes.get_by_id(foreign_processes, foreign_trade_process['id']), 'output', metric) * foreign_trade_process['amount']
+                        if 'id' in foreign_trade_process and 'amount' in foreign_trade_process:
+                            flow['output'][metric] += Processes.retrieve_metric(foreign_processes, Processes.get_by_id(foreign_processes, foreign_trade_process['id']), 'output', metric) * foreign_trade_process['amount']
             
             resources_depletion = {}
             for metric in Processes.metrics_get_ids_list():
