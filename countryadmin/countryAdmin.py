@@ -730,8 +730,10 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                                 'uri': country['uri'], 'count': 0, 'id': id
                             })
                             processOffer['count'] += 1;
+                            processesOffers[id] = processOffer
                     
-                    for processOffer in processesOffers:
+                    for processOfferId in processesOffers:
+                        processOffer = processesOffers[processOfferId]
                         if processOffer['count'] == 1:
                             # Une situation potentielle de monopole
                             # Si il n'y a pas d'échanges avec d'autres pays l'alerte ne devrait pas être utilisée
@@ -757,24 +759,24 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                                                 'time': f"{datetime.now()}"
                                             })
 
-                    # Environmental check
-                    # Cette alerte n'est pas gênante tant que les autres pays sont d'accords et absorbent le CO2 du pays.
-                    #   Emissions + emissions importées
-                    if random.random() <= 0.1:
-                        guard.alerts.append({
-                            'title': 'Overpollution',
-                            'description': f"De la part de {processOffer['uri']} Pays eméttant plus de CO2 que ce que sa capacité d'absorption",
-                            'time': f"{datetime.now()}"
-                        })
+                        # Environmental check
+                        # Cette alerte n'est pas gênante tant que les autres pays sont d'accords et absorbent le CO2 du pays.
+                        #   Emissions + emissions importées
+                        if random.random() <= 0.1:
+                            guard.alerts.append({
+                                'title': 'Overpollution',
+                                'description': f"De la part de {processOffer['uri']} Pays eméttant plus de CO2 que ce que sa capacité d'absorption",
+                                'time': f"{datetime.now()}"
+                            })
 
-                    # Définit comme la valeur de sociale entre les bénéficiaires de tous les processus du pays cible (bénéficiaires de impors)
-                    # versus la valeur sociale du pays d'échange (d'ou on importe)
-                    if random.random() <= 0.1:
-                        guard.alerts.append({
-                            'title': 'Injustice social',
-                            'description': f"{processOffer['uri']} induit de la misère sociale via ses imports",
-                            'time': f"{datetime.now()}"
-                        })
+                        # Définit comme la valeur de sociale entre les bénéficiaires de tous les processus du pays cible (bénéficiaires de impors)
+                        # versus la valeur sociale du pays d'échange (d'ou on importe)
+                        if random.random() <= 0.1:
+                            guard.alerts.append({
+                                'title': 'Injustice social',
+                                'description': f"{processOffer['uri']} induit de la misère sociale via ses imports",
+                                'time': f"{datetime.now()}"
+                            })
 
                     guard.alerts.extend(oldAlerts)
                     guard.checked_update()
