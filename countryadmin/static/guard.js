@@ -14,7 +14,7 @@ function guardClearAlerts() {
         guardFrontRefresh()
     })
 }
-function clearPollutionDebt(uri, emissionEnv=90) {
+function clearPollutionDebt(alert_id, uri, emissionEnv=90) {
     const process = {
         title: 'Propose country to absorbe its emissions',
         description: 'Propose country to absorbe its emissions',
@@ -46,6 +46,9 @@ function clearPollutionDebt(uri, emissionEnv=90) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(tradeData)
+        }).then(response => {
+            fetch(`/api/guard/alert/${alert_id}`, {method: 'DELETE'})
+            guardFrontRefresh()
         })
     })
 }
@@ -71,7 +74,7 @@ function fetchGuardState() {
                             console.warn("no amount provided");
                         } else {
                             alertElement.innerHTML += `
-                                <button onclick="clearPollutionDebt('${alert.country}',${amount})" class="btn btn-primary mt-2">Clear the debt</div>
+                                <button onclick="clearPollutionDebt(${alert.id},'${alert.country}',${amount})" class="btn btn-primary mt-2">Clear the debt</div>
                             `;
                         }
                     }

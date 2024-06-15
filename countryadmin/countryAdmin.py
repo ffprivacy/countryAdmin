@@ -671,12 +671,22 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             db.session.commit()
 
         @app.route('/api/guard/alerts/clear')
-        @login_required
+        @auth_required
+        @staticmethod
         def guard_alert_delete():
             guard = Guard.get()
             GuardAlert.query.filter(GuardAlert.guard_id == guard.id).delete()
             db.session.commit()
             return {'success': True}
+        
+        @staticmethod
+        @app.route('/api/guard/alert/<int:alert_id>', methods=['DELETE'])
+        @auth_required
+        def guard_alert_manage(alert_id):
+            if request.method == 'DELETE':
+                GuardAlert.query.filter(GuardAlert.id == alert_id).delete()
+                db.session.commit()
+                return {'success': True}
 
         @app.route('/api/guard/subscribe', methods=['POST'])
         @login_required
@@ -811,7 +821,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
                     guard.checked_update()
                     db.session.commit()
-                    time.sleep(1)
+                    time.sleep(30)
 
         @staticmethod
         def guard_daemon():
