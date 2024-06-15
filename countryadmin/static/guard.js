@@ -65,9 +65,15 @@ function fetchGuardState() {
                         <div class="guard-alert-description">${alert.description}</div>
                     `;
                     if ( alert.title.match("pollution") ) {
-                        alertElement.innerHTML += `
-                            <button onclick="clearPollutionDebt('${alert.country}')" class="btn btn-primary mt-2">Clear the debt</div>
-                        `;
+                        const match = alert.description.match(/amount=(\d+)/);
+                        const amount = match ? parseInt(match[1]) : null;
+                        if (amount == null) {
+                            console.warn("no amount provided");
+                        } else {
+                            alertElement.innerHTML += `
+                                <button onclick="clearPollutionDebt('${alert.country}',${amount})" class="btn btn-primary mt-2">Clear the debt</div>
+                            `;
+                        }
                     }
                     guardAlerts.appendChild(alertElement);
                 }

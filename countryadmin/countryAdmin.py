@@ -717,10 +717,15 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                         response.raise_for_status()
                         processes = response.json()
 
+                        response = requests.get(f"{uri}/api/country/metrics")
+                        response.raise_for_status()
+                        metrics = response.json()
+
                         countries.append({
                             'uri': uri,
                             'country': country,
-                            'processes': processes
+                            'processes': processes,
+                            'metrics': metrics
                         })
 
                     # Ici on devrait déjà identifier les processus similaires dans un premier temps
@@ -765,17 +770,6 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                                                 'time': f"{datetime.now()}"
                                             })
 
-                        # Environmental check
-                        # Cette alerte n'est pas gênante tant que les autres pays sont d'accords et absorbent le CO2 du pays.
-                        #   Emissions + emissions importées
-                        if random.random() <= 0.1:
-                            guard.alerts.append({
-                                'title': 'Overpollution',
-                                'country': f"{processOffer['uri']}",
-                                'description': f"De la part de {processOffer['uri']} Pays eméttant plus de CO2 que ce que sa capacité d'absorption",
-                                'time': f"{datetime.now()}"
-                            })
-
                         # Définit comme la valeur de sociale entre les bénéficiaires de tous les processus du pays cible (bénéficiaires de impors)
                         # versus la valeur sociale du pays d'échange (d'ou on importe)
                         if random.random() <= 0.1:
@@ -783,6 +777,17 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                                 'title': 'Injustice social',
                                 'country': f"{processOffer['uri']}",
                                 'description': f"{processOffer['uri']} induit de la misère sociale via ses imports",
+                                'time': f"{datetime.now()}"
+                            })
+
+                    for country in countries:
+                        envEmissionsNet = country['metrics']['flow']['output']['envEmissions'] - country['metrics']['flow']['input']['envEmissions']
+                        atmosphereFill = country['country']['resources']['envEmissions']['amount'] - envEmissionsNet
+                        if atmosphereFill < 0:
+                            guard.alerts.append({
+                                'title': 'Overpollution',
+                                'country': f"{processOffer['uri']}",
+                                'description': f"Pays eméttant plus de CO2 que ce que sa capacité d'absorption amount={abs(atmosphereFill)}",
                                 'time': f"{datetime.now()}"
                             })
 
@@ -926,7 +931,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             return [metric['id'] for metric in Processes.metrics_get_list()]
 
     @app.route('/api/country/metrics', methods=['GET'])
-    @login_required
+    @auth_required
     def get_flow():
         metrics = Country.metrics()
         return jsonify(metrics)
