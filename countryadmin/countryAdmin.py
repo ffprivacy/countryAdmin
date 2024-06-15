@@ -811,7 +811,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
                     for country in countries:
                         envEmissionsNet = country['metrics']['flow']['output']['envEmissions'] - country['metrics']['flow']['input']['envEmissions']
-                        atmosphereFill = country['country']['resources'].get('envEmissions',{'amount': 0})['amount'] - envEmissionsNet
+                        atmosphereFill = country['country']['resources'].get('envEmissions',{'amount': 0})['amount'] * (1 + country['country']['resources'].get('envEmissions',{'renew_rate': 0})['renew_rate']) - envEmissionsNet
                         if atmosphereFill < 0:
                             db.session.add(GuardAlert( 
                                 title="Overpollution",
