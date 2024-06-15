@@ -750,8 +750,8 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                             price = -1
                             for country in countries:
                                 for process in country['processes']:
-                                    if process.id == process_id:
-                                        sell_price = process.metrics['input'].get('economic', 0) - process.metrics['output'].get('economic', 0)
+                                    if process['id'] == process_id:
+                                        sell_price = process['metrics']['input'].get('economic', 0) - process['metrics']['output'].get('economic', 0)
                                         if sell_price < price:
                                             guard.alerts.append({
                                                 'title': 'Potentiel situation de vente à perte détectée',
