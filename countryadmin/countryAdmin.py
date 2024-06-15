@@ -411,6 +411,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         db.session.query(ProcessInteraction).delete()
         db.session.query(Trade).delete()
         db.session.query(Guard).delete()
+        db.session.query(GuardAlert).delete()
         db.session.commit()
         set_country_data({})
         return redirect(url_for('logout'))
@@ -634,11 +635,24 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         db.session.commit()
         return jsonify({'success': True}), 200
 
+
+
+    def guard_get_id():
+        return Guard.get().id
+
+    class GuardAlert(db.Model):
+        id = db.Column(db.Integer, primary_key=True)
+        guard_id = db.Column(db.Integer, db.ForeignKey('guard.id'), default=guard_get_id)
+        title = db.Column(db.String)
+        description = db.Column(db.String)
+        time = db.Column(db.DateTime, default=datetime.now)
+        country = db.Column(db.String)
+
     class Guard(db.Model):
         id = db.Column(db.Integer, primary_key=True)
         country_uris = db.Column(db.JSON, default=[])
         last_check_date = db.Column(db.DateTime, default=datetime.now)
-        alerts = db.Column(db.JSON, default=[])
+        alerts = db.relationship('GuardAlert', backref='guard', lazy=True)
 
         @staticmethod
         def get():
@@ -655,13 +669,12 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
         @app.route('/api/guard/alerts/clear')
         @login_required
-        @staticmethod
-        def guard_alert_clear():
+        def guard_alert_delete():
             guard = Guard.get()
-            guard.alerts = []
+            GuardAlert.query.filter(GuardAlert.guard_id == guard.id).delete()
             db.session.commit()
             return {'success': True}
-    
+
         @app.route('/api/guard/subscribe', methods=['POST'])
         @login_required
         @staticmethod
@@ -687,10 +700,19 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         @staticmethod
         def guard_list():
             guard = Guard.get()
+            alerts = []
+            for alert in guard.alerts:
+                alerts.append({
+                    'id': alert.id,
+                    'title': alert.title,
+                    'description': alert.description,
+                    'country': alert.country,
+                    'time': alert.time
+                })
             return jsonify({
                 'country_uris': guard.country_uris,
                 'last_check_date': guard.last_check_date,
-                'alerts': guard.alerts
+                'alerts': alerts
             })
 
         @app.route('/guard')
@@ -704,9 +726,6 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             with app.app_context():
                 while True:
                     guard = Guard.get()
-                    oldAlerts = guard.alerts
-                    guard.alerts = []
-
                     countries = []
                     for uri in guard.country_uris:
                         response = requests.get(f"{uri}/api/country")
@@ -746,12 +765,11 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                         if processOffer['count'] == 1:
                             # Une situation potentielle de monopole
                             # Si il n'y a pas d'échanges avec d'autres pays l'alerte ne devrait pas être utilisée
-                            guard.alerts.append({
-                                'title': 'Monopole detecté',
-                                'country': f"{processOffer['uri']}",
-                                'description': f"De la part de {processOffer['uri']} sur {processOffer['id']}",
-                                'time': f"{datetime.now()}"
-                            })
+                            db.session.add(GuardAlert( 
+                                title="Monopole detecté",
+                                country=f"{processOffer['uri']}",
+                                description=f"De la part de {processOffer['uri']} sur {processOffer['id']}"
+                            ))
                         else:
                             # Dans l'idéal estimer à quel point deux processus sont différents ou similaires
                             # En regardant la composition de ces derniers (input/output)
@@ -763,38 +781,34 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                                     if process['id'] == process_id:
                                         sell_price = process['metrics']['input'].get('economic', 0) - process['metrics']['output'].get('economic', 0)
                                         if sell_price < price:
-                                            guard.alerts.append({
-                                                'title': 'Potentiel situation de vente à perte détectée',
-                                                'country': f"{processOffer['uri']}",
-                                                'description': f"De la part de {processOffer['uri']} sur {processOffer['id']} proposed price {sell_price} on previous {price}",
-                                                'time': f"{datetime.now()}"
-                                            })
+                                            db.session.add(GuardAlert( 
+                                                title="Potentiel situation de vente à perte détectée",
+                                                country=f"{processOffer['uri']}",
+                                                description=f"sur {processOffer['id']} proposed price {sell_price} on previous {price}"
+                                            ))
 
                         # Définit comme la valeur de sociale entre les bénéficiaires de tous les processus du pays cible (bénéficiaires de impors)
                         # versus la valeur sociale du pays d'échange (d'ou on importe)
                         if random.random() <= 0.1:
-                            guard.alerts.append({
-                                'title': 'Injustice social',
-                                'country': f"{processOffer['uri']}",
-                                'description': f"{processOffer['uri']} induit de la misère sociale via ses imports",
-                                'time': f"{datetime.now()}"
-                            })
+                            db.session.add(GuardAlert( 
+                                title="Injustice social",
+                                country=f"{processOffer['uri']}",
+                                description=f"{processOffer['uri']} induit de la misère sociale via ses imports"
+                            ))
 
                     for country in countries:
                         envEmissionsNet = country['metrics']['flow']['output']['envEmissions'] - country['metrics']['flow']['input']['envEmissions']
-                        atmosphereFill = country['country']['resources']['envEmissions']['amount'] - envEmissionsNet
+                        atmosphereFill = country['country']['resources'].get('envEmissions',{'amount': 0})['amount'] - envEmissionsNet
                         if atmosphereFill < 0:
-                            guard.alerts.append({
-                                'title': 'Overpollution',
-                                'country': f"{processOffer['uri']}",
-                                'description': f"Pays eméttant plus de CO2 que ce que sa capacité d'absorption amount={abs(atmosphereFill)}",
-                                'time': f"{datetime.now()}"
-                            })
+                            db.session.add(GuardAlert( 
+                                title="Overpollution",
+                                country=f"{processOffer['uri']}",
+                                description=f"Pays eméttant plus de CO2 que ce que sa capacité d'absorption amount={abs(atmosphereFill)}"
+                            ))
 
-                    guard.alerts.extend(oldAlerts)
                     guard.checked_update()
                     db.session.commit()
-                    time.sleep(30)
+                    time.sleep(1)
 
         @staticmethod
         def guard_daemon():
@@ -812,7 +826,6 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                     session['user_id'] = user.id
                     return redirect(url_for('dashboard'))
             else:
-                # Create new user if not in database
                 new_user = User(username=username)
                 new_user.set_password(password)
                 db.session.add(new_user)
