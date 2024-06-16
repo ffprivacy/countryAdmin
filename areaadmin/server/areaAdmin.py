@@ -69,7 +69,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
         @staticmethod
         def get_usage(process):
-            area = Area.get_main()
+            area = MainArea.get()
             if not area:
                 return jsonify({'error': 'Area not found'}), 404
             process_usage = next((pu for pu in process.usages if pu.area_id == area.id), None)
@@ -168,7 +168,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
     @app.route('/api/trade/receive', methods=['POST'])
     @auth_required
     def trade_receive():
-        area = Area.get_main()
+        area = MainArea.get()
         if not area:
             return jsonify({'error': 'Area not found'}), 404
 
@@ -210,7 +210,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
     @app.route('/api/trade', methods=['POST'])
     @auth_required
     def initiate_trade():
-        area = Area.get_main()
+        area = MainArea.get()
         if not area:
             return jsonify({'error': 'Home area not found'}), 404
         
@@ -272,7 +272,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
     @app.route('/api/trades', methods=['GET'])
     @auth_required
     def get_trades():
-        area = Area.get_main()
+        area = MainArea.get()
         if not area:
             return jsonify({'error': 'Area not found'}), 404
 
@@ -329,10 +329,6 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
             db.session.commit()
             return {'success': True}
-        
-        @staticmethod
-        def get_main():
-            return Area.query.first()
 
         def get_time_to_depletion(self, metric, usage_balance):
             resource_amount = self.resources[metric]['amount']
@@ -426,15 +422,6 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 return jsonify(metrics)
             else:
                 return jsonify({'error': 'Area not found'}), 404
-
-        @app.route('/api/area/metrics', methods=['GET'])
-        @auth_required
-        @staticmethod
-        def get_flow():
-            area = Area.get_main()
-            if not area:
-                return jsonify({'error': 'Area not found'}), 404
-            return Area.area_metrics(area.id)
         
         @app.route('/api/areas', methods=['GET'])
         @auth_required
@@ -468,7 +455,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         @auth_required
         @staticmethod
         def handle_area():
-            area = Area.get_main()
+            area = MainArea.get()
             if request.method == 'POST':
                 data = request.json
                 if area and data.get('id') == None:
@@ -478,6 +465,50 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 if not area:
                     return jsonify({'error': 'Area not found'}), 404
                 return Area.get_area(area.id)
+
+        @app.route('/api/area/<int:id>/update_process_usage/<int:process_id>', methods=['POST'])
+        @auth_required
+        def update_process_usage(id,process_id):
+            data = request.json
+            new_usage_count = data.get('usage_count')
+
+            if new_usage_count is None:
+                return jsonify({'error': 'Missing usage count'}), 400
+
+            process_usage = ProcessUsage.query.filter_by(area_id=id, process_id=process_id).first()
+            if not process_usage:
+                process_usage = ProcessUsage(area_id=id, process_id=process_id, usage_count=new_usage_count)
+                db.session.add(process_usage)
+            else:
+                process_usage.usage_count = new_usage_count
+
+            db.session.commit()
+            return jsonify({'success': True, 'id': process_id, 'new_usage_count': new_usage_count})
+
+
+    class MainArea():
+
+        @staticmethod
+        def get():
+            return Area.query.first()
+        
+        @app.route('/api/update_process_usage/<int:process_id>', methods=['POST'])
+        @auth_required
+        @staticmethod
+        def main_update_process_usage(process_id):
+            area = MainArea.get() 
+            if not area:
+                return jsonify({'error': 'Area not found'}), 404
+            return Area.update_process_usage(area.id,process_id)
+
+        @app.route('/api/area/metrics', methods=['GET'])
+        @auth_required
+        @staticmethod
+        def main_are_metrics():
+            area = MainArea.get()
+            if not area:
+                return jsonify({'error': 'Area not found'}), 404
+            return Area.area_metrics(area.id)
 
     @app.route('/')
     def index():
@@ -587,7 +618,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             states = request.form.getlist('selected[]')
         states = [ast.literal_eval(value.capitalize()) for value in states]
 
-        area = Area.get_main()
+        area = MainArea.get()
         if not area:
             return jsonify({'error': 'Area not found'}), 404
 
@@ -648,7 +679,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             db.session.add(new_process)
             db.session.commit()
 
-            area = Area.get_main()
+            area = MainArea.get()
             if not area:
                 return jsonify({'error': 'Area not found'}), 404
             process_usage = area.process_usage(new_process,selected)
@@ -1043,33 +1074,9 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 return jsonify({'success': True})
             return jsonify({'success': False}), 400
 
-    @app.route('/api/update_process_usage/<int:process_id>', methods=['POST'])
-    @auth_required
-    def update_process_usage(process_id):
-        data = request.json
-        new_usage_count = data.get('usage_count')
-
-        if new_usage_count is None:
-            return jsonify({'error': 'Missing usage count'}), 400
-
-        area = Area.get_main()  # Assuming you're dealing with a single area scenario
-        if not area:
-            return jsonify({'error': 'Area not found'}), 404
-
-        process_usage = ProcessUsage.query.filter_by(area_id=area.id, process_id=process_id).first()
-        if not process_usage:
-            # Assuming you want to create a new usage record if it doesn't exist
-            process_usage = ProcessUsage(area_id=area.id, process_id=process_id, usage_count=new_usage_count)
-            db.session.add(process_usage)
-        else:
-            process_usage.usage_count = new_usage_count
-
-        db.session.commit()
-        return jsonify({'success': True, 'id': process_id, 'new_usage_count': new_usage_count})
-
     with app.app_context():
         db.create_all()
-        if not Area.get_main():
+        if not MainArea.get():
             Area.set_area_data({'name': name, 'description': description})
         Guard.guard_daemon()
 
