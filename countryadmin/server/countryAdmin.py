@@ -327,6 +327,11 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
         return jsonify(trades_data)
     
+    class AreaComposition(db.Model):
+        id = db.Column(db.Integer, primary_key=True)
+        area_id = db.Column(db.Integer, db.ForeignKey('area.id'), nullable=False)
+        child = db.Column(db.Integer, db.ForeignKey('area.id'), nullable=False)
+
     class Country(db.Model):
         id = db.Column(db.Integer, primary_key=True)
         name = db.Column(db.String(100))
@@ -334,6 +339,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         resources = db.Column(db.JSON)
         process_usages = db.relationship('ProcessUsage', back_populates='country')
         trades = db.relationship('Trade', foreign_keys='Trade.home_country_id', back_populates='home_country')
+        childs = db.relationship('AreaComposition', backref='area', lazy=True)
 
         @staticmethod
         def get_time_to_depletion(resource_amount, renew_rate, usage_balance):
@@ -407,6 +413,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         db.session.query(User).delete()
         db.session.query(Composition).delete()
         db.session.query(Country).delete()
+        db.session.query(AreaComposition).delete()
         db.session.query(Process).delete()
         db.session.query(ProcessTag).delete()
         db.session.query(ProcessUsage).delete()
