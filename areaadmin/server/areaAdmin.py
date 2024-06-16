@@ -325,7 +325,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         guard = db.relationship('Guard')
 
         @staticmethod
-        def set_area_data(data):
+        def set_area_data(data, rv={'area_id': 0}):
             area_resources = data.get('resources', {})
             for key, resource in area_resources.items():
                 if 'amount' not in resource or resource['amount'] is None:
@@ -338,6 +338,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             area_description = data.get('description', DEFAULT_COUNTRY_DESCRIPTION)
             id = data.get('id', None)
 
+            area = None
             if id is None:
                 guard = Guard()
                 db.session.add(guard)
@@ -363,6 +364,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                     compositionItem = AreaComposition(area_id=area.id,child_id=composition.id)
                     db.session.add(compositionItem)
             db.session.commit()
+            rv['area_id'] = area.id
             return {'success': True}
 
         def get_time_to_depletion(self, metric, usage_balance):
@@ -754,6 +756,23 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 db.session.rollback()
                 return jsonify({'success': False, 'error': str(e)}), 500
             return jsonify({'success': True, 'message': 'Trade setup successfully'}), 200
+
+        @app.route('/api/area/<int:id>/create_sub', methods=['POST'])
+        @auth_required
+        @staticmethod
+        def create_sub(id):
+            data = request.json
+            rv = {}
+            area = Area.query.get(id)
+            if not area:
+                return jsonify({'error': 'Area not found'}), 404
+            
+            Area.set_area_data(data, rv)
+
+            composition = AreaComposition(area_id=id,child_id=rv['area_id'])
+            db.session.add(composition)
+            db.session.commit()
+            return jsonify({'success': True})
 
         @app.route('/api/area/<int:id>/trades', methods=['GET'])
         @auth_required

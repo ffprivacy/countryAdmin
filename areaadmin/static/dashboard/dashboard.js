@@ -410,6 +410,19 @@ document.addEventListener('DOMContentLoaded', function () {
 	areaResourcesSetup(areaResourcesPrefix);
 	addProcessSetup();
 
+	document.getElementById("create-subzone").addEventListener("click", function(e) {
+		fetch(`/api/area/${dashboard_data['area_id']}/create_sub`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({})
+        })
+		.then(response => {
+			dashboardRefresh();
+		});
+	});
+
 	updateRadarChart(0, 0, 0);
 
 	document.getElementById("btn-adjust").addEventListener("click", selectProcesses);
