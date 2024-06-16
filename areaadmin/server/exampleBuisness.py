@@ -5,7 +5,7 @@ import os
 from flask import Flask, render_template, request, redirect, url_for, jsonify, session, send_file
 import socket
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='../static/', static_folder='../static/')
 @app.route('/api/processes', methods=['GET'])
 def get_processes():
     return [

@@ -42,7 +42,7 @@ def jsonify(data):
 def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEFAULT_COUNTRY_DESCRIPTION):
 
     db_name_fname = f'{db_name}.db'
-    app = Flask(__name__)
+    app = Flask(__name__, template_folder='../static/', static_folder='../static/')
     app.secret_key = 'your_secret_key'
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + db_name_fname
     db = SQLAlchemy(app)
@@ -932,8 +932,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
     @app.route('/dashboard', methods=['GET'])
     @login_required
     def dashboard():
-        processes = Process.query.all()
-        return render_template('dashboard.html', processes=processes)
+        return render_template('dashboard.html')
 
     def process_wrap_for_response(process):
         """Helper function to format the process data for JSON response."""
