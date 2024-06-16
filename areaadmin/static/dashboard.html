@@ -43,7 +43,7 @@
                     <input type="file" id="import-database-file" class="d-none" accept=".db" />
                 </li>
                 <li>
-                    <button class="btn btn-info" id="create-subzone">Create a subzone</button>
+                    <button class="btn btn-primary" id="create-subzone">Create a subzone</button>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
@@ -55,7 +55,18 @@
     <div class="container mt-4">
         <div class="row">
             <div class="col-md-6 mb-4">
-                <h3>Area Resources</h3>
+                <h3>Area Data</h3>
+                <hr>
+                <div class="row mb-4">
+                    <div class="col">
+                        <h6>Area description</h6>
+                    </div>
+                    <div class="col">
+                        <input type="text" class="form-control" id="area-data-title" required>
+                        <input type="text" class="form-control" id="area-data-description" required>
+                        <button type="button" class="btn btn-primary" id="area-data-set">Set</button>
+                    </div>
+                </div>
                 <hr>
                 <div class="row mb-4">
                     <div class="col">

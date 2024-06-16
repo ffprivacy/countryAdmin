@@ -237,8 +237,15 @@ function dashboardRefresh() {
 				fetch(`/api/area/${dashboard_data['area_id']}`)
 				.then(response => JSON_parse(response))
 				.then(async function(area) {
+					
 					const pageTitle = document.getElementById("dashboard-title");
 					pageTitle.innerText = ` - ${area.name}`;
+
+					const areaTitle = document.getElementById("area-data-title");
+					areaTitle.value = area.name;
+					const areaDescription = document.getElementById("area-data-description");
+					areaDescription.value = area.description;
+
 					const subzones = document.getElementById("area-subareas");
 					subzones.innerHTML = '';
 					for(let composition of area.compositions) {
@@ -442,6 +449,18 @@ document.addEventListener('DOMContentLoaded', function () {
 		.then(response => {
 			dashboardRefresh();
 		});
+	});
+	document.getElementById("area-data-set").addEventListener("click", function(e) {
+		const areaTitle = document.getElementById("area-data-title");
+		const areaDescription = document.getElementById("area-data-description");
+
+		fetch(`/api/area/${dashboard_data['area_id']}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({name: areaTitle.value,description: areaDescription.value, id: dashboard_data['area_id']})
+        }).then(response => dashboardRefresh())
 	});
 
 	updateRadarChart(0, 0, 0);
