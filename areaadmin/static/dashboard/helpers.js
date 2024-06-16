@@ -36,16 +36,16 @@ function setupImportDatabaseElement(e) {
 function tradesSetup() {
 	fetchTrades();
 }
-function countryResourcesFillDefault() {
-    for(let country in countryResourcesDefaults) {
-        const list = document.getElementById("country-prefill");
+function areaResourcesFillDefault() {
+    for(let area in areaResourcesDefaults) {
+        const list = document.getElementById("area-prefill");
         const opt = document.createElement("option");
-        opt.value = country;
-        opt.innerText = country;
+        opt.value = area;
+        opt.innerText = area;
         list.appendChild(opt);
     }
 }
-function countryResourcesSetup(prefix) {
+function areaResourcesSetup(prefix) {
     const container = document.getElementById(prefix);
 
     container.innerHTML = '';
@@ -72,10 +72,10 @@ function countryResourcesSetup(prefix) {
                                 <hr>`;
     }
 
-    fetch('/api/country')
+    fetch('/api/area')
     .then(response => response.json())
-    .then(country => {
-        const data = country.resources;
+    .then(area => {
+        const data = area.resources;
         for(let metric of Processes.metricsGetIdsList()) {
             document.getElementById(`${prefix}-${metric}-amount`).value = data[metric] ? data[metric].amount || 0 : 0;
             document.getElementById(`${prefix}-${metric}-renew-rate`).value = data[metric] ? data[metric].renew_rate || 0 : 0;
@@ -90,7 +90,7 @@ function countryResourcesSetup(prefix) {
                 renew_rate: parseInt(document.getElementById(`${prefix}-${metric}-renew-rate`).value) || 0
             };
         }
-        fetch('/api/country', {
+        fetch('/api/area', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -104,7 +104,7 @@ function countryResourcesSetup(prefix) {
             });
     });
 
-    countryResourcesFillDefault();
+    areaResourcesFillDefault();
 }
 function updateTrade(tradeId) {
     const data = {

@@ -7,7 +7,7 @@
     <link href="/static/cache/bootstrap.min.css" rel="stylesheet">
     <script src="/static/cache/bootstrap.bundle.min.js" defer></script>
     <script src="/static/cache/chart.js"></script>
-    <script src="/static/countryAdmin.js" defer></script>
+    <script src="/static/areaAdmin.js" defer></script>
     <script src="/static/dashboard/process.js" defer></script>
     <script src="/static/dashboard/helpers.js" defer></script>
     <script src="/static/dashboard/dashboard.js" defer></script>
@@ -50,21 +50,21 @@
     <div class="container mt-4">
         <div class="row">
             <div class="col-md-6 mb-4">
-                <h3>Country Resources</h3>
+                <h3>Area Resources</h3>
                 <hr>
                 <div class="row mb-4">
                     <div class="col">
-                        <h6>Country Prefill</h6>
+                        <h6>Area Prefill</h6>
                     </div>
                     <div class="col">
                         <div class="form-group">
-                            <select class="form-control" id="country-prefill"></select>
+                            <select class="form-control" id="area-prefill"></select>
                         </div>
                         <button type="button" class="btn btn-primary" id="prefill-button">Prefill</button>
                     </div>
                 </div>
                 <hr>
-                <div id="country-resources"></div>
+                <div id="area-resources"></div>
                 <button type="button" class="btn btn-primary mb-2" id="btn-set-resources">Set Resources</button>
             </div>        
             <div class="col-md-6 mb-4">
@@ -73,11 +73,11 @@
                     <div class="row">
                         <h6>Resources used:</h6>
                     </div>
-                    <div class="row" id="country-resource-total-input"></div>
+                    <div class="row" id="area-resource-total-input"></div>
                     <div class="row">
                         <h6>Resources produced:</h6>
                     </div>
-                    <div class="row" id="country-resource-total-output"></div>
+                    <div class="row" id="area-resource-total-output"></div>
                     <div class="row mt-4">
                       <div class="col-12">
                         <h3>Long term planning - time before resource no more viable:</h3>
@@ -86,7 +86,7 @@
                     <div class="row">
                         <h6>Resources depletion:</h6>
                     </div>
-                    <div class="row" id="country-resource-depletion"></div>
+                    <div class="row" id="area-resource-depletion"></div>
                   </div>
                 <div>
                     <canvas style="max-width: 400px; max-height: 400px;" id="metricsRadarChart" width="400" height="400"></canvas>
@@ -108,15 +108,15 @@
                                 <form id="trade-form">
                                     <div class="row">
                                         <div class="col-md-6">
-                                            <h5>Home Country</h5>
+                                            <h5>Home Area</h5>
                                             <div id="homeProcesses">
                                                 <!-- Home processes inputs will be added here -->
                                             </div>
                                             <button type="button" class="btn btn-secondary mb-2" onclick="tradesAddProcess('home')">Add Home Process</button>
                                         </div>
                                         <div class="col-md-6">
-                                            <h5>Foreign Country</h5>
-                                            <input id="trade-initiate-foreign-country-uri" />
+                                            <h5>Foreign Area</h5>
+                                            <input id="trade-initiate-foreign-area-uri" />
                                             <div id="foreignProcesses">
                                                 <!-- Foreign processes inputs will be added here -->
                                             </div>

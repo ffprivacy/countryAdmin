@@ -1,9 +1,9 @@
-document.getElementById('search-country').addEventListener('keyup', function() {
+document.getElementById('search-area').addEventListener('keyup', function() {
     const searchValue = this.value.toLowerCase();
-    const rows = document.querySelectorAll('#country-table tr');
+    const rows = document.querySelectorAll('#area-table tr');
     rows.forEach(row => {
-        const countryName = row.querySelector('td').textContent.toLowerCase();
-        row.style.display = countryName.includes(searchValue) ? '' : 'none';
+        const areaName = row.querySelector('td').textContent.toLowerCase();
+        row.style.display = areaName.includes(searchValue) ? '' : 'none';
     });
 });
 
@@ -16,8 +16,8 @@ function guardClearAlerts() {
 }
 function clearPollutionDebt(alert_id, uri, emissionEnv=90) {
     const process = {
-        title: 'Propose country to absorbe its emissions',
-        description: 'Propose country to absorbe its emissions',
+        title: 'Propose area to absorbe its emissions',
+        description: 'Propose area to absorbe its emissions',
         metrics: {
             input: {
                 envEmissions: emissionEnv,
@@ -37,7 +37,7 @@ function clearPollutionDebt(alert_id, uri, emissionEnv=90) {
     .then(response => response.json())
     .then(response => {
         const tradeData = {
-            to_country_uri: uri,
+            to_area_uri: uri,
             foreign_processes: response.processes,
         };
         fetch('/api/trade', {
@@ -74,7 +74,7 @@ function fetchGuardState() {
                             console.warn("no amount provided");
                         } else {
                             alertElement.innerHTML += `
-                                <button onclick="clearPollutionDebt(${alert.id},'${alert.country}',${amount})" class="btn btn-primary mt-2">Clear the debt</div>
+                                <button onclick="clearPollutionDebt(${alert.id},'${alert.area}',${amount})" class="btn btn-primary mt-2">Clear the debt</div>
                             `;
                         }
                     }
@@ -83,10 +83,10 @@ function fetchGuardState() {
             })
 }
 
-document.getElementById('add-country-btn').addEventListener('click', function() {
-    const newUri = document.getElementById('new-country-uri').value.trim();
+document.getElementById('add-area-btn').addEventListener('click', function() {
+    const newUri = document.getElementById('new-area-uri').value.trim();
     if (newUri) {
-        document.getElementById('new-country-uri').value = '';
+        document.getElementById('new-area-uri').value = '';
 
         fetch(`/api/guard/subscribe`, {
 			method: 'POST',
@@ -104,17 +104,17 @@ document.getElementById('add-country-btn').addEventListener('click', function() 
 
 function guardFrontRefresh() {
     fetchGuardState().then(data => {
-        fetchCountryData();
+        fetchAreaData();
     })
 }
 document.getElementById('refresh-btn').addEventListener('click', function() {
     guardFrontRefresh();
 });
 
-const fetchCountryData = async () => {
-    let countryData = [];
-    for(let uri of guard.country_uris) {
-        countryData.push(await fetch(`${uri}/api/country`, {
+const fetchAreaData = async () => {
+    let areaData = [];
+    for(let uri of guard.area_uris) {
+        areaData.push(await fetch(`${uri}/api/area`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -123,20 +123,20 @@ const fetchCountryData = async () => {
         }).then(response => response.json()));
     }
 
-    updateTable(countryData);
-    updateCharts(countryData);
+    updateTable(areaData);
+    updateCharts(areaData);
 }
 
-const updateTable = (countryData) => {
-    const tableBody = document.getElementById('country-table');
+const updateTable = (areaData) => {
+    const tableBody = document.getElementById('area-table');
     tableBody.innerHTML = '';
 
-    countryData.forEach(country => {
+    areaData.forEach(area => {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${country.name}</td>
-            <td>${calculateTotalMetric(country.processes)}</td>
-            <td>${calculateDepletionTime(country.resources)}</td>
+            <td>${area.name}</td>
+            <td>${calculateTotalMetric(area.processes)}</td>
+            <td>${calculateDepletionTime(area.resources)}</td>
             <td><button class="btn btn-primary">Details</button></td>
         `;
         tableBody.appendChild(row);
@@ -153,14 +153,14 @@ const calculateDepletionTime = (resources) => {
         return time < minTime ? time : minTime;
     }, Infinity);*/
 };
-const calculateMetric = (country, metric) => {
-    return 100; //country.resources[metric] || 10;
+const calculateMetric = (area, metric) => {
+    return 100; //area.resources[metric] || 10;
 };
 
-const updateCharts = (countryData) => {
-    const labels = countryData.map(country => country.name);
-    const dataTotalMetric = countryData.map(country => calculateTotalMetric(country.processes));
-    const dataDepletionTime = countryData.map(country => calculateDepletionTime(country.resources));
+const updateCharts = (areaData) => {
+    const labels = areaData.map(area => area.name);
+    const dataTotalMetric = areaData.map(area => calculateTotalMetric(area.processes));
+    const dataDepletionTime = areaData.map(area => calculateDepletionTime(area.resources));
 
     const ctxPuzzle = document.getElementById('puzzleChart').getContext('2d');
     const puzzleChart = new Chart(ctxPuzzle, {
@@ -188,7 +188,7 @@ const updateCharts = (countryData) => {
         }
     });
 
-    updateGraph(countryData, 'tradeVolume');
+    updateGraph(areaData, 'tradeVolume');
 
 };
 
@@ -200,20 +200,20 @@ document.getElementById('metric-select').addEventListener('change', function() {
     const selectedMetric = this.value;
     updateGraph(selectedMetric);
 });
-const updateGraph = (countryData, metric) => {
+const updateGraph = (areaData, metric) => {
     const svg = d3.select('#graphSvg');
     svg.selectAll('*').remove();
 
     const width = +svg.attr('width');
     const height = +svg.attr('height');
 
-    const nodes = countryData.map((country, index) => ({
-        id: country.name,
-        radius: calculateMetric(country, metric)
+    const nodes = areaData.map((area, index) => ({
+        id: area.name,
+        radius: calculateMetric(area, metric)
     }));
 
-    const links = countryData.map((country, index) => {
-        return {source: country.name, target: country.name, value: calculateMetric(country, metric)};
+    const links = areaData.map((area, index) => {
+        return {source: area.name, target: area.name, value: calculateMetric(area, metric)};
     });
 
     const simulation = d3.forceSimulation(nodes)

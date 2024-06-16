@@ -12,7 +12,7 @@ import flask, json
 import threading, time
 import random
 
-DEFAULT_DB_NAME = "country"
+DEFAULT_DB_NAME = "area"
 DEFAULT_PORT = 5000
 DEFAULT_COUNTRY_NAME = "Template name"
 DEFAULT_COUNTRY_DESCRIPTION = "Template description"
@@ -108,10 +108,10 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
         @staticmethod
         def get_usage(process):
-            country = Country.query.first()
-            if not country:
-                return jsonify({'error': 'Country not found'}), 404
-            process_usage = next((pu for pu in process.usages if pu.country_id == country.id), None)
+            area = Area.query.first()
+            if not area:
+                return jsonify({'error': 'Area not found'}), 404
+            process_usage = next((pu for pu in process.usages if pu.area_id == area.id), None)
             return process_usage.usage_count if process_usage else 0
 
     class ProcessInteraction(db.Model):
@@ -140,15 +140,15 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         tag = db.relationship('Tag', back_populates='processes')
 
     class ProcessUsage(db.Model):
-        country_id = db.Column(db.Integer, db.ForeignKey('country.id'), primary_key=True)
+        area_id = db.Column(db.Integer, db.ForeignKey('area.id'), primary_key=True)
         process_id = db.Column(db.Integer, db.ForeignKey('process.id'), primary_key=True)
         usage_count = db.Column(db.Integer, default=0)
 
-        country = db.relationship('Country', back_populates='process_usages')
+        area = db.relationship('Area', back_populates='process_usages')
         process = db.relationship('Process', back_populates='usages')
 
         def __repr__(self):
-            return f"<ProcessUsage country_id={self.country_id} process_id={self.process_id} usage_count={self.usage_count}>"
+            return f"<ProcessUsage area_id={self.area_id} process_id={self.process_id} usage_count={self.usage_count}>"
 
     class User(db.Model):
         id = db.Column(db.Integer, primary_key=True)
@@ -163,25 +163,25 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
     class Trade(db.Model):
         id = db.Column(db.Integer, primary_key=True)
-        home_country_id = db.Column(db.Integer, db.ForeignKey('country.id'), nullable=False)
-        to_country_uri = db.Column(db.String(255), nullable=False)
-        to_country_trade_id = db.Column(db.Integer, nullable=True)
+        home_area_id = db.Column(db.Integer, db.ForeignKey('area.id'), nullable=False)
+        to_area_uri = db.Column(db.String(255), nullable=False)
+        to_area_trade_id = db.Column(db.Integer, nullable=True)
         home_processes = db.Column(db.JSON)
         foreign_processes = db.Column(db.JSON)
         home_confirm = db.Column(db.Boolean, default=False)
         foreign_confirm = db.Column(db.Boolean, default=False)
 
-        home_country = db.relationship('Country', foreign_keys=[home_country_id], back_populates='trades')
+        home_area = db.relationship('Area', foreign_keys=[home_area_id], back_populates='trades')
 
         def __repr__(self):
-            return f"<Trade country_id={self.home_country_id} trade id={self.id}>"
+            return f"<Trade area_id={self.home_area_id} trade id={self.id}>"
 
     def tradeToJson(trade):
         return {
             'id': trade.id,
-            'home_country_id': trade.home_country_id,
-            'to_country_uri': trade.to_country_uri,
-            'to_country_trade_id': trade.to_country_trade_id,
+            'home_area_id': trade.home_area_id,
+            'to_area_uri': trade.to_area_uri,
+            'to_area_trade_id': trade.to_area_trade_id,
             'home_processes': trade.home_processes,
             'foreign_processes': trade.foreign_processes,
             'home_confirm': trade.home_confirm,
@@ -191,12 +191,12 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
     def tradeSend(trade):
         tradeJSON = tradeToJson(trade)
         tradeJSON['uri'] = f'http://127.0.0.1:{app.config["SERVING_PORT"]}'
-        response = requests.post(f"{trade.to_country_uri}/api/trade/receive", json=tradeJSON)
+        response = requests.post(f"{trade.to_area_uri}/api/trade/receive", json=tradeJSON)
         return jsonify(response.json())
 
     def tradeRemoteDelete(trade):
-        if trade.to_country_trade_id:
-            response = requests.delete(f"{trade.to_country_uri}/api/trade/${trade.id}")
+        if trade.to_area_trade_id:
+            response = requests.delete(f"{trade.to_area_uri}/api/trade/${trade.id}")
             if response.status_code == 404:
                 return jsonify({'success': True, 'message': 'Remote seem already deleted'}), 200
             else:
@@ -207,9 +207,9 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
     @app.route('/api/trade/receive', methods=['POST'])
     @auth_required
     def trade_receive():
-        country = Country.query.first()
-        if not country:
-            return jsonify({'error': 'Country not found'}), 404
+        area = Area.query.first()
+        if not area:
+            return jsonify({'error': 'Area not found'}), 404
 
         data = request.get_json()
 
@@ -217,22 +217,22 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         foreign_processes = data['home_processes']        
         data['foreign_confirm'] = data['home_confirm']
 
-        to_country_trade_id = data['id']
-        to_country_uri = data['uri']
-        trade = Trade.query.filter_by(id=to_country_trade_id).first()
+        to_area_trade_id = data['id']
+        to_area_uri = data['uri']
+        trade = Trade.query.filter_by(id=to_area_trade_id).first()
 
         if trade:
-            trade.to_country_trade_id=to_country_trade_id
+            trade.to_area_trade_id=to_area_trade_id
             trade.foreign_processes = foreign_processes
             trade.foreign_confirm = data['foreign_confirm']
             trade.home_processes = home_processes
         else:
             new_trade = Trade(
-                home_country_id=country.id,
-                to_country_uri=to_country_uri,
+                home_area_id=area.id,
+                to_area_uri=to_area_uri,
                 home_processes=home_processes,
                 foreign_processes=foreign_processes,
-                to_country_trade_id=to_country_trade_id,
+                to_area_trade_id=to_area_trade_id,
                 foreign_confirm=data['foreign_confirm']
             )
             db.session.add(new_trade)
@@ -249,18 +249,18 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
     @app.route('/api/trade', methods=['POST'])
     @auth_required
     def initiate_trade():
-        country = Country.query.first()
-        if not country:
-            return jsonify({'error': 'Home country not found'}), 404
+        area = Area.query.first()
+        if not area:
+            return jsonify({'error': 'Home area not found'}), 404
         
         data = request.get_json()
-        if 'to_country_uri' not in data:
+        if 'to_area_uri' not in data:
             return jsonify({'success': False, 'error': 'Incomplete data provided'}), 400
 
         try:
             trade = Trade(
-                home_country_id=country.id,
-                to_country_uri=data['to_country_uri'],
+                home_area_id=area.id,
+                to_area_uri=data['to_area_uri'],
                 home_processes=data.get('home_processes', []),
                 foreign_processes=data.get('foreign_processes', [])
             )
@@ -282,8 +282,8 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         if request.method == 'POST':
             data = request.get_json()
             try:
-                if 'to_country_uri' in data:
-                    trade.to_country_uri = data['to_country_uri']
+                if 'to_area_uri' in data:
+                    trade.to_area_uri = data['to_area_uri']
                 if 'home_processes' in data:
                     trade.home_processes = data['home_processes']
                 if 'foreign_confirm' in data:
@@ -311,35 +311,35 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
     @app.route('/api/trades', methods=['GET'])
     @auth_required
     def get_trades():
-        country = Country.query.first()
-        if not country:
-            return jsonify({'error': 'Country not found'}), 404
+        area = Area.query.first()
+        if not area:
+            return jsonify({'error': 'Area not found'}), 404
 
         trades_data = [{
             'id': trade.id,
-            'to_country_uri': trade.to_country_uri,
+            'to_area_uri': trade.to_area_uri,
             'home_processes': trade.home_processes,
             'foreign_processes': trade.foreign_processes,
             'foreign_confirm': trade.foreign_confirm,
             'home_confirm': trade.home_confirm
-        } for trade in country.trades]
+        } for trade in area.trades]
 
         return jsonify(trades_data)
     
     class AreaComposition(db.Model):
         id = db.Column(db.Integer, primary_key=True)
-        area_id = db.Column(db.Integer, db.ForeignKey('country.id'), nullable=False)
-        child_id = db.Column(db.Integer, db.ForeignKey('country.id'), nullable=False)
-        area = db.relationship('Country', foreign_keys='AreaComposition.area_id', back_populates='compositions')
-        child = db.relationship('Country', foreign_keys='AreaComposition.child_id')
+        area_id = db.Column(db.Integer, db.ForeignKey('area.id'), nullable=False)
+        child_id = db.Column(db.Integer, db.ForeignKey('area.id'), nullable=False)
+        area = db.relationship('Area', foreign_keys='AreaComposition.area_id', back_populates='compositions')
+        child = db.relationship('Area', foreign_keys='AreaComposition.child_id')
                                
-    class Country(db.Model):
+    class Area(db.Model):
         id = db.Column(db.Integer, primary_key=True)
         name = db.Column(db.String(100))
         description = db.Column(db.String(100))
         resources = db.Column(db.JSON)
-        process_usages = db.relationship('ProcessUsage', back_populates='country')
-        trades = db.relationship('Trade', foreign_keys='Trade.home_country_id', back_populates='home_country')
+        process_usages = db.relationship('ProcessUsage', back_populates='area')
+        trades = db.relationship('Trade', foreign_keys='Trade.home_area_id', back_populates='home_area')
         compositions = db.relationship('AreaComposition', foreign_keys='AreaComposition.area_id', back_populates='area')
 
         @staticmethod
@@ -357,11 +357,11 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             
         @staticmethod
         def metrics():
-            country = Country.query.first()
-            if not country:
-                return jsonify({'error': 'Country not found'}), 404
+            area = Area.query.first()
+            if not area:
+                return jsonify({'error': 'Area not found'}), 404
 
-            country_resources = country.resources
+            area_resources = area.resources
             processes = Process.query.all()
             trades = Trade.query.all()
             flow = {'input': {}, 'output': {}}
@@ -370,7 +370,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 flow['input'][metric] = 0
                 flow['output'][metric] = 0
             
-            for usage in country.process_usages:
+            for usage in area.process_usages:
                 process = usage.process
                 for metric in Processes.metrics_get_ids_list():
                     for sens in ['input','output']:
@@ -382,7 +382,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                         if 'id' in home_process and 'amount' in home_process:
                             flow['output'][metric] -= Processes.retrieve_metric(processes, Processes.get_by_id(processes, home_process['id']), 'output', metric) * home_process['amount']
                 
-                response = requests.get(f"{trade.to_country_uri}/api/processes")
+                response = requests.get(f"{trade.to_area_uri}/api/processes")
                 response.raise_for_status()
                 foreign_processes = response.json()
                 for foreign_trade_process in trade.foreign_processes:
@@ -393,8 +393,8 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             resources_depletion = {}
             for metric in Processes.metrics_get_ids_list():
                 usage_balance = flow['output'][metric] - flow['input'][metric]
-                if country_resources.get(metric):
-                    resources_depletion[metric] = Country.get_time_to_depletion(country_resources[metric]['amount'], country_resources[metric]['renew_rate'], usage_balance)
+                if area_resources.get(metric):
+                    resources_depletion[metric] = Area.get_time_to_depletion(area_resources[metric]['amount'], area_resources[metric]['renew_rate'], usage_balance)
                 else:
                     resources_depletion[metric] = float('inf') if usage_balance > 0 else 0
 
@@ -413,7 +413,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         db.session.query(Tag).delete()
         db.session.query(User).delete()
         db.session.query(Composition).delete()
-        db.session.query(Country).delete()
+        db.session.query(Area).delete()
         db.session.query(AreaComposition).delete()
         db.session.query(Process).delete()
         db.session.query(ProcessTag).delete()
@@ -424,7 +424,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         db.session.query(Guard).delete()
         db.session.query(GuardAlert).delete()
         db.session.commit()
-        set_country_data({})
+        set_area_data({})
         return redirect(url_for('logout'))
 
     @app.route('/api/process/<int:process_id>/like', methods=['POST'])
@@ -511,14 +511,14 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             states = request.form.getlist('selected[]')
         states = [ast.literal_eval(value.capitalize()) for value in states]
 
-        country = Country.query.first()
-        if not country:
-            return jsonify({'error': 'Country not found'}), 404
+        area = Area.query.first()
+        if not area:
+            return jsonify({'error': 'Area not found'}), 404
 
         processes = Process.query.filter(Process.id.in_(ids)).all()
         if processes and len(processes) == len(states):
             for process, state in zip(processes, states):
-                country_process_usage(country,process,state)
+                area_process_usage(area,process,state)
 
             db.session.commit()
 
@@ -572,10 +572,10 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             db.session.add(new_process)
             db.session.commit()
 
-            country = Country.query.first()
-            if not country:
-                return jsonify({'error': 'Country not found'}), 404
-            process_usage = country_process_usage(country,new_process,selected)
+            area = Area.query.first()
+            if not area:
+                return jsonify({'error': 'Area not found'}), 404
+            process_usage = area_process_usage(area,new_process,selected)
             if process_usage:
                 process_usage.amount = amount
 
@@ -657,11 +657,11 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         title = db.Column(db.String)
         description = db.Column(db.String)
         time = db.Column(db.DateTime, default=datetime.now)
-        country = db.Column(db.String)
+        area = db.Column(db.String)
 
     class Guard(db.Model):
         id = db.Column(db.Integer, primary_key=True)
-        country_uris = db.Column(db.JSON, default=[])
+        area_uris = db.Column(db.JSON, default=[])
         last_check_date = db.Column(db.DateTime, default=datetime.now)
         alerts = db.relationship('GuardAlert', backref='guard', lazy=True)
 
@@ -709,10 +709,10 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             if not isinstance(uris,list):
                 uris = [uris]
 
-            oldURIs = guard.country_uris
-            guard.country_uris = []
-            guard.country_uris.extend(uris)
-            guard.country_uris.extend(oldURIs)
+            oldURIs = guard.area_uris
+            guard.area_uris = []
+            guard.area_uris.extend(uris)
+            guard.area_uris.extend(oldURIs)
             db.session.commit()
             return {'success': True}
 
@@ -727,11 +727,11 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                     'id': alert.id,
                     'title': alert.title,
                     'description': alert.description,
-                    'country': alert.country,
+                    'area': alert.area,
                     'time': alert.time
                 })
             return jsonify({
-                'country_uris': guard.country_uris,
+                'area_uris': guard.area_uris,
                 'last_check_date': guard.last_check_date,
                 'alerts': alerts
             })
@@ -748,22 +748,22 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 while True:
                     guard = Guard.get()
                     countries = []
-                    for uri in guard.country_uris:
-                        response = requests.get(f"{uri}/api/country")
+                    for uri in guard.area_uris:
+                        response = requests.get(f"{uri}/api/area")
                         response.raise_for_status()
-                        country = response.json()
+                        area = response.json()
 
                         response = requests.get(f"{uri}/api/processes")
                         response.raise_for_status()
                         processes = response.json()
 
-                        response = requests.get(f"{uri}/api/country/metrics")
+                        response = requests.get(f"{uri}/api/area/metrics")
                         response.raise_for_status()
                         metrics = response.json()
 
                         countries.append({
                             'uri': uri,
-                            'country': country,
+                            'area': area,
                             'processes': processes,
                             'metrics': metrics
                         })
@@ -772,11 +772,11 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                     # exemple en comparant les input/ouput des process, + title desc
                     # pour l'instant on utilise des ids (qui ne sont potentiellement pas les mêmes)
                     processesOffers = {}
-                    for country in countries:
-                        for process_usage in country['country']['processes']:
+                    for area in countries:
+                        for process_usage in area['area']['processes']:
                             id = process_usage['id']
                             processOffer = processesOffers.get(id, {
-                                'uri': country['uri'], 'count': 0, 'id': id
+                                'uri': area['uri'], 'count': 0, 'id': id
                             })
                             processOffer['count'] += 1;
                             processesOffers[id] = processOffer
@@ -788,7 +788,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                             # Si il n'y a pas d'échanges avec d'autres pays l'alerte ne devrait pas être utilisée
                             db.session.add(GuardAlert( 
                                 title="Monopole detecté",
-                                country=f"{processOffer['uri']}",
+                                area=f"{processOffer['uri']}",
                                 description=f"De la part de {processOffer['uri']} sur {processOffer['id']}"
                             ))
                         else:
@@ -797,14 +797,14 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                             # Et on devrait regarder uniquement les processus impliqué dans des échanges (même indirecte)
                             process_id = processOffer['id']
                             price = -1
-                            for country in countries:
-                                for process in country['processes']:
+                            for area in countries:
+                                for process in area['processes']:
                                     if process['id'] == process_id:
                                         sell_price = process['metrics']['input'].get('economic', 0) - process['metrics']['output'].get('economic', 0)
                                         if sell_price < price:
                                             db.session.add(GuardAlert( 
                                                 title="Potentiel situation de vente à perte détectée",
-                                                country=f"{processOffer['uri']}",
+                                                area=f"{processOffer['uri']}",
                                                 description=f"sur {processOffer['id']} proposed price {sell_price} on previous {price}"
                                             ))
 
@@ -813,17 +813,17 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                         if random.random() <= 0.1:
                             db.session.add(GuardAlert( 
                                 title="Injustice social",
-                                country=f"{processOffer['uri']}",
+                                area=f"{processOffer['uri']}",
                                 description=f"{processOffer['uri']} induit de la misère sociale via ses imports"
                             ))
 
-                    for country in countries:
-                        envEmissionsNet = country['metrics']['flow']['output']['envEmissions'] - country['metrics']['flow']['input']['envEmissions']
-                        atmosphereFill = country['country']['resources'].get('envEmissions',{'amount': 0})['amount'] * (1 + country['country']['resources'].get('envEmissions',{'renew_rate': 0})['renew_rate']) - envEmissionsNet
+                    for area in countries:
+                        envEmissionsNet = area['metrics']['flow']['output']['envEmissions'] - area['metrics']['flow']['input']['envEmissions']
+                        atmosphereFill = area['area']['resources'].get('envEmissions',{'amount': 0})['amount'] * (1 + area['area']['resources'].get('envEmissions',{'renew_rate': 0})['renew_rate']) - envEmissionsNet
                         if atmosphereFill < 0:
                             db.session.add(GuardAlert( 
                                 title="Overpollution",
-                                country=f"{processOffer['uri']}",
+                                area=f"{processOffer['uri']}",
                                 description=f"Pays eméttant plus de CO2 que ce que sa capacité d'absorption amount={abs(atmosphereFill)}"
                             ))
 
@@ -855,11 +855,11 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 return redirect(url_for('dashboard'))
         return render_template('login.html')
 
-    def country_process_usage(country,process,state):
-        process_usage = ProcessUsage.query.filter_by(country_id=country.id, process_id=process.id).first()
+    def area_process_usage(area,process,state):
+        process_usage = ProcessUsage.query.filter_by(area_id=area.id, process_id=process.id).first()
         if state:
             if not process_usage:
-                new_process_usage = ProcessUsage(country_id=country.id, process_id=process.id, usage_count=1)
+                new_process_usage = ProcessUsage(area_id=area.id, process_id=process.id, usage_count=1)
                 db.session.add(new_process_usage)
         else:
             if process_usage:
@@ -964,22 +964,22 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         def metrics_get_ids_list():
             return [metric['id'] for metric in Processes.metrics_get_list()]
 
-    @app.route('/api/country/metrics', methods=['GET'])
+    @app.route('/api/area/metrics', methods=['GET'])
     @auth_required
     def get_flow():
-        metrics = Country.metrics()
+        metrics = Area.metrics()
         return jsonify(metrics)
 
-    @app.route('/api/country', methods=['POST','GET'])
+    @app.route('/api/area', methods=['POST','GET'])
     @auth_required
-    def handle_country():
+    def handle_area():
         if request.method == 'POST':
             data = request.json
-            return jsonify(set_country_data(data))
+            return jsonify(set_area_data(data))
         elif request.method == 'GET':
-            country = Country.query.first()
+            area = Area.query.first()
 
-            if not country:
+            if not area:
                 return jsonify({
                     'name': DEFAULT_COUNTRY_NAME,
                     'description': DEFAULT_COUNTRY_DESCRIPTION,
@@ -990,34 +990,34 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 'id': pu.process_id,
                 'title': pu.process.title,
                 'usage_count': pu.usage_count
-            } for pu in country.process_usages]
+            } for pu in area.process_usages]
 
             return jsonify({
-                'name': country.name,
-                'description': country.description,
-                'resources': country.resources,
+                'name': area.name,
+                'description': area.description,
+                'resources': area.resources,
                 'processes': processes
             })
 
-    def set_country_data(data):
-        country_resources = data.get('resources', {})
-        for key, resource in country_resources.items():
+    def set_area_data(data):
+        area_resources = data.get('resources', {})
+        for key, resource in area_resources.items():
             if 'amount' not in resource or resource['amount'] is None:
                 resource['amount'] = 0
             if 'renew_rate' not in resource or resource['renew_rate'] is None:
                 resource['renew_rate'] = 0
 
-        country_name = data.get('name', DEFAULT_COUNTRY_NAME)
-        country_description = data.get('description', DEFAULT_COUNTRY_DESCRIPTION)
+        area_name = data.get('name', DEFAULT_COUNTRY_NAME)
+        area_description = data.get('description', DEFAULT_COUNTRY_DESCRIPTION)
 
-        country = Country.query.first()
-        if not country:
-            country = Country(name=country_name, description=country_description, resources=country_resources)
-            db.session.add(country)
+        area = Area.query.first()
+        if not area:
+            area = Area(name=area_name, description=area_description, resources=area_resources)
+            db.session.add(area)
         else:
-            country.name = country_name
-            country.description = country_description
-            country.resources = country_resources
+            area.name = area_name
+            area.description = area_description
+            area.resources = area_resources
 
         db.session.commit()
         return {'success': True}
@@ -1046,14 +1046,14 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         if new_usage_count is None:
             return jsonify({'error': 'Missing usage count'}), 400
 
-        country = Country.query.first()  # Assuming you're dealing with a single country scenario
-        if not country:
-            return jsonify({'error': 'Country not found'}), 404
+        area = Area.query.first()  # Assuming you're dealing with a single area scenario
+        if not area:
+            return jsonify({'error': 'Area not found'}), 404
 
-        process_usage = ProcessUsage.query.filter_by(country_id=country.id, process_id=process_id).first()
+        process_usage = ProcessUsage.query.filter_by(area_id=area.id, process_id=process_id).first()
         if not process_usage:
             # Assuming you want to create a new usage record if it doesn't exist
-            process_usage = ProcessUsage(country_id=country.id, process_id=process_id, usage_count=new_usage_count)
+            process_usage = ProcessUsage(area_id=area.id, process_id=process_id, usage_count=new_usage_count)
             db.session.add(process_usage)
         else:
             process_usage.usage_count = new_usage_count
@@ -1063,8 +1063,8 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
     with app.app_context():
         db.create_all()
-        if not Country.query.first():
-            set_country_data({'name': name, 'description': description})
+        if not Area.query.first():
+            set_area_data({'name': name, 'description': description})
         Guard.guard_daemon()
 
     return app, db

@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 import threading
-from countryadmin.server.countryAdmin import run_app
+from areaadmin.server.areaAdmin import run_app
 import os
 from flask import Flask, render_template, request, redirect, url_for, jsonify, session, send_file
 import socket
@@ -27,7 +27,7 @@ def start_instance():
         return jsonify({'success': False, 'error': f'Port {port} is already in use.'}), 400
 
     if not db_path:
-        db_path = "country_default.db"
+        db_path = "area_default.db"
 
     try:
         import shutil

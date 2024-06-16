@@ -28,13 +28,13 @@ function addProcessCompositionGuess() {
 	const processTitle = document.getElementById("add-process-title");
 	const contextInput = document.getElementById("add-process-composition-guess-context");
 	/**
-	 * plain text describing country, etc contextInput.value
+	 * plain text describing area, etc contextInput.value
 	 * Depuis des informations comme le pays le type de process que l'on veut créer,
 	 * un guess de la composition est fait, par exemple "Administrer mon village x" va probablement
 	 * utiliser les mêmes processus que les autres sur les routes, la signalisation mais veut ajouter certains
 	 * process plus spécialement pour être au plus près du territoire
 	 */
-	console.warn("plain text describing country: " + contextInput.value + " for process '" + processTitle.value + "'");
+	console.warn("plain text describing area: " + contextInput.value + " for process '" + processTitle.value + "'");
 	addProcessAddComposition(id=1,amount=2);
 }
 function processCreateElement(allProcesses,process) {

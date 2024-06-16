@@ -1,10 +1,10 @@
 import pytest
-from countryadmin.countryAdmin import app, db, User, Process
+from areaadmin.areaAdmin import app, db, User, Process
 from werkzeug.security import generate_password_hash
 from io import BytesIO
 from flask import Flask, render_template, request, redirect, url_for, jsonify, session, send_file
 from flask_sqlalchemy import SQLAlchemy
-from countryadmin.countryAdmin import app, db, User
+from areaadmin.areaAdmin import app, db, User
 
 @pytest.fixture
 def client():

@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "countryAdmin"
+name = "areaAdmin"
 version = "0.1.0"
-description = "Simple country admin"
+description = "Simple area admin"
 authors = ["ffprivacy <ffprivacy@netcourrier.com>"]
 readme = "README.md"
 
@@ -22,8 +22,8 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-countryAdmin = 'countryadmin.server.countryAdmin:main'
-countryManager = 'countryadmin.server.manager:main'
+areaAdmin = 'areaadmin.server.areaAdmin:main'
+areaManager = 'areaadmin.server.manager:main'
 
 [tool.pytest.ini_options]
 testpaths = [

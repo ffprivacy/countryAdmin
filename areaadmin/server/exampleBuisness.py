@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 import threading
-from countryadmin.server.countryAdmin import run_app
+from areaadmin.server.areaAdmin import run_app
 import os
 from flask import Flask, render_template, request, redirect, url_for, jsonify, session, send_file
 import socket

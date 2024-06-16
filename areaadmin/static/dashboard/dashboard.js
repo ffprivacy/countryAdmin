@@ -194,10 +194,10 @@ function dashboardRefresh() {
             const allProcesses = data;
             processList.innerHTML = '';
 
-            fetch('/api/country/metrics')
+            fetch('/api/area/metrics')
             .then(response => JSON_parse(response))
             .then(metrics => {
-                const countryMetrics = metrics.flow;
+                const areaMetrics = metrics.flow;
                 const resourcesDepletion = metrics.resources_depletion;
 
                 allProcesses.forEach(process => {
@@ -205,9 +205,9 @@ function dashboardRefresh() {
                 });
 
                 for (let sens of ['input', 'output']) {
-                    const container = document.getElementById(`country-resource-total-${sens}`);
+                    const container = document.getElementById(`area-resource-total-${sens}`);
                     Processes.metricsGetList().forEach(metric => {
-                        const id = `country-resource-total-${sens}-${metric.id}`;
+                        const id = `area-resource-total-${sens}-${metric.id}`;
                         let element = document.getElementById(id);
                         if (!element) {
                             element = document.createElement('div');
@@ -215,13 +215,13 @@ function dashboardRefresh() {
                             element.id = id;
                             container.appendChild(element);
                         }
-                        element.innerHTML = `<p>${metric.label}: <span>${countryMetrics[sens][metric.id]}</span> ${metric.unit}</p>`;
+                        element.innerHTML = `<p>${metric.label}: <span>${areaMetrics[sens][metric.id]}</span> ${metric.unit}</p>`;
                     });
                 }
 
-                const containerDepletion = document.getElementById("country-resource-depletion");
+                const containerDepletion = document.getElementById("area-resource-depletion");
                 Processes.metricsGetList().forEach(metric => {
-                    const id = `country-resources-depletion-time-${metric.id}-container`;
+                    const id = `area-resources-depletion-time-${metric.id}-container`;
                     let element = document.getElementById(id);
                     if (!element) {
                         element = document.createElement('div');
@@ -232,10 +232,10 @@ function dashboardRefresh() {
                     element.innerHTML = `<p>${metric.label}: <span>${resourcesDepletion[metric.id] == Infinity ? "∞" : resourcesDepletion[metric.id]}</span></p>`;
                 });
 
-                updateRadarChart(countryMetrics['output'].economic, countryMetrics['input'].envEmissions - countryMetrics['output'].envEmissions, countryMetrics['output'].social);
+                updateRadarChart(areaMetrics['output'].economic, areaMetrics['input'].envEmissions - areaMetrics['output'].envEmissions, areaMetrics['output'].social);
             })
             .catch(error => {
-                console.error('There was a problem fetching country metrics:', error.message);
+                console.error('There was a problem fetching area metrics:', error.message);
             });
 
         })
@@ -274,15 +274,15 @@ function attachSelectedEvent() {
 	});
 }
 
-function tradesAddProcess(country) {
-    const container = document.getElementById(country + 'Processes');
+function tradesAddProcess(area) {
+    const container = document.getElementById(area + 'Processes');
     const newProcessDiv = document.createElement('div');
     newProcessDiv.className = 'form-group';
     newProcessDiv.innerHTML = `
         <label>Process ID:</label>
-        <input type="number" class="form-control mb-2" placeholder="Process ID" name="${country}ProcessId[]">
+        <input type="number" class="form-control mb-2" placeholder="Process ID" name="${area}ProcessId[]">
         <label>Amount:</label>
-        <input type="number" class="form-control mb-2" placeholder="Amount" name="${country}Amount[]">
+        <input type="number" class="form-control mb-2" placeholder="Amount" name="${area}Amount[]">
     `;
     container.appendChild(newProcessDiv);
 }
@@ -290,10 +290,10 @@ function tradesAddProcess(country) {
 function submitTrade() {
     const homeProcessIds = document.querySelectorAll('input[name="homeProcessId[]"]');
     const homeAmounts = document.querySelectorAll('input[name="homeAmount[]"]');
-	const foreignCountryUri = document.getElementById('trade-initiate-foreign-country-uri').value;
+	const foreignAreaUri = document.getElementById('trade-initiate-foreign-area-uri').value;
     const tradeData = {
         home_processes: [],
-		to_country_uri: foreignCountryUri
+		to_area_uri: foreignAreaUri
     };
 
     homeProcessIds.forEach((input, index) => {
@@ -331,10 +331,10 @@ function fetchTrades() {
 			listItem.innerHTML = `
 				<div class="mb-3 card">
 					<div class="card-body">
-						<h5 class="card-title">Trade with <a href="${trade.to_country_uri}" target="_blank">${trade.to_country_uri}</a></h5>
+						<h5 class="card-title">Trade with <a href="${trade.to_area_uri}" target="_blank">${trade.to_area_uri}</a></h5>
 						<div class="row">
 							<div class="col-md-6">
-								<h6>Home Country Processes</h6>
+								<h6>Home Area Processes</h6>
 								<div class="form-check form-switch">
 									<input class="form-check-input" type="checkbox" id="trade-status-${trade.id}" ${trade.home_confirm ? 'checked' : ''}>
 									<label class="form-check-label" for="trade-status-${trade.id}">${trade.home_confirm ? 'Validated' : 'Pending'}</label>
@@ -343,7 +343,7 @@ function fetchTrades() {
 								<button class="btn btn-outline-secondary btn-sm" onclick="tradeHomeAddProcess(${trade.id})" ${trade.home_confirm ? 'hidden' : ''} >Add Process</button>
 							</div>
 							<div class="col-md-6">
-								<h6>Foreign Country Processes</h6>
+								<h6>Foreign Area Processes</h6>
 								<p class="badge ${trade.foreign_confirm ? 'bg-success' : 'bg-warning'}">${trade.foreign_confirm ? 'Validated' : 'Pending'}</p>
 								<div id="trade-${trade.id}-foreign-processes" class="mb-2"></div>
 							</div>
@@ -405,8 +405,8 @@ document.addEventListener('DOMContentLoaded', function () {
 	tradesSetup();
 	setupExportDatabaseElement(document.getElementById('export-database-btn'));
 	setupImportDatabaseElement(document.getElementById('import-database-file'));
-	const countryResourcesPrefix = "country-resources";
-	countryResourcesSetup(countryResourcesPrefix);
+	const areaResourcesPrefix = "area-resources";
+	areaResourcesSetup(areaResourcesPrefix);
 	addProcessSetup();
 
 	updateRadarChart(0, 0, 0);

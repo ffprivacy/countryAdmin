@@ -1,3 +1,3 @@
 #!/bin/bash
-conda activate countryAdmin
-countryAdmin
+conda activate areaAdmin
+areaAdmin
