@@ -412,6 +412,17 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                     db.session.delete(process_usage)
             return process_usage
 
+        def fill_flow(self,flow):
+            processes = Process.query.all()
+            for usage in self.process_usages:
+                process = usage.process
+                for metric in Processes.metrics_get_ids_list():
+                    for sens in ['input','output']:
+                        flow[sens][metric] += Processes.retrieve_metric(processes, process, sens, metric) * usage.usage_count
+            
+            for composition in self.compositions:
+                composition.child.fill_flow(flow)
+
         def metrics(self):
             processes = Process.query.all()
             trades = Trade.query.all()
@@ -421,11 +432,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 flow['input'][metric] = 0
                 flow['output'][metric] = 0
             
-            for usage in self.process_usages:
-                process = usage.process
-                for metric in Processes.metrics_get_ids_list():
-                    for sens in ['input','output']:
-                        flow[sens][metric] += Processes.retrieve_metric(processes, process, sens, metric) * usage.usage_count
+            self.fill_flow(flow)
 
             for trade in trades:
                 for home_trade_process in trade.home_processes:
