@@ -430,7 +430,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         @auth_required
         @staticmethod
         def area_metrics(id):
-            area = Area.query.filter_by(id=id).first()
+            area = Area.query.get(id).first()
             if area:
                 return jsonify(area.metrics())
             else:
@@ -461,7 +461,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             elif request.method == 'GET':
                 return jsonify(area.toJson())
             elif request.method == 'delete':
-                Area.query.filter_by(id=id).delete()
+                Area.query.get(id).delete()
                 db.session.commit()
 
         @app.route('/api/area', methods=['POST','GET'])
