@@ -16,7 +16,6 @@ DEFAULT_DB_NAME = "country"
 DEFAULT_PORT = 5000
 DEFAULT_COUNTRY_NAME = "Template name"
 DEFAULT_COUNTRY_DESCRIPTION = "Template description"
-
 def jsonify(data):
     def replace_special_floats(obj):
         if isinstance(obj, float):
@@ -204,7 +203,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 return jsonify(response.json())
         else:
             return jsonify({'success': True, 'message': 'No foreign trade to delete'}), 200
-        
+    
     @app.route('/api/trade/receive', methods=['POST'])
     @auth_required
     def trade_receive():
@@ -329,9 +328,11 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
     
     class AreaComposition(db.Model):
         id = db.Column(db.Integer, primary_key=True)
-        area_id = db.Column(db.Integer, db.ForeignKey('area.id'), nullable=False)
-        child = db.Column(db.Integer, db.ForeignKey('area.id'), nullable=False)
-
+        area_id = db.Column(db.Integer, db.ForeignKey('country.id'), nullable=False)
+        child_id = db.Column(db.Integer, db.ForeignKey('country.id'), nullable=False)
+        area = db.relationship('Country', foreign_keys='AreaComposition.area_id', back_populates='compositions')
+        child = db.relationship('Country', foreign_keys='AreaComposition.child_id')
+                               
     class Country(db.Model):
         id = db.Column(db.Integer, primary_key=True)
         name = db.Column(db.String(100))
@@ -339,7 +340,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         resources = db.Column(db.JSON)
         process_usages = db.relationship('ProcessUsage', back_populates='country')
         trades = db.relationship('Trade', foreign_keys='Trade.home_country_id', back_populates='home_country')
-        childs = db.relationship('AreaComposition', backref='area', lazy=True)
+        compositions = db.relationship('AreaComposition', foreign_keys='AreaComposition.area_id', back_populates='area')
 
         @staticmethod
         def get_time_to_depletion(resource_amount, renew_rate, usage_balance):
