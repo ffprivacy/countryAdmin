@@ -528,18 +528,18 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         db.session.commit()
         return jsonify({'success': True})
 
-    @app.route('/api/process/<int:process_id>/dislike', methods=['POST'])
+    @app.route('/api/process/<int:id>/dislike', methods=['POST'])
     @auth_required
-    def dislike_process(process_id):
+    def dislike_process(id):
         if 'user_id' not in session:
             return jsonify({'success': False, 'error': 'User not logged in'}), 403
 
         user_id = session['user_id']
-        process = Process.query.get(process_id)
+        process = Process.query.get(id)
         if not process:
             return jsonify({'success': False, 'error': 'Process not found'}), 404
 
-        interaction = ProcessInteraction.query.filter_by(user_id=user_id, process_id=process_id).first()
+        interaction = ProcessInteraction.query.filter_by(user_id=user_id, process_id=id).first()
 
         if interaction:
             if interaction.interaction_type == 'like':
@@ -547,20 +547,20 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             else:
                 return jsonify({'success': False, 'error': 'Already disliked'}), 400
         else:
-            new_interaction = ProcessInteraction(user_id=user_id, process_id=process_id, interaction_type='dislike')
+            new_interaction = ProcessInteraction(user_id=user_id, process_id=id, interaction_type='dislike')
             db.session.add(new_interaction)
 
         db.session.commit()
         return jsonify({'success': True})
 
-    @app.route('/api/process/<int:process_id>/add_comment', methods=['POST'])
+    @app.route('/api/process/<int:id>/add_comment', methods=['POST'])
     @auth_required
-    def comment_process(process_id):
+    def comment_process(id):
         if 'user_id' not in session:
             return jsonify({'success': False, 'error': 'User not logged in'}), 403
 
         user_id = session['user_id']
-        process = Process.query.get(process_id)
+        process = Process.query.get(id)
         if not process:
             return jsonify({'success': False, 'error': 'Process not found'}), 404
 
@@ -568,7 +568,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         if not comment_text:
             return jsonify({'success': False, 'error': 'Comment is required'}), 400
 
-        comment = ProcessComment(user_id=user_id, process_id=process_id, comment=comment_text)
+        comment = ProcessComment(user_id=user_id, process_id=id, comment=comment_text)
         db.session.add(comment)
         db.session.commit()
         return jsonify({'success': True})
@@ -676,21 +676,21 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         process_list = [process_wrap_for_response(process) for process in processes]
         return jsonify(process_list)
 
-    @app.route('/api/process/<int:process_id>', methods=['GET','DELETE'])
+    @app.route('/api/process/<int:id>', methods=['GET','DELETE'])
     @auth_required
-    def handle_process(process_id):
-        process = Process.query.get(process_id)
+    def handle_process(id):
+        process = Process.query.get(id)
         if not process:
             return jsonify({'error': 'Process not found'}), 404
         if request.method == 'GET':
             process_data = process_wrap_for_response(process)
             return jsonify(process_data)
         elif request.method == 'DELETE':
-            Composition.query.filter_by(composed_process_id=process_id).delete()
-            ProcessInteraction.query.filter_by(process_id=process.id).delete()
-            ProcessComment.query.filter_by(process_id=process.id).delete()
-            ProcessUsage.query.filter_by(process_id=process.id).delete()
-            ProcessTag.query.filter_by(process_id=process.id).delete()
+            Composition.query.filter_by(composed_process_id=id).delete()
+            ProcessInteraction.query.filter_by(process_id=id).delete()
+            ProcessComment.query.filter_by(process_id=id).delete()
+            ProcessUsage.query.filter_by(process_id=id).delete()
+            ProcessTag.query.filter_by(process_id=id).delete()
         
             db.session.delete(process)
             db.session.commit()
