@@ -470,7 +470,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         @auth_required
         @staticmethod
         def handle_area():
-            area = MainArea.main_get()
+            area = Area.Main.main_get()
             if request.method == 'POST':
                 data = request.json
                 if area and data.get('id') == None:
@@ -817,121 +817,119 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                     'last_check_date': guard.last_check_date,
                     'alerts': alerts
                 })
+        class Main():
 
+            @staticmethod
+            def ensurePresent(name,description):
+                if not Area.Main.main_get():
+                    Area.set_area_data({'name': name, 'description': description})
 
-    class MainArea():
-
-        @staticmethod
-        def ensurePresent(name,description):
-            if not MainArea.main_get():
-                Area.set_area_data({'name': name, 'description': description})
-
-        @staticmethod
-        def main_get():
-            return Area.query.first()
-        
-        @app.route('/api/trade/receive', methods=['POST'])
-        @auth_required
-        @staticmethod
-        def main_trade_receive():
-            return Area.trade_receive(MainArea.main_get().id)
-
-        @app.route('/api/trade', methods=['POST'])
-        @auth_required
-        @staticmethod
-        def main_initiate_trade():
-            return Area.initiate_trade(MainArea.main_get().id)
-        
-        @app.route('/api/process/<int:id>/add_comment', methods=['POST'])
-        @auth_required
-        @staticmethod
-        def main_comment_process(id):
-            return Area.comment_process(MainArea.main_get().id,id)
-        
-        @app.route('/api/process/<int:id>/dislike', methods=['POST'])
-        @auth_required
-        @staticmethod
-        def main_dislike_process(id):
-            return Area.dislike_process(MainArea.main_get().id, id)
-        
-        @app.route('/api/process/<int:id>/like', methods=['POST'])
-        @auth_required
-        @staticmethod
-        def main_like_process(id):
-            return Area.like_process(MainArea.main_get().id, id)
-        
-        @app.route('/api/update_process_usage/<int:id>', methods=['POST'])
-        @auth_required
-        @staticmethod
-        def main_update_process_usage(id):
-            area = MainArea.main_get() 
-            if not area:
-                return jsonify({'error': 'Area not found'}), 404
-            return Area.update_process_usage(area.id,id)
-
-        @app.route('/api/area/metrics', methods=['GET'])
-        @auth_required
-        @staticmethod
-        def main_metrics():
-            area = MainArea.main_get()
-            if not area:
-                return jsonify({'error': 'Area not found'}), 404
-            return Area.area_metrics(area.id)
-        
-        @app.route('/api/set_process', methods=['POST'])
-        @auth_required
-        @staticmethod
-        def main_set_process():
-            return Area.set_process(MainArea.main_get().id)
-        
-        @app.route('/api/select_process', methods=['POST'])
-        @auth_required
-        @staticmethod
-        def main_select_process():
-            return Area.select_process(MainArea.main_get().id)
-        
-        @app.route('/api/trades', methods=['GET'])
-        @auth_required
-        @staticmethod
-        def main_get_trades():
-            return Area.get_trades(MainArea.main_get().id)
-        
-        @app.route('/dashboard', methods=['GET'])
-        @login_required
-        @staticmethod
-        def dashboard():
-            return render_template('dashboard.html')
-
-        class Guard():
-            @app.route('/api/guard/alerts/clear')
+            @staticmethod
+            def main_get():
+                return Area.query.first()
+            
+            @app.route('/api/trade/receive', methods=['POST'])
             @auth_required
             @staticmethod
-            def main_alerts_clear():
-                return Area.Guard.alerts_clear(MainArea.main_get().id)
-            
-            @app.route('/api/guard/alert/<int:alert_id>', methods=['DELETE'])
+            def main_trade_receive():
+                return Area.trade_receive(Area.Main.main_get().id)
+
+            @app.route('/api/trade', methods=['POST'])
             @auth_required
             @staticmethod
-            def main_alert(alert_id):
-                return Area.Guard.alert(MainArea.main_get().id, alert_id)
+            def main_initiate_trade():
+                return Area.initiate_trade(Area.Main.main_get().id)
             
-            @app.route('/api/guard/subscribe', methods=['POST'])
+            @app.route('/api/process/<int:id>/add_comment', methods=['POST'])
+            @auth_required
+            @staticmethod
+            def main_comment_process(id):
+                return Area.comment_process(Area.Main.main_get().id,id)
+            
+            @app.route('/api/process/<int:id>/dislike', methods=['POST'])
+            @auth_required
+            @staticmethod
+            def main_dislike_process(id):
+                return Area.dislike_process(Area.Main.main_get().id, id)
+            
+            @app.route('/api/process/<int:id>/like', methods=['POST'])
+            @auth_required
+            @staticmethod
+            def main_like_process(id):
+                return Area.like_process(Area.Main.main_get().id, id)
+            
+            @app.route('/api/update_process_usage/<int:id>', methods=['POST'])
+            @auth_required
+            @staticmethod
+            def main_update_process_usage(id):
+                area = Area.Main.main_get() 
+                if not area:
+                    return jsonify({'error': 'Area not found'}), 404
+                return Area.update_process_usage(area.id,id)
+
+            @app.route('/api/area/metrics', methods=['GET'])
+            @auth_required
+            @staticmethod
+            def main_metrics():
+                area = Area.Main.main_get()
+                if not area:
+                    return jsonify({'error': 'Area not found'}), 404
+                return Area.area_metrics(area.id)
+            
+            @app.route('/api/set_process', methods=['POST'])
+            @auth_required
+            @staticmethod
+            def main_set_process():
+                return Area.set_process(Area.Main.main_get().id)
+            
+            @app.route('/api/select_process', methods=['POST'])
+            @auth_required
+            @staticmethod
+            def main_select_process():
+                return Area.select_process(Area.Main.main_get().id)
+            
+            @app.route('/api/trades', methods=['GET'])
+            @auth_required
+            @staticmethod
+            def main_get_trades():
+                return Area.get_trades(Area.Main.main_get().id)
+            
+            @app.route('/dashboard', methods=['GET'])
             @login_required
             @staticmethod
-            def main_subscribe():
-                return Area.Guard.subscribe(MainArea.main_get().id)
-            
-            @app.route('/api/guard', methods=['GET'])
-            @login_required
-            @staticmethod
-            def main_list():
-                return Area.Guard.list(MainArea.main_get().id)
-            
-            @app.route('/guard')
-            @login_required
-            @staticmethod
-            def main_guard():
-                return render_template('guard.html')
+            def dashboard():
+                return render_template('dashboard.html')
+
+            class Guard():
+                @app.route('/api/guard/alerts/clear')
+                @auth_required
+                @staticmethod
+                def main_alerts_clear():
+                    return Area.Guard.alerts_clear(Area.Main.main_get().id)
+                
+                @app.route('/api/guard/alert/<int:alert_id>', methods=['DELETE'])
+                @auth_required
+                @staticmethod
+                def main_alert(alert_id):
+                    return Area.Guard.alert(Area.Main.main_get().id, alert_id)
+                
+                @app.route('/api/guard/subscribe', methods=['POST'])
+                @login_required
+                @staticmethod
+                def main_subscribe():
+                    return Area.Guard.subscribe(Area.Main.main_get().id)
+                
+                @app.route('/api/guard', methods=['GET'])
+                @login_required
+                @staticmethod
+                def main_list():
+                    return Area.Guard.list(Area.Main.main_get().id)
+                
+                @app.route('/guard')
+                @login_required
+                @staticmethod
+                def main_guard():
+                    return render_template('guard.html')
 
     @app.route('/')
     def index():
@@ -990,7 +988,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
         @staticmethod
         def get():
-            return MainArea.main_get().guard
+            return Area.Main.main_get().guard
         
         def daemon_loop(self_id):
             print("Guard background task started")
@@ -1189,7 +1187,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
     with app.app_context():
         db.create_all()
-        MainArea.ensurePresent(name,description)
+        Area.Main.ensurePresent(name,description)
         for guard in Guard.query.all():
             guard.daemon()
 
