@@ -304,6 +304,33 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         compositions = db.relationship('AreaComposition', foreign_keys='AreaComposition.area_id', back_populates='area')
 
         @staticmethod
+        def set_area_data(data):
+            area_resources = data.get('resources', {})
+            for key, resource in area_resources.items():
+                if 'amount' not in resource or resource['amount'] is None:
+                    resource['amount'] = 0
+                if 'renew_rate' not in resource or resource['renew_rate'] is None:
+                    resource['renew_rate'] = 0
+
+            area_name = data.get('name', DEFAULT_COUNTRY_NAME)
+            area_description = data.get('description', DEFAULT_COUNTRY_DESCRIPTION)
+            id = data.get('id', None)
+
+            if id is None:
+                area = Area(name=area_name, description=area_description, resources=area_resources)
+                db.session.add(area)
+            else:
+                area = Area.query.filter_by(id=id)
+                if not area:
+                    return jsonify({'error': 'Area not found'}), 404
+                area.name = area_name
+                area.description = area_description
+                area.resources = area_resources
+
+            db.session.commit()
+            return {'success': True}
+        
+        @staticmethod
         def get_main():
             return Area.query.first()
 
@@ -389,80 +416,65 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 'processes': processes
             }
 
-    @app.route('/api/area/<int:id>/metrics', methods=['GET'])
-    @auth_required
-    def area_metrics(id):
-        area = Area.query.filter_by(id=id).first()
-        if area:
-            metrics = area.metrics()
-            return jsonify(metrics)
-        else:
-            return jsonify({'error': 'Area not found'}), 404
+        @app.route('/api/area/<int:id>/metrics', methods=['GET'])
+        @auth_required
+        @staticmethod
+        def area_metrics(id):
+            area = Area.query.filter_by(id=id).first()
+            if area:
+                metrics = area.metrics()
+                return jsonify(metrics)
+            else:
+                return jsonify({'error': 'Area not found'}), 404
 
-    @app.route('/api/area/metrics', methods=['GET'])
-    @auth_required
-    def get_flow():
-        area = Area.get_main()
-        if not area:
-            return jsonify({'error': 'Area not found'}), 404
-        return area_metrics(area.id)
-    
-    @app.route('/api/areas', methods=['GET'])
-    @auth_required
-    def get_areas():
-        areas = Area.query.all()
-        areas_response = []
-        for area in areas:
-            areas_response.append(area.toJson())
-        return jsonify(areas_response)
-    
+        @app.route('/api/area/metrics', methods=['GET'])
+        @auth_required
+        @staticmethod
+        def get_flow():
+            area = Area.get_main()
+            if not area:
+                return jsonify({'error': 'Area not found'}), 404
+            return Area.area_metrics(area.id)
+        
+        @app.route('/api/areas', methods=['GET'])
+        @auth_required
+        @staticmethod
+        def get_areas():
+            areas = Area.query.all()
+            areas_response = []
+            for area in areas:
+                areas_response.append(area.toJson())
+            return jsonify(areas_response)
+        
 
-    @app.route('/api/area/<int:id>', methods=['GET','POST'])
-    @auth_required
-    def get_area(id):
-        area = Area.query.filter_by(id=id)
-        if not area:
-            return jsonify({'error': 'Area not found'}), 404
-        if request.method == 'POST':
-            data = request.json
-            return jsonify(Area.set_area_data(data))
-        elif request.method == 'GET':
-            return jsonify(area.toJson())
+        @app.route('/api/area/<int:id>', methods=['GET','POST'])
+        @auth_required
+        @staticmethod
+        def get_area(id):
+            area = Area.query.filter_by(id=id)
+            if not area:
+                return jsonify({'error': 'Area not found'}), 404
+            if request.method == 'POST':
+                data = request.json
+                data['id'] = id
+                return jsonify(Area.set_area_data(data))
+            elif request.method == 'GET':
+                return jsonify(area.toJson())
 
-    @app.route('/api/area', methods=['POST','GET'])
-    @auth_required
-    def handle_area():
-        area = Area.get_main()
-        if not area:
-            return jsonify({'error': 'Area not found'}), 404
-        if request.method == 'POST':
-            data = request.json
-            return jsonify(Area.set_area_data(data))
-        elif request.method == 'GET':
-            return get_area(area.id)
-
-    def set_area_data(data):
-        area_resources = data.get('resources', {})
-        for key, resource in area_resources.items():
-            if 'amount' not in resource or resource['amount'] is None:
-                resource['amount'] = 0
-            if 'renew_rate' not in resource or resource['renew_rate'] is None:
-                resource['renew_rate'] = 0
-
-        area_name = data.get('name', DEFAULT_COUNTRY_NAME)
-        area_description = data.get('description', DEFAULT_COUNTRY_DESCRIPTION)
-
-        area = Area.get_main()
-        if not area:
-            area = Area(name=area_name, description=area_description, resources=area_resources)
-            db.session.add(area)
-        else:
-            area.name = area_name
-            area.description = area_description
-            area.resources = area_resources
-
-        db.session.commit()
-        return {'success': True}
+        @app.route('/api/area', methods=['POST','GET'])
+        @auth_required
+        @staticmethod
+        def handle_area():
+            area = Area.get_main()
+            if request.method == 'POST':
+                data = request.json
+                if area and data.get('id') == None:
+                    data['id'] = area.id
+                return jsonify(Area.set_area_data(data))
+            elif request.method == 'GET':
+                if not area:
+                    return jsonify({'error': 'Area not found'}), 404
+                return Area.get_area(area.id)
 
     @app.route('/')
     def index():
