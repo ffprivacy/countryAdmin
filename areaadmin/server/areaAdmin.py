@@ -711,10 +711,10 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         db.session.commit()
         return jsonify({'success': True}), 200
 
-    @app.route('/api/delete_composition/<int:process_id>/<int:component_process_id>', methods=['POST'])
+    @app.route('/api/process/<int:id>/delete_composition/<int:component_process_id>', methods=['POST'])
     @auth_required
-    def delete_composition(process_id, component_process_id):
-        composition = Composition.query.filter_by(composed_process_id=process_id, component_process_id=component_process_id).first()
+    def delete_composition(id, component_process_id):
+        composition = Composition.query.filter_by(composed_process_id=id, component_process_id=component_process_id).first()
         if not composition:
             return jsonify({'error': 'Composition not found'}), 404
 

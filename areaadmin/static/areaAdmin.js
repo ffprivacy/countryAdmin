@@ -149,7 +149,7 @@ class Processes {
     }
     
     static compositionDelete(process_id, compositionId) {
-        fetch(`/api/delete_composition/${process_id}/${compositionId}`, {
+        fetch(`/api/process/${process_id}/delete_composition/${compositionId}`, {
             method: 'POST'
         })
         .then(response => response.json())
