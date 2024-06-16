@@ -233,6 +233,25 @@ function dashboardRefresh() {
                 });
 
                 updateRadarChart(areaMetrics['output'].economic, areaMetrics['input'].envEmissions - areaMetrics['output'].envEmissions, areaMetrics['output'].social);
+
+				fetch(`/api/area/${dashboard_data['area_id']}`)
+				.then(response => JSON_parse(response))
+				.then(async function(area) {
+					const subzones = document.getElementById("area-subareas");
+					subzones.innerHTML = '';
+					for(let composition of area.compositions) {
+						const id = composition['id'];
+						let child = await fetch(`/api/area/${id}`).then(response => JSON_parse(response));
+						let childElement = document.createElement('div');
+						childElement.className = "card card-body";
+						let childUri = dashboard_area_generate_uri_from_database("" + id);
+						childElement.innerHTML = `
+							<div><a href="${childUri}" target="_blank">${child.name}</a></div>
+							<div>${child.description}</div>
+						`;
+						subzones.appendChild(childElement);
+					}
+				});
             })
             .catch(error => {
                 console.error('There was a problem fetching area metrics:', error.message);

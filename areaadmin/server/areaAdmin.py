@@ -444,7 +444,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 'usage_count': pu.usage_count
             } for pu in self.process_usages]
 
-            compositions = [{'id': composition.id} for composition in self.compositions]
+            compositions = [{'id': composition.child_id} for composition in self.compositions]
 
             return {
                 'name': self.name,
