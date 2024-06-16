@@ -237,6 +237,8 @@ function dashboardRefresh() {
 				fetch(`/api/area/${dashboard_data['area_id']}`)
 				.then(response => JSON_parse(response))
 				.then(async function(area) {
+					const pageTitle = document.getElementById("dashboard-title");
+					pageTitle.innerText = ` - ${area.name}`;
 					const subzones = document.getElementById("area-subareas");
 					subzones.innerHTML = '';
 					for(let composition of area.compositions) {
