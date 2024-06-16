@@ -371,15 +371,47 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 'resources_depletion': resources_depletion
             }
         
+        def toJson(self):
+            processes = [{
+                'id': pu.process_id,
+                'title': pu.process.title,
+                'usage_count': pu.usage_count
+            } for pu in self.process_usages]
+
+            return {
+                'name': self.name,
+                'description': self.description,
+                'resources': self.resources,
+                'processes': processes
+            }
+
+    @app.route('/api/area/<int:id>/metrics', methods=['GET'])
+    @auth_required
+    def area_metrics():
+        area = Area.query.filter_by(id=id).first()
+        if area:
+            metrics = area.metrics()
+            return jsonify(metrics)
+        else:
+            return jsonify({'error': 'Area not found'}), 404
+
     @app.route('/api/area/metrics', methods=['GET'])
     @auth_required
     def get_flow():
         area = Area.query.first()
         if not area:
             return jsonify({'error': 'Area not found'}), 404
-        metrics = area.metrics()
-        return jsonify(metrics)
-
+        return redirect(f'/api/area/${area.id}/metrics')
+    
+    @app.route('/api/areas', methods=['GET'])
+    @auth_required
+    def get_areas():
+        areas = Area.query.all()
+        areas_response = []
+        for area in areas:
+            areas_response.append(area.toJson())
+        return jsonify(areas_response)
+    
     @app.route('/api/area', methods=['POST','GET'])
     @auth_required
     def handle_area():
@@ -390,24 +422,10 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             area = Area.query.first()
 
             if not area:
-                return jsonify({
-                    'name': DEFAULT_COUNTRY_NAME,
-                    'description': DEFAULT_COUNTRY_DESCRIPTION,
-                    'resources': {}
-                })
+                return jsonify({'error': 'No area in db'}), 404
 
-            processes = [{
-                'id': pu.process_id,
-                'title': pu.process.title,
-                'usage_count': pu.usage_count
-            } for pu in area.process_usages]
-
-            return jsonify({
-                'name': area.name,
-                'description': area.description,
-                'resources': area.resources,
-                'processes': processes
-            })
+            return jsonify(area.toJson())
+            
 
     def set_area_data(data):
         area_resources = data.get('resources', {})
