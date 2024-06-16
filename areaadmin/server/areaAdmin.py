@@ -316,25 +316,19 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             else:
                 return abs(resource_amount / net_usage) 
 
-        @staticmethod
-        def process_usage(area,process,state):
-            process_usage = ProcessUsage.query.filter_by(area_id=area.id, process_id=process.id).first()
+        def process_usage(self,process,state):
+            process_usage = ProcessUsage.query.filter_by(area_id=self.id, process_id=process.id).first()
             if state:
                 if not process_usage:
-                    new_process_usage = ProcessUsage(area_id=area.id, process_id=process.id, usage_count=1)
+                    new_process_usage = ProcessUsage(area_id=self.id, process_id=process.id, usage_count=1)
                     db.session.add(new_process_usage)
             else:
                 if process_usage:
                     db.session.delete(process_usage)
             return process_usage
 
-        @staticmethod
-        def metrics():
-            area = Area.query.first()
-            if not area:
-                return jsonify({'error': 'Area not found'}), 404
-
-            area_resources = area.resources
+        def metrics(self):
+            area_resources = self.resources
             processes = Process.query.all()
             trades = Trade.query.all()
             flow = {'input': {}, 'output': {}}
@@ -343,7 +337,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 flow['input'][metric] = 0
                 flow['output'][metric] = 0
             
-            for usage in area.process_usages:
+            for usage in self.process_usages:
                 process = usage.process
                 for metric in Processes.metrics_get_ids_list():
                     for sens in ['input','output']:
@@ -376,66 +370,66 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 'resources_depletion': resources_depletion
             }
         
-        @app.route('/api/area/metrics', methods=['GET'])
-        @auth_required
-        @staticmethod
-        def get_flow():
-            metrics = Area.metrics()
-            return jsonify(metrics)
+    @app.route('/api/area/metrics', methods=['GET'])
+    @auth_required
+    def get_flow():
+        area = Area.query.first()
+        if not area:
+            return jsonify({'error': 'Area not found'}), 404
+        metrics = area.metrics()
+        return jsonify(metrics)
 
-        @app.route('/api/area', methods=['POST','GET'])
-        @auth_required
-        @staticmethod
-        def handle_area():
-            if request.method == 'POST':
-                data = request.json
-                return jsonify(Area.set_area_data(data))
-            elif request.method == 'GET':
-                area = Area.query.first()
+    @app.route('/api/area', methods=['POST','GET'])
+    @auth_required
+    def handle_area():
+        if request.method == 'POST':
+            data = request.json
+            return jsonify(Area.set_area_data(data))
+        elif request.method == 'GET':
+            area = Area.query.first()
 
-                if not area:
-                    return jsonify({
-                        'name': DEFAULT_COUNTRY_NAME,
-                        'description': DEFAULT_COUNTRY_DESCRIPTION,
-                        'resources': {}
-                    })
-
-                processes = [{
-                    'id': pu.process_id,
-                    'title': pu.process.title,
-                    'usage_count': pu.usage_count
-                } for pu in area.process_usages]
-
+            if not area:
                 return jsonify({
-                    'name': area.name,
-                    'description': area.description,
-                    'resources': area.resources,
-                    'processes': processes
+                    'name': DEFAULT_COUNTRY_NAME,
+                    'description': DEFAULT_COUNTRY_DESCRIPTION,
+                    'resources': {}
                 })
 
-        @staticmethod
-        def set_area_data(data):
-            area_resources = data.get('resources', {})
-            for key, resource in area_resources.items():
-                if 'amount' not in resource or resource['amount'] is None:
-                    resource['amount'] = 0
-                if 'renew_rate' not in resource or resource['renew_rate'] is None:
-                    resource['renew_rate'] = 0
+            processes = [{
+                'id': pu.process_id,
+                'title': pu.process.title,
+                'usage_count': pu.usage_count
+            } for pu in area.process_usages]
 
-            area_name = data.get('name', DEFAULT_COUNTRY_NAME)
-            area_description = data.get('description', DEFAULT_COUNTRY_DESCRIPTION)
+            return jsonify({
+                'name': area.name,
+                'description': area.description,
+                'resources': area.resources,
+                'processes': processes
+            })
 
-            area = Area.query.first()
-            if not area:
-                area = Area(name=area_name, description=area_description, resources=area_resources)
-                db.session.add(area)
-            else:
-                area.name = area_name
-                area.description = area_description
-                area.resources = area_resources
+    def set_area_data(data):
+        area_resources = data.get('resources', {})
+        for key, resource in area_resources.items():
+            if 'amount' not in resource or resource['amount'] is None:
+                resource['amount'] = 0
+            if 'renew_rate' not in resource or resource['renew_rate'] is None:
+                resource['renew_rate'] = 0
 
-            db.session.commit()
-            return {'success': True}
+        area_name = data.get('name', DEFAULT_COUNTRY_NAME)
+        area_description = data.get('description', DEFAULT_COUNTRY_DESCRIPTION)
+
+        area = Area.query.first()
+        if not area:
+            area = Area(name=area_name, description=area_description, resources=area_resources)
+            db.session.add(area)
+        else:
+            area.name = area_name
+            area.description = area_description
+            area.resources = area_resources
+
+        db.session.commit()
+        return {'success': True}
 
     @app.route('/')
     def index():
@@ -552,7 +546,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         processes = Process.query.filter(Process.id.in_(ids)).all()
         if processes and len(processes) == len(states):
             for process, state in zip(processes, states):
-                Area.process_usage(area,process,state)
+                area.process_usage(process,state)
 
             db.session.commit()
 
@@ -609,7 +603,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             area = Area.query.first()
             if not area:
                 return jsonify({'error': 'Area not found'}), 404
-            process_usage = Area.process_usage(area,new_process,selected)
+            process_usage = area.process_usage(new_process,selected)
             if process_usage:
                 process_usage.amount = amount
 
