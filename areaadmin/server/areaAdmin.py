@@ -108,6 +108,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 return jsonify(process_data)
             elif request.method == 'DELETE':
                 Composition.query.filter_by(composed_process_id=id).delete()
+                Composition.query.filter_by(component_process_id=id).delete()
                 ProcessInteraction.query.filter_by(process_id=id).delete()
                 ProcessComment.query.filter_by(process_id=id).delete()
                 ProcessUsage.query.filter_by(process_id=id).delete()
@@ -969,24 +970,27 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
     class GuardAlert(db.Model):
         id = DB.Column(DB.Integer, primary_key=True)
-        guard_id = DB.Column(DB.Integer, DB.ForeignKey('guard.id'), default=guard_get_id)
         title = DB.Column(DB.String)
         description = DB.Column(DB.String)
         time = DB.Column(DB.DateTime, default=datetime.now)
         area = DB.Column(DB.String)
 
+        guard_id = DB.Column(DB.Integer, DB.ForeignKey('guard.id'), default=guard_get_id)
+        guard = db.relationship('Guard', foreign_keys='GuardAlert.guard_id', back_populates='alerts')
+        
+
     class Guard(db.Model):
         id = DB.Column(DB.Integer, primary_key=True)
         area_uris = DB.Column(DB.JSON, default=[])
         last_check_date = DB.Column(DB.DateTime, default=datetime.now)
-        alerts = db.relationship('GuardAlert', backref='guard', lazy=True)
-        
+        alerts = db.relationship('GuardAlert', back_populates='guard', lazy=True)
+
         def signal_a_pass(self):
             self.last_check_date = datetime.now()
 
         @staticmethod
         def get():
-            MainArea.main_get().guard
+            return MainArea.main_get().guard
         
         def daemon_loop(self_id):
             print("Guard background task started")
