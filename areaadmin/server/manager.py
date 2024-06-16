@@ -31,7 +31,7 @@ def start_instance():
 
     try:
         import shutil
-        destination_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), f'../instance/{name}.db')
+        destination_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), f'../../instance/{name}.db')
         shutil.copyfile(db_path, destination_path)
     except Exception as e:
         return jsonify({'success': False, 'error': f'Failed to import database: {str(e)}'}), 500

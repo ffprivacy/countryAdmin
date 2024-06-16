@@ -962,7 +962,6 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         process_list = [process.wrap_for_response() for process in processes]
         return jsonify(process_list)
 
-
     def guard_get_id():
         return Guard.get().id
 
@@ -975,7 +974,6 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
         guard_id = DB.Column(DB.Integer, DB.ForeignKey('guard.id'), default=guard_get_id)
         guard = db.relationship('Guard', foreign_keys='GuardAlert.guard_id', back_populates='alerts')
-        
 
     class Guard(db.Model):
         id = DB.Column(DB.Integer, primary_key=True)
@@ -1173,12 +1171,12 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
     @auth_required
     def handle_database():
         if request.method == 'GET':
-            db_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), '../instance/' + db_name_fname)
+            db_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), '../../instance/' + db_name_fname)
             return send_file(db_path, as_attachment=True, download_name=db_name_fname)
         elif request.method == 'POST':
             file = request.files['file']
             if file:
-                file_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), '../instance/' + db_name_fname)
+                file_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), '../../instance/' + db_name_fname)
                 file.save(file_path)
                 db.create_all()
                 return jsonify({'success': True})
