@@ -35,6 +35,12 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
     def DEFAULT_HOST():
         return f'http://127.0.0.1:{app.config["SERVING_PORT"]}'
 
+    def area_generate_uri_from_database(uri):
+        if ( IS_LOCAL_AREA_REGEX(uri) ):
+            return DEFAULT_HOST(), f"{DEFAULT_HOST()}/api/area/{int(uri)}";
+        else:
+            return uri, f"{uri}/api/area";
+
     def login_required(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
@@ -1014,26 +1020,22 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 while True:
                     countries = []
                     for uri in self.area_uris:
-                        area_path = "/api/area"
-                        if IS_LOCAL_AREA_REGEX(uri):
-                            area_path = f"/api/area/{int(uri)}"
-                            uri = DEFAULT_HOST()
+                        hostUri, areaURI = area_generate_uri_from_database(uri)
 
-                        response = requests.get(f"{uri}/{area_path}")
+                        response = requests.get(f"{areaURI}")
                         response.raise_for_status()
                         area = response.json()
 
-                        response = requests.get(f"{uri}/api/processes")
+                        response = requests.get(f"{hostUri}/api/processes")
                         response.raise_for_status()
                         processes = response.json()
 
-                        response = requests.get(f"{uri}/{area_path}/metrics")
+                        response = requests.get(f"{areaURI}/metrics")
                         response.raise_for_status()
                         metrics = response.json()
 
                         countries.append({
                             'uri': uri,
-                            'area_path': area_path,
                             'data': {
                                 'area': area,
                                 'processes': processes,
@@ -1049,8 +1051,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                         for process_usage in area['data']['area']['processes']:
                             id = process_usage['id']
                             processOffer = processesOffers.get(id, {
-                                'uri': area['uri'], 'count': 0, 'id': id,
-                                'area_path': area_path
+                                'uri': area['uri'], 'count': 0, 'id': id
                             })
                             processOffer['count'] += 1;
                             processesOffers[id] = processOffer
