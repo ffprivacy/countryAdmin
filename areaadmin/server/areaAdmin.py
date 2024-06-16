@@ -364,10 +364,10 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                         flow[sens][metric] += Processes.retrieve_metric(processes, process, sens, metric) * usage.usage_count
 
             for trade in trades:
-                for home_process in trade.home_processes:
+                for home_trade_process in trade.home_processes:
                     for metric in Processes.metrics_get_ids_list():
-                        if 'id' in home_process and 'amount' in home_process:
-                            flow['output'][metric] -= Processes.retrieve_metric(processes, Processes.get_by_id(processes, home_process['id']), 'output', metric) * home_process['amount']
+                        if 'id' in home_trade_process and 'amount' in home_trade_process:
+                            flow['output'][metric] -= Processes.retrieve_metric(processes, Processes.get_by_id(processes, home_trade_process['id']), 'output', metric) * home_trade_process['amount']
                 
                 response = requests.get(f"{trade.to_area_uri}/api/processes")
                 response.raise_for_status()
