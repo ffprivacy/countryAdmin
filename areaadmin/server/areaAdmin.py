@@ -127,6 +127,13 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 ProcessComment.query.filter_by(process_id=id).delete()
                 ProcessUsage.query.filter_by(process_id=id).delete()
                 ProcessTag.query.filter_by(process_id=id).delete()
+                for trade in Trade.query.all():
+                    oldProcesses = trade.home_processes
+                    trade.home_processes = []
+                    for index in range(len(oldProcesses)):
+                        trade_process = oldProcesses[index]
+                        if trade_process['id'] != id:
+                            trade.home_processes.append(trade_process)
             
                 db.session.delete(process)
                 db.session.commit()
