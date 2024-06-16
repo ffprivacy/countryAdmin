@@ -86,8 +86,8 @@ function areaResourcesSetup(prefix) {
         const resources = {};
         for(let metric of Processes.metricsGetIdsList()) {
             resources[metric] = {
-                amount: parseInt(document.getElementById(`${prefix}-${metric}-amount`).value) || 0,
-                renew_rate: parseInt(document.getElementById(`${prefix}-${metric}-renew-rate`).value) || 0
+                amount: parseFloat(document.getElementById(`${prefix}-${metric}-amount`).value) || 0,
+                renew_rate: parseFloat(document.getElementById(`${prefix}-${metric}-renew-rate`).value) || 0
             };
         }
         fetch('/api/area', {
