@@ -654,6 +654,34 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             db.session.commit()
             return jsonify({'success': True})
 
+        @app.route('/api/area/<int:id>/select_process', methods=['POST'])
+        @auth_required
+        @staticmethod
+        def select_process(id):
+            ids = []
+            states = []
+            id_single = request.form.get('id')
+            if id_single:
+                ids.append(id_single)
+                states.append(request.form.get('selected'))
+            else:
+                ids = request.form.getlist('id[]')
+                states = request.form.getlist('selected[]')
+            states = [ast.literal_eval(value.capitalize()) for value in states]
+
+            area = Area.query.get(id)
+            if not area:
+                return jsonify({'error': 'Area not found'}), 404
+
+            processes = Process.query.filter(Process.id.in_(ids)).all()
+            if processes and len(processes) == len(states):
+                for process, state in zip(processes, states):
+                    area.process_usage(process,state)
+
+                db.session.commit()
+
+            return jsonify({'success': True})
+
     class MainArea():
 
         @staticmethod
@@ -701,6 +729,11 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         @staticmethod
         def set_process():
             return Area.set_process(MainArea.get().id)
+        
+        @app.route('/api/select_process', methods=['POST'])
+        @auth_required
+        def select_process():
+            return Area.select_process(MainArea.get().id)
 
     @app.route('/')
     def index():
@@ -725,33 +758,6 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         db.session.commit()
         Area.set_area_data({})
         return redirect(url_for('logout'))
-    
-    @app.route('/api/select_process', methods=['POST'])
-    @auth_required
-    def select_process():
-        ids = []
-        states = []
-        id_single = request.form.get('id')
-        if id_single:
-            ids.append(id_single)
-            states.append(request.form.get('selected'))
-        else:
-            ids = request.form.getlist('id[]')
-            states = request.form.getlist('selected[]')
-        states = [ast.literal_eval(value.capitalize()) for value in states]
-
-        area = MainArea.get()
-        if not area:
-            return jsonify({'error': 'Area not found'}), 404
-
-        processes = Process.query.filter(Process.id.in_(ids)).all()
-        if processes and len(processes) == len(states):
-            for process, state in zip(processes, states):
-                area.process_usage(process,state)
-
-            db.session.commit()
-
-        return jsonify({'success': True})
 
     @app.route('/api/processes', methods=['GET'])
     @auth_required
