@@ -868,6 +868,9 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         area_uris = DB.Column(DB.JSON, default=[])
         last_check_date = DB.Column(DB.DateTime, default=datetime.now)
         alerts = db.relationship('GuardAlert', backref='guard', lazy=True)
+        
+        def signal_a_pass(self):
+            self.last_check_date = datetime.now()
 
         @staticmethod
         def get():
@@ -877,24 +880,20 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 db.session.add(guard)
                 db.session.commit()
             return guard
-        
-        def checked_update(self):
-            self.last_check_date = datetime.now()
-            db.session.commit()
 
         @app.route('/api/guard/alerts/clear')
         @auth_required
         @staticmethod
-        def guard_alert_delete():
+        def alerts_clear():
             guard = Guard.get()
             GuardAlert.query.filter(GuardAlert.guard_id == guard.id).delete()
             db.session.commit()
             return {'success': True}
         
-        @staticmethod
         @app.route('/api/guard/alert/<int:alert_id>', methods=['DELETE'])
         @auth_required
-        def guard_alert_manage(alert_id):
+        @staticmethod
+        def alert(alert_id):
             if request.method == 'DELETE':
                 GuardAlert.query.filter(GuardAlert.id == alert_id).delete()
                 db.session.commit()
@@ -903,7 +902,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         @app.route('/api/guard/subscribe', methods=['POST'])
         @login_required
         @staticmethod
-        def guard_subsribe():
+        def subscribe():
             guard = Guard.get()
             uris = request.json.get('uri')
             
@@ -923,7 +922,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         @app.route('/api/guard', methods=['GET'])
         @login_required
         @staticmethod
-        def guard_list():
+        def list():
             guard = Guard.get()
             alerts = []
             for alert in guard.alerts:
@@ -946,13 +945,11 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         def guard():
             return render_template('guard.html')
         
-        @staticmethod
-        def guard_daemon_loop():
+        def daemon_loop(self):
             with app.app_context():
                 while True:
-                    guard = Guard.get()
                     countries = []
-                    for uri in guard.area_uris:
+                    for uri in self.area_uris:
                         response = requests.get(f"{uri}/api/area")
                         response.raise_for_status()
                         area = response.json()
@@ -1031,13 +1028,12 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                                 description=f"Pays eméttant plus de CO2 que ce que sa capacité d'absorption amount={abs(atmosphereFill)}"
                             ))
 
-                    guard.checked_update()
+                    self.signal_a_pass()
                     db.session.commit()
                     time.sleep(30)
 
-        @staticmethod
-        def guard_daemon():
-            thread = threading.Thread(target=Guard.guard_daemon_loop, daemon=True)
+        def daemon(self):
+            thread = threading.Thread(target=Guard.daemon_loop, args=(self), daemon=True)
             thread.start()
 
     @app.route('/login', methods=['GET', 'POST'])
@@ -1145,7 +1141,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         db.create_all()
         if not MainArea.get():
             Area.set_area_data({'name': name, 'description': description})
-        Guard.guard_daemon()
+        Guard.get().daemon()
 
     return app, db
 
