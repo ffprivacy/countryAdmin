@@ -351,9 +351,6 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 if 'renew_rate' not in resource or resource['renew_rate'] is None:
                     resource['renew_rate'] = 0
 
-            compositions = data.get('compositions', [])
-            area_name = data.get('name', DEFAULT_COUNTRY_NAME)
-            area_description = data.get('description', DEFAULT_COUNTRY_DESCRIPTION)
             id = data.get('id', None)
 
             area = None
@@ -361,7 +358,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 guard = Guard()
                 db.session.add(guard)
                 db.session.commit()
-                area = Area(name=area_name, description=area_description, 
+                area = Area(name=data.get('name', DEFAULT_COUNTRY_NAME), description=data.get('description', DEFAULT_COUNTRY_DESCRIPTION), 
                             resources=area_resources, guard_id=guard.id
                 )
                 db.session.add(area)
@@ -369,8 +366,10 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 area = Area.query.get(id)
                 if not area:
                     return jsonify({'error': 'Area not found'}), 404
-                area.name = area_name
-                area.description = area_description
+                if data.get('name') is not None:
+                    area.name = data.get('name')
+                if data.get('description') is not None:
+                    area.name = data.get('description')
                 area.resources = area_resources
 
             compositions = data.get('compositions')
