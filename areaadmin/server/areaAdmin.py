@@ -447,7 +447,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             return jsonify(areas_response)
         
 
-        @app.route('/api/area/<int:id>', methods=['GET','POST'])
+        @app.route('/api/area/<int:id>', methods=['GET','POST','DELETE'])
         @auth_required
         @staticmethod
         def get_area(id):
@@ -460,6 +460,9 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 return jsonify(Area.set_area_data(data))
             elif request.method == 'GET':
                 return jsonify(area.toJson())
+            elif request.method == 'delete':
+                Area.query.filter_by(id=id).delete()
+                db.session.commit()
 
         @app.route('/api/area', methods=['POST','GET'])
         @auth_required
