@@ -304,21 +304,32 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 if 'renew_rate' not in resource or resource['renew_rate'] is None:
                     resource['renew_rate'] = 0
 
+            compositions = data.get('compositions', [])
             area_name = data.get('name', DEFAULT_COUNTRY_NAME)
             area_description = data.get('description', DEFAULT_COUNTRY_DESCRIPTION)
             id = data.get('id', None)
 
             if id is None:
-                area = Area(name=area_name, description=area_description, resources=area_resources)
+                area = Area(name=area_name, description=area_description, 
+                            resources=area_resources
+                )
                 db.session.add(area)
             else:
-                area = Area.query.filter_by(id=id)
+                area = Area.query.get(id)
                 if not area:
                     return jsonify({'error': 'Area not found'}), 404
                 area.name = area_name
                 area.description = area_description
                 area.resources = area_resources
 
+            compositions = data.get('compositions')
+            if compositions is not None:
+                AreaComposition.query.filter_by(area_id=id).delete()
+                for composition in compositions:
+                    if Area.query.get(composition.id) == None:
+                        return jsonify({'error': f'Area {area.id} is composed of {composition.id} but this area not found'}), 404
+                    compositionItem = AreaComposition(area_id=area.id,child_id=composition.id)
+                    db.session.add(compositionItem)
             db.session.commit()
             return {'success': True}
 
@@ -336,11 +347,13 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             else:
                 return abs(resource_amount / net_usage) 
 
-        def process_usage(self,process,state):
+        def process_set_usage(self,process,amount):
             process_usage = ProcessUsage.query.filter_by(area_id=self.id, process_id=process.id).first()
-            if state:
-                if not process_usage:
-                    new_process_usage = ProcessUsage(area_id=self.id, process_id=process.id, usage_count=1)
+            if 0 < amount:
+                if process_usage:
+                    process_usage.usage_count = amount
+                else:
+                    new_process_usage = ProcessUsage(area_id=self.id, process_id=process.id, usage_count=amount)
                     db.session.add(new_process_usage)
             else:
                 if process_usage:
@@ -397,11 +410,14 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 'usage_count': pu.usage_count
             } for pu in self.process_usages]
 
+            compositions = [{'id': composition.id} for composition in self.compositions]
+
             return {
                 'name': self.name,
                 'description': self.description,
                 'resources': self.resources,
-                'processes': processes
+                'processes': processes,
+                'compositions': compositions
             }
 
         @app.route('/api/area/<int:id>/metrics', methods=['GET'])
@@ -410,8 +426,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         def area_metrics(id):
             area = Area.query.filter_by(id=id).first()
             if area:
-                metrics = area.metrics()
-                return jsonify(metrics)
+                return jsonify(area.metrics())
             else:
                 return jsonify({'error': 'Area not found'}), 404
         
@@ -602,7 +617,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                     area = Area.query.filter_by(id)
                     if not area:
                         return jsonify({'error': 'Area not found'}), 404
-                    process_usage = area.process_usage(new_process,selected)
+                    process_usage = area.process_set_usage(new_process,selected)
                     if process_usage:
                         process_usage.amount = process_data.get('amount')
 
@@ -641,10 +656,9 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             processes = Process.query.filter(Process.id.in_(ids)).all()
             if processes and len(processes) == len(states):
                 for process, state in zip(processes, states):
-                    area.process_usage(process,state)
+                    area.process_set_usage(process,state)
 
-                db.session.commit()
-
+            db.session.commit()
             return jsonify({'success': True})
 
         @app.route('/api/area/<int:id>/trade/receive', methods=['POST'])
