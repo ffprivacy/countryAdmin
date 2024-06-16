@@ -83,7 +83,30 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
         def get_usage(self, area=None):
             process_usage = next((pu for pu in self.usages if area == None or pu.area_id == area.id), None)
-            return process_usage.usage_count if process_usage else 0
+            process_usage = process_usage.usage_count if process_usage else 0
+            if area is not None:
+                for composition in area.compositions:
+                    process_usage += self.get_usage(composition.child)
+            return process_usage
+        
+        def get_like_count(self, area=None):
+            count = 0
+            if area is not None:
+                for composition in area.compositions:
+                    count += self.get_like_count(composition.child)
+            count += len([i for i in self.interactions if (i.interaction_type == 'like' and (area == None or area.id == i.area_id))]) - len([i for i in self.interactions if (i.interaction_type == 'dislike' and (area == None or area.id == i.area_id))])
+            return count
+        
+        def get_comments(self,area=None):
+            comments = [{
+                    'user': comment.user.username,
+                    'date': comment.timestamp.isoformat(),
+                    'text': comment.comment
+                } for comment in self.comments if (comment.user and (area == None or area.id == comment.area_id))]
+            if area is not None:
+                for composition in area.compositions:
+                    comments.extend(self.get_comments(composition.child))
+            return comments
         
         def wrap_for_response(self, area=None):
             """Helper function to format the process data for JSON response."""
@@ -101,13 +124,8 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                     'id': comp.component_process_id,
                     'amount': comp.amount
                 } for comp in self.composition],
-                'like_count': len([i for i in self.interactions if i.interaction_type == 'like']) -
-                            len([i for i in self.interactions if i.interaction_type == 'dislike']),
-                'comments': [{
-                    'user': comment.user.username,
-                    'date': comment.timestamp.isoformat(),
-                    'text': comment.comment
-                } for comment in self.comments if comment.user]
+                'like_count': self.get_like_count(area),
+                'comments': self.get_comments(area)
             }
 
         @app.route('/api/process/<int:id>', methods=['GET','DELETE'])
@@ -415,8 +433,8 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                         if 'id' in home_trade_process and 'amount' in home_trade_process:
                             flow['output'][metric] -= Processes.retrieve_metric(processes, Processes.get_by_id(processes, home_trade_process['id']), 'output', metric) * home_trade_process['amount']
                 
-                uri, trash = area_generate_uri_from_database(trade.to_area_uri)
-                response = requests.get(f"{uri}/api/processes")
+                uri, areaURI = area_generate_uri_from_database(trade.to_area_uri)
+                response = requests.get(f"{areaURI}/processes")
                 response.raise_for_status()
                 foreign_processes = response.json()
                 for foreign_trade_process in trade.foreign_processes:
@@ -463,6 +481,16 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 return jsonify(area.metrics())
             else:
                 return jsonify({'error': 'Area not found'}), 404
+        
+        @app.route('/api/area/<int:id>/processes', methods=['GET'])
+        @auth_required
+        def area_get_processes(id):
+            area = Area.query.get(id)
+            if not area:
+                return jsonify({'error': 'Area not found'}), 404
+            processes = Process.query.all()
+            process_list = [process.wrap_for_response(area) for process in processes]
+            return jsonify(process_list)
         
         @app.route('/api/areas', methods=['GET'])
         @auth_required
@@ -1057,7 +1085,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                         response.raise_for_status()
                         area = response.json()
 
-                        response = requests.get(f"{hostUri}/api/processes")
+                        response = requests.get(f"{areaURI}/processes")
                         response.raise_for_status()
                         processes = response.json()
 

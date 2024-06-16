@@ -182,7 +182,7 @@ function JSON_parse(response) {
     });
 }
 function dashboardRefresh() {
-    return fetch('/api/processes')
+    return fetch(`/api/area/${dashboard_data['area_id']}/processes`)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -515,7 +515,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	});	
 		
 	document.getElementById('export-btn').addEventListener('click', function() {
-		fetch('/api/processes')
+		fetch(`/api/area/${dashboard_data['area_id']}/processes`)
 		.then(response => {
 		if (!response.ok) {
 			throw new Error('Network response was not ok');
