@@ -430,7 +430,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         @auth_required
         @staticmethod
         def area_metrics(id):
-            area = Area.query.get(id).first()
+            area = Area.query.get(id)
             if area:
                 return jsonify(area.metrics())
             else:
@@ -849,23 +849,23 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         @app.route('/api/process/<int:id>/dislike', methods=['POST'])
         @auth_required
         @staticmethod
-        def main_dislike_process(process_id):
-            return Area.dislike_process(MainArea.main_get().id, process_id)
+        def main_dislike_process(id):
+            return Area.dislike_process(MainArea.main_get().id, id)
         
-        @app.route('/api/process/<int:process_id>/like', methods=['POST'])
+        @app.route('/api/process/<int:id>/like', methods=['POST'])
         @auth_required
         @staticmethod
-        def main_like_process(process_id):
-            return Area.like_process(MainArea.main_get().id, process_id)
+        def main_like_process(id):
+            return Area.like_process(MainArea.main_get().id, id)
         
-        @app.route('/api/update_process_usage/<int:process_id>', methods=['POST'])
+        @app.route('/api/update_process_usage/<int:id>', methods=['POST'])
         @auth_required
         @staticmethod
-        def main_update_process_usage(process_id):
+        def main_update_process_usage(id):
             area = MainArea.main_get() 
             if not area:
                 return jsonify({'error': 'Area not found'}), 404
-            return Area.update_process_usage(area.id,process_id)
+            return Area.update_process_usage(area.id,id)
 
         @app.route('/api/area/metrics', methods=['GET'])
         @auth_required
