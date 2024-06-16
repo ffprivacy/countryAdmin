@@ -294,6 +294,9 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         process_usages = db.relationship('ProcessUsage', back_populates='area')
         trades = db.relationship('Trade', foreign_keys='Trade.home_area_id', back_populates='home_area')
         compositions = db.relationship('AreaComposition', foreign_keys='AreaComposition.area_id', back_populates='area')
+        
+        guard_id = DB.Column(DB.Integer, DB.ForeignKey('guard.id'), nullable=False)
+        guard = db.relationship('Guard')
 
         @staticmethod
         def set_area_data(data):
@@ -742,6 +745,75 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
             return jsonify(trades_data)
 
+        class Guard():
+            @app.route('/api/area/<int:id>/guard/alerts/clear')
+            @auth_required
+            @staticmethod
+            def alerts_clear(id):
+                area = Area.query.get(id)
+                if not area:
+                    return jsonify({'error': 'Area not found'}), 404
+                guard = area.guard
+                GuardAlert.query.filter(GuardAlert.guard_id == guard.id).delete()
+                db.session.commit()
+                return {'success': True}
+
+            @app.route('/api/guard/alert/<int:alert_id>', methods=['DELETE'])
+            @auth_required
+            @staticmethod
+            def alert(alert_id):
+                if request.method == 'DELETE':
+                    GuardAlert.query.filter(GuardAlert.id == alert_id).delete()
+                    db.session.commit()
+                    return {'success': True}
+
+            @app.route('/api/area/<int:id>/guard/subscribe', methods=['POST'])
+            @auth_required
+            @staticmethod
+            def subscribe(id):
+                area = Area.query.get(id)
+                if not area:
+                    return jsonify({'error': 'Area not found'}), 404
+                guard = area.guard
+                uris = request.json.get('uri')
+                
+                if not uris:
+                    return jsonify({'error': 'Missing parameter "uri"'}), 400
+                
+                if not isinstance(uris,list):
+                    uris = [uris]
+
+                oldURIs = guard.area_uris
+                guard.area_uris = []
+                guard.area_uris.extend(uris)
+                guard.area_uris.extend(oldURIs)
+                db.session.commit()
+                return {'success': True}
+
+            @app.route('/api/area/<int:id>/guard', methods=['GET'])
+            @login_required
+            @staticmethod
+            def list(id):
+                area = Area.query.get(id)
+                if not area:
+                    return jsonify({'error': 'Area not found'}), 404
+                guard = area.guard
+                alerts = []
+                for alert in guard.alerts:
+                    alerts.append({
+                        'id': alert.id,
+                        'title': alert.title,
+                        'description': alert.description,
+                        'area': alert.area,
+                        'time': alert.time
+                    })
+                return jsonify({
+                    'area_uris': guard.area_uris,
+                    'last_check_date': guard.last_check_date,
+                    'alerts': alerts
+                })
+
+
     class MainArea():
 
         @staticmethod
@@ -820,6 +892,37 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         def dashboard():
             return render_template('dashboard.html')
 
+        class Guard():
+            @app.route('/api/guard/alerts/clear')
+            @auth_required
+            @staticmethod
+            def alerts_clear():
+                return Area.Guard.alerts_clear(MainArea.get().id)
+            
+            @app.route('/api/guard/alert/<int:alert_id>', methods=['DELETE'])
+            @auth_required
+            @staticmethod
+            def alert(alert_id):
+                return Area.Guard.alert(MainArea.get().id, alert_id)
+            
+            @app.route('/api/guard/subscribe', methods=['POST'])
+            @login_required
+            @staticmethod
+            def subscribe():
+                return Area.Guard.subscribe(MainArea.get().id)
+            
+            @app.route('/api/guard', methods=['GET'])
+            @login_required
+            @staticmethod
+            def list():
+                return Area.Guard.list(MainArea.get().id)
+            
+            @app.route('/guard')
+            @login_required
+            @staticmethod
+            def guard():
+                return render_template('guard.html')
+
     @app.route('/')
     def index():
         return render_template('index.html')
@@ -880,70 +983,6 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 db.session.add(guard)
                 db.session.commit()
             return guard
-
-        @app.route('/api/guard/alerts/clear')
-        @auth_required
-        @staticmethod
-        def alerts_clear():
-            guard = Guard.get()
-            GuardAlert.query.filter(GuardAlert.guard_id == guard.id).delete()
-            db.session.commit()
-            return {'success': True}
-        
-        @app.route('/api/guard/alert/<int:alert_id>', methods=['DELETE'])
-        @auth_required
-        @staticmethod
-        def alert(alert_id):
-            if request.method == 'DELETE':
-                GuardAlert.query.filter(GuardAlert.id == alert_id).delete()
-                db.session.commit()
-                return {'success': True}
-
-        @app.route('/api/guard/subscribe', methods=['POST'])
-        @login_required
-        @staticmethod
-        def subscribe():
-            guard = Guard.get()
-            uris = request.json.get('uri')
-            
-            if not uris:
-                return jsonify({'error': 'Missing parameter "uri"'}), 400
-            
-            if not isinstance(uris,list):
-                uris = [uris]
-
-            oldURIs = guard.area_uris
-            guard.area_uris = []
-            guard.area_uris.extend(uris)
-            guard.area_uris.extend(oldURIs)
-            db.session.commit()
-            return {'success': True}
-
-        @app.route('/api/guard', methods=['GET'])
-        @login_required
-        @staticmethod
-        def list():
-            guard = Guard.get()
-            alerts = []
-            for alert in guard.alerts:
-                alerts.append({
-                    'id': alert.id,
-                    'title': alert.title,
-                    'description': alert.description,
-                    'area': alert.area,
-                    'time': alert.time
-                })
-            return jsonify({
-                'area_uris': guard.area_uris,
-                'last_check_date': guard.last_check_date,
-                'alerts': alerts
-            })
-
-        @app.route('/guard')
-        @login_required
-        @staticmethod
-        def guard():
-            return render_template('guard.html')
         
         def daemon_loop(self):
             with app.app_context():
