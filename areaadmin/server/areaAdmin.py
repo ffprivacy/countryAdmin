@@ -36,10 +36,12 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         return f'http://127.0.0.1:{app.config["SERVING_PORT"]}'
 
     def area_generate_uri_from_database(uri):
+        host_part = uri
+        path_part = "/api/area"
         if ( IS_LOCAL_AREA_REGEX(uri) ):
-            return DEFAULT_HOST(), f"{DEFAULT_HOST()}/api/area/{int(uri)}";
-        else:
-            return uri, f"{uri}/api/area";
+            host_part = DEFAULT_HOST()
+            path_part = f"api/area/{int(uri)}"
+        return host_part, f"{host_part}{'' if host_part.endswith('/') else '/'}{path_part}"
 
     def login_required(f):
         @wraps(f)
@@ -244,12 +246,14 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         def send(self):
             tradeJSON = self.toJson()
             tradeJSON['uri'] = DEFAULT_HOST()
-            response = requests.post(f"{self.to_area_uri}/api/trade/receive", json=tradeJSON)
+            uri, trash = area_generate_uri_from_database(self.to_area_uri)
+            response = requests.post(f"{uri}/api/trade/receive", json=tradeJSON)
             return jsonify(response.json())
 
         def remoteDelete(self):
             if self.to_area_trade_id:
-                response = requests.delete(f"{self.to_area_uri}/api/trade/{self.id}")
+                uri, trash = area_generate_uri_from_database(self.to_area_uri)
+                response = requests.delete(f"{uri}/api/trade/{self.id}")
                 if response.status_code == 404:
                     return jsonify({'success': True, 'message': 'Remote seem already deleted'}), 200
                 else:
@@ -402,7 +406,8 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                         if 'id' in home_trade_process and 'amount' in home_trade_process:
                             flow['output'][metric] -= Processes.retrieve_metric(processes, Processes.get_by_id(processes, home_trade_process['id']), 'output', metric) * home_trade_process['amount']
                 
-                response = requests.get(f"{trade.to_area_uri}/api/processes")
+                uri, trash = area_generate_uri_from_database(trade.to_area_uri)
+                response = requests.get(f"{uri}/api/processes")
                 response.raise_for_status()
                 foreign_processes = response.json()
                 for foreign_trade_process in trade.foreign_processes:

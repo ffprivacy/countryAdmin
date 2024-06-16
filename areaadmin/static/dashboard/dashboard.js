@@ -327,11 +327,12 @@ function fetchTrades() {
         tradesList.innerHTML = '';
         trades.forEach(trade => {
             const listItem = document.createElement('div');
+			const to_area_uri = area_generate_uri_from_database(trade.to_area_uri);
             listItem.className = 'list-group-item';
 			listItem.innerHTML = `
 				<div class="mb-3 card">
 					<div class="card-body">
-						<h5 class="card-title">Trade with <a href="${trade.to_area_uri}" target="_blank">${trade.to_area_uri}</a></h5>
+						<h5 class="card-title">Trade with <a href="${to_area_uri}" target="_blank">${to_area_uri}</a></h5>
 						<div class="row">
 							<div class="col-md-6">
 								<h6>Home Area Processes</h6>

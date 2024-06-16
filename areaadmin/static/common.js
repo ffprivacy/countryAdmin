@@ -5,6 +5,6 @@ function area_generate_uri_from_database(uri) {
     if ( IS_LOCAL_AREA_REGEX(uri) ) {
         return `/api/area/${parseInt(uri)}`;
     } else {
-        return `${uri}/api/area`;
+        return `${uri}${uri.endsWith("/") ? "" : "/"}api/area`;
     }
 }
