@@ -114,7 +114,12 @@ document.getElementById('refresh-btn').addEventListener('click', function() {
 const fetchAreaData = async () => {
     let areaData = [];
     for(let uri of guard.area_uris) {
-        areaData.push(await fetch(`${uri}/api/area`, {
+        let areaPath = "/api/area";
+        if ( uri.match(/^[ \t]*\d+[ \t]*$/) == null ) {
+            areaPath = `/api/area/${parseInt(uri)}`
+            uri = ""
+        }
+        areaData.push(await fetch(`${uri}/${areaPath}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',

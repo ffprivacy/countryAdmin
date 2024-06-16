@@ -9,7 +9,7 @@ from datetime import datetime
 import requests
 from flask_cors import CORS
 import flask, json
-import threading, time
+import threading, time, re
 import random
 import sqlalchemy as DB
 from areaadmin.server.custom.flask import jsonify
@@ -1003,12 +1003,18 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         
         def daemon_loop(self_id):
             print("Guard background task started")
+            uriRE = re.compile(r'^\s*\d+\s*$')
             with app.app_context():
                 self = Guard.query.get(self_id)
                 while True:
                     countries = []
                     for uri in self.area_uris:
-                        response = requests.get(f"{uri}/api/area")
+                        area_path = "/api/area"
+                        if uriRE.match(uri) is not None:
+                            area_path = f"/api/area/{int(uri)}"
+                            uri = ""
+
+                        response = requests.get(f"{uri}/{area_path}")
                         response.raise_for_status()
                         area = response.json()
 
@@ -1016,15 +1022,18 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                         response.raise_for_status()
                         processes = response.json()
 
-                        response = requests.get(f"{uri}/api/area/metrics")
+                        response = requests.get(f"{uri}/{area_path}/metrics")
                         response.raise_for_status()
                         metrics = response.json()
 
                         countries.append({
                             'uri': uri,
-                            'area': area,
-                            'processes': processes,
-                            'metrics': metrics
+                            'area_path': area_path,
+                            'data': {
+                                'area': area,
+                                'processes': processes,
+                                'metrics': metrics
+                            }
                         })
 
                     # Ici on devrait déjà identifier les processus similaires dans un premier temps
@@ -1032,10 +1041,11 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                     # pour l'instant on utilise des ids (qui ne sont potentiellement pas les mêmes)
                     processesOffers = {}
                     for area in countries:
-                        for process_usage in area['area']['processes']:
+                        for process_usage in area['data']['area']['processes']:
                             id = process_usage['id']
                             processOffer = processesOffers.get(id, {
-                                'uri': area['uri'], 'count': 0, 'id': id
+                                'uri': area['uri'], 'count': 0, 'id': id,
+                                'area_path': area_path
                             })
                             processOffer['count'] += 1;
                             processesOffers[id] = processOffer
@@ -1057,7 +1067,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                             process_id = processOffer['id']
                             price = -1
                             for area in countries:
-                                for process in area['processes']:
+                                for process in area['data']['processes']:
                                     if process['id'] == process_id:
                                         sell_price = process['metrics']['input'].get('economic', 0) - process['metrics']['output'].get('economic', 0)
                                         if sell_price < price:
@@ -1077,8 +1087,8 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                             ))
 
                     for area in countries:
-                        envEmissionsNet = area['metrics']['flow']['output']['envEmissions'] - area['metrics']['flow']['input']['envEmissions']
-                        atmosphereFill = area['area']['resources'].get('envEmissions',{'amount': 0})['amount'] * (1 + area['area']['resources'].get('envEmissions',{'renew_rate': 0})['renew_rate']) - envEmissionsNet
+                        envEmissionsNet = area['data']['metrics']['flow']['output']['envEmissions'] - area['data']['metrics']['flow']['input']['envEmissions']
+                        atmosphereFill = area['data']['area']['resources'].get('envEmissions',{'amount': 0})['amount'] * (1 + area['data']['area']['resources'].get('envEmissions',{'renew_rate': 0})['renew_rate']) - envEmissionsNet
                         if atmosphereFill < 0:
                             db.session.add(GuardAlert( 
                                 title="Overpollution",
