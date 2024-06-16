@@ -451,7 +451,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         @auth_required
         @staticmethod
         def get_area(id):
-            area = Area.query.filter_by(id=id)
+            area = Area.query.get(id)
             if not area:
                 return jsonify({'error': 'Area not found'}), 404
             if request.method == 'POST':
@@ -572,10 +572,10 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             db.session.commit()
             return jsonify({'success': True})
         
-        @app.route('/api/area/<int:id>/set_process', methods=['POST'])
+        @app.route('/api/area/<int:area_id>/set_process', methods=['POST'])
         @auth_required
         @staticmethod
-        def set_process(id):
+        def set_process(area_id):
             data = request.json
             if not data:
                 return jsonify({'error': 'No data provided'}), 400
@@ -620,7 +620,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 db.session.commit()
 
                 if process_data.get('amount') is not None:
-                    area = Area.query.filter_by(id)
+                    area = Area.query.get(area_id)
                     if not area:
                         return jsonify({'error': 'Area not found'}), 404
                     process_usage = area.process_set_usage(new_process,selected)
