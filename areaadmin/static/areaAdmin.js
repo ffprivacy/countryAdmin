@@ -130,7 +130,7 @@ class Processes {
     }
 
     static compositionUpdate(process_id, composition) {
-        fetch(`/api/update_composition/${process_id}`, {
+        fetch(`/api/process/${process_id}/update_composition`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

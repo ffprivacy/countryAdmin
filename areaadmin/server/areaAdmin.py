@@ -696,14 +696,14 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             db.session.commit()
             return jsonify({'success': True}), 200
 
-    @app.route('/api/update_composition/<int:process_id>', methods=['POST'])
+    @app.route('/api/process/<int:id>/update_composition', methods=['POST'])
     @auth_required
-    def update_composition(process_id):
+    def update_composition(id):
         data = request.json
         component_process_id = data.get('id')
         amount = data.get('amount')
 
-        composition = Composition.query.filter_by(composed_process_id=process_id, component_process_id=component_process_id).first()
+        composition = Composition.query.filter_by(composed_process_id=id, component_process_id=component_process_id).first()
         if not composition:
             return jsonify({'error': 'Composition not found'}), 404
 
