@@ -96,6 +96,56 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 } for comment in self.comments if comment.user]
             }
 
+        @app.route('/api/process/<int:id>', methods=['GET','DELETE'])
+        @auth_required
+        @staticmethod
+        def handle(id):
+            process = Process.query.get(id)
+            if not process:
+                return jsonify({'error': 'Process not found'}), 404
+            if request.method == 'GET':
+                process_data = process.wrap_for_response()
+                return jsonify(process_data)
+            elif request.method == 'DELETE':
+                Composition.query.filter_by(composed_process_id=id).delete()
+                ProcessInteraction.query.filter_by(process_id=id).delete()
+                ProcessComment.query.filter_by(process_id=id).delete()
+                ProcessUsage.query.filter_by(process_id=id).delete()
+                ProcessTag.query.filter_by(process_id=id).delete()
+            
+                db.session.delete(process)
+                db.session.commit()
+                return jsonify({'success': True}), 200
+
+        @app.route('/api/process/<int:id>/update_composition', methods=['POST'])
+        @auth_required
+        @staticmethod
+        def update_composition(id):
+            data = request.json
+            component_process_id = data.get('id')
+            amount = data.get('amount')
+
+            composition = Composition.query.filter_by(composed_process_id=id, component_process_id=component_process_id).first()
+            if not composition:
+                return jsonify({'error': 'Composition not found'}), 404
+
+            composition.amount = amount
+            db.session.commit()
+            return jsonify({'success': True}), 200
+
+        @app.route('/api/process/<int:id>/delete_composition/<int:component_process_id>', methods=['POST'])
+        @auth_required
+        @staticmethod
+        def delete_composition(id, component_process_id):
+            composition = Composition.query.filter_by(composed_process_id=id, component_process_id=component_process_id).first()
+            if not composition:
+                return jsonify({'error': 'Composition not found'}), 404
+
+            db.session.delete(composition)
+            db.session.commit()
+            return jsonify({'success': True}), 200
+
+
     class ProcessInteraction(db.Model):
         id = DB.Column(DB.Integer, primary_key=True)
         process_id = DB.Column(DB.Integer, DB.ForeignKey('process.id'), nullable=False)
@@ -164,156 +214,71 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         def __repr__(self):
             return f"<Trade area_id={self.home_area_id} trade id={self.id}>"
 
-    def tradeToJson(trade):
-        return {
-            'id': trade.id,
-            'home_area_id': trade.home_area_id,
-            'to_area_uri': trade.to_area_uri,
-            'to_area_trade_id': trade.to_area_trade_id,
-            'home_processes': trade.home_processes,
-            'foreign_processes': trade.foreign_processes,
-            'home_confirm': trade.home_confirm,
-            'foreign_confirm': trade.foreign_confirm
-        }
+        def toJson(self):
+            return {
+                'id': self.id,
+                'home_area_id': self.home_area_id,
+                'to_area_uri': self.to_area_uri,
+                'to_area_trade_id': self.to_area_trade_id,
+                'home_processes': self.home_processes,
+                'foreign_processes': self.foreign_processes,
+                'home_confirm': self.home_confirm,
+                'foreign_confirm': self.foreign_confirm
+            }
 
-    def tradeSend(trade):
-        tradeJSON = tradeToJson(trade)
-        tradeJSON['uri'] = f'http://127.0.0.1:{app.config["SERVING_PORT"]}'
-        response = requests.post(f"{trade.to_area_uri}/api/trade/receive", json=tradeJSON)
-        return jsonify(response.json())
+        def send(self):
+            tradeJSON = self.toJson()
+            tradeJSON['uri'] = f'http://127.0.0.1:{app.config["SERVING_PORT"]}'
+            response = requests.post(f"{self.to_area_uri}/api/trade/receive", json=tradeJSON)
+            return jsonify(response.json())
 
-    def tradeRemoteDelete(trade):
-        if trade.to_area_trade_id:
-            response = requests.delete(f"{trade.to_area_uri}/api/trade/${trade.id}")
-            if response.status_code == 404:
-                return jsonify({'success': True, 'message': 'Remote seem already deleted'}), 200
+        def remoteDelete(self):
+            if self.to_area_trade_id:
+                response = requests.delete(f"{self.to_area_uri}/api/trade/{self.id}")
+                if response.status_code == 404:
+                    return jsonify({'success': True, 'message': 'Remote seem already deleted'}), 200
+                else:
+                    return jsonify(response.json())
             else:
-                return jsonify(response.json())
-        else:
-            return jsonify({'success': True, 'message': 'No foreign trade to delete'}), 200
+                return jsonify({'success': True, 'message': 'No foreign trade to delete'}), 200
     
-    @app.route('/api/trade/receive', methods=['POST'])
-    @auth_required
-    def trade_receive():
-        area = MainArea.get()
-        if not area:
-            return jsonify({'error': 'Area not found'}), 404
-
-        data = request.get_json()
-
-        home_processes = data['foreign_processes']
-        foreign_processes = data['home_processes']        
-        data['foreign_confirm'] = data['home_confirm']
-
-        to_area_trade_id = data['id']
-        to_area_uri = data['uri']
-        trade = Trade.query.filter_by(id=to_area_trade_id).first()
-
-        if trade:
-            trade.to_area_trade_id=to_area_trade_id
-            trade.foreign_processes = foreign_processes
-            trade.foreign_confirm = data['foreign_confirm']
-            trade.home_processes = home_processes
-        else:
-            new_trade = Trade(
-                home_area_id=area.id,
-                to_area_uri=to_area_uri,
-                home_processes=home_processes,
-                foreign_processes=foreign_processes,
-                to_area_trade_id=to_area_trade_id,
-                foreign_confirm=data['foreign_confirm']
-            )
-            db.session.add(new_trade)
-    
-        try:
-            db.session.commit()
-            # TODO notify the client
-            return jsonify({'success': True, 'message': 'Trade received and saved successfully'}), 201
-        except Exception as e:
-            db.session.rollback()
-            print(str(e))
-            return jsonify({'success': False, 'error': str(e)}), 500
-
-    @app.route('/api/trade', methods=['POST'])
-    @auth_required
-    def initiate_trade():
-        area = MainArea.get()
-        if not area:
-            return jsonify({'error': 'Home area not found'}), 404
+        @app.route('/api/trade/<int:id>', methods=['POST','DELETE'])
+        @auth_required
+        @staticmethod
+        def handle_trade(id):
+            trade = Trade.query.get(id)
+            if not trade:
+                return jsonify({'error': 'Trade not found'}), 404
         
-        data = request.get_json()
-        if 'to_area_uri' not in data:
-            return jsonify({'success': False, 'error': 'Incomplete data provided'}), 400
+            if request.method == 'POST':
+                data = request.get_json()
+                try:
+                    if 'to_area_uri' in data:
+                        trade.to_area_uri = data['to_area_uri']
+                    if 'home_processes' in data:
+                        trade.home_processes = data['home_processes']
+                    if 'foreign_confirm' in data:
+                        return jsonify({'success': False, 'error': 'This is reserved to the other side'}), 400
+                    if 'home_confirm' in data:
+                        trade.home_confirm = data['home_confirm']
 
-        try:
-            trade = Trade(
-                home_area_id=area.id,
-                to_area_uri=data['to_area_uri'],
-                home_processes=data.get('home_processes', []),
-                foreign_processes=data.get('foreign_processes', [])
-            )
-            db.session.add(trade)
-            db.session.commit()
-            tradeSend(trade)
-        except Exception as e:
-            db.session.rollback()
-            return jsonify({'success': False, 'error': str(e)}), 500
-        return jsonify({'success': True, 'message': 'Trade setup successfully'}), 200
+                    db.session.commit()
+                    trade.send()
+                except Exception as e:
+                    db.session.rollback()
+                    return jsonify({'success': False, 'error': str(e)}), 500
+                    
+                return jsonify({'success': True, 'message': 'Trade setup successfully'}), 200
+            elif request.method == 'DELETE':
+                try:
+                    trade.remoteDelete()
+                    db.session.delete(trade)
+                    db.session.commit()
+                    return jsonify({'success': True, 'message': 'Trade deleted successfully'}), 200
+                except Exception as e:
+                    db.session.rollback()
+                    return jsonify({'success': False, 'error': str(e)}), 500
 
-    @app.route('/api/trade/<int:trade_id>', methods=['POST','DELETE'])
-    @auth_required
-    def handle_trade(trade_id):
-        trade = Trade.query.get(trade_id)
-        if not trade:
-            return jsonify({'error': 'Trade not found'}), 404
-    
-        if request.method == 'POST':
-            data = request.get_json()
-            try:
-                if 'to_area_uri' in data:
-                    trade.to_area_uri = data['to_area_uri']
-                if 'home_processes' in data:
-                    trade.home_processes = data['home_processes']
-                if 'foreign_confirm' in data:
-                    return jsonify({'success': False, 'error': 'This is reserved to the other side'}), 400
-                if 'home_confirm' in data:
-                    trade.home_confirm = data['home_confirm']
-
-                db.session.commit()
-                tradeSend(trade)
-            except Exception as e:
-                db.session.rollback()
-                return jsonify({'success': False, 'error': str(e)}), 500
-                
-            return jsonify({'success': True, 'message': 'Trade setup successfully'}), 200
-        elif request.method == 'DELETE':
-            try:
-                tradeRemoteDelete(trade)
-                db.session.delete(trade)
-                db.session.commit()
-                return jsonify({'success': True, 'message': 'Trade deleted successfully'}), 200
-            except Exception as e:
-                db.session.rollback()
-                return jsonify({'success': False, 'error': str(e)}), 500
-
-    @app.route('/api/trades', methods=['GET'])
-    @auth_required
-    def get_trades():
-        area = MainArea.get()
-        if not area:
-            return jsonify({'error': 'Area not found'}), 404
-
-        trades_data = [{
-            'id': trade.id,
-            'to_area_uri': trade.to_area_uri,
-            'home_processes': trade.home_processes,
-            'foreign_processes': trade.foreign_processes,
-            'foreign_confirm': trade.foreign_confirm,
-            'home_confirm': trade.home_confirm
-        } for trade in area.trades]
-
-        return jsonify(trades_data)
-    
     class AreaComposition(db.Model):
         id = DB.Column(DB.Integer, primary_key=True)
         area_id = DB.Column(DB.Integer, DB.ForeignKey('area.id'), nullable=False)
@@ -682,11 +647,104 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
             return jsonify({'success': True})
 
+        @app.route('/api/area/<int:id>/trade/receive', methods=['POST'])
+        @auth_required
+        @staticmethod
+        def trade_receive(id):
+            data = request.get_json()
+
+            home_processes = data['foreign_processes']
+            foreign_processes = data['home_processes']        
+            data['foreign_confirm'] = data['home_confirm']
+
+            to_area_trade_id = data['id']
+            to_area_uri = data['uri']
+            trade = Trade.query.filter_by(id=to_area_trade_id).first()
+
+            if trade:
+                trade.to_area_trade_id=to_area_trade_id
+                trade.foreign_processes = foreign_processes
+                trade.foreign_confirm = data['foreign_confirm']
+                trade.home_processes = home_processes
+            else:
+                new_trade = Trade(
+                    home_area_id=id,
+                    to_area_uri=to_area_uri,
+                    home_processes=home_processes,
+                    foreign_processes=foreign_processes,
+                    to_area_trade_id=to_area_trade_id,
+                    foreign_confirm=data['foreign_confirm']
+                )
+                db.session.add(new_trade)
+        
+            try:
+                db.session.commit()
+                # TODO notify the client
+                return jsonify({'success': True, 'message': 'Trade received and saved successfully'}), 201
+            except Exception as e:
+                db.session.rollback()
+                print(str(e))
+                return jsonify({'success': False, 'error': str(e)}), 500
+
+        @app.route('/api/area/<int:id>/trade', methods=['POST'])
+        @auth_required
+        @staticmethod
+        def initiate_trade(id):
+            data = request.get_json()
+            if 'to_area_uri' not in data:
+                return jsonify({'success': False, 'error': 'Incomplete data provided'}), 400
+
+            try:
+                trade = Trade(
+                    home_area_id=id,
+                    to_area_uri=data['to_area_uri'],
+                    home_processes=data.get('home_processes', []),
+                    foreign_processes=data.get('foreign_processes', [])
+                )
+                db.session.add(trade)
+                db.session.commit()
+                trade.send()
+            except Exception as e:
+                db.session.rollback()
+                return jsonify({'success': False, 'error': str(e)}), 500
+            return jsonify({'success': True, 'message': 'Trade setup successfully'}), 200
+
+        @app.route('/api/area/<int:id>/trades', methods=['GET'])
+        @auth_required
+        @staticmethod
+        def get_trades(id):
+            area = Area.query.get(id)
+            if not area:
+                return jsonify({'error': 'Area not found'}), 404
+
+            trades_data = [{
+                'id': trade.id,
+                'to_area_uri': trade.to_area_uri,
+                'home_processes': trade.home_processes,
+                'foreign_processes': trade.foreign_processes,
+                'foreign_confirm': trade.foreign_confirm,
+                'home_confirm': trade.home_confirm
+            } for trade in area.trades]
+
+            return jsonify(trades_data)
+
     class MainArea():
 
         @staticmethod
         def get():
             return Area.query.first()
+        
+        @app.route('/api/trade/receive', methods=['POST'])
+        @auth_required
+        @staticmethod
+        def trade_receive():
+            return Area.trade_receive(MainArea.get().id)
+
+        @app.route('/api/trade', methods=['POST'])
+        @auth_required
+        @staticmethod
+        def initiate_trade():
+            return Area.initiate_trade(MainArea.get().id)
         
         @app.route('/api/process/<int:id>/add_comment', methods=['POST'])
         @auth_required
@@ -732,8 +790,21 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         
         @app.route('/api/select_process', methods=['POST'])
         @auth_required
+        @staticmethod
         def select_process():
             return Area.select_process(MainArea.get().id)
+        
+        @app.route('/api/trades', methods=['GET'])
+        @auth_required
+        @staticmethod
+        def get_trades():
+            return Area.get_trades(MainArea.get().id)
+        
+        @app.route('/dashboard', methods=['GET'])
+        @login_required
+        @staticmethod
+        def dashboard():
+            return render_template('dashboard.html')
 
     @app.route('/')
     def index():
@@ -765,53 +836,6 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         processes = Process.query.all()
         process_list = [process.wrap_for_response() for process in processes]
         return jsonify(process_list)
-
-    @app.route('/api/process/<int:id>', methods=['GET','DELETE'])
-    @auth_required
-    def handle_process(id):
-        process = Process.query.get(id)
-        if not process:
-            return jsonify({'error': 'Process not found'}), 404
-        if request.method == 'GET':
-            process_data = process.wrap_for_response()
-            return jsonify(process_data)
-        elif request.method == 'DELETE':
-            Composition.query.filter_by(composed_process_id=id).delete()
-            ProcessInteraction.query.filter_by(process_id=id).delete()
-            ProcessComment.query.filter_by(process_id=id).delete()
-            ProcessUsage.query.filter_by(process_id=id).delete()
-            ProcessTag.query.filter_by(process_id=id).delete()
-        
-            db.session.delete(process)
-            db.session.commit()
-            return jsonify({'success': True}), 200
-
-    @app.route('/api/process/<int:id>/update_composition', methods=['POST'])
-    @auth_required
-    def update_composition(id):
-        data = request.json
-        component_process_id = data.get('id')
-        amount = data.get('amount')
-
-        composition = Composition.query.filter_by(composed_process_id=id, component_process_id=component_process_id).first()
-        if not composition:
-            return jsonify({'error': 'Composition not found'}), 404
-
-        composition.amount = amount
-        db.session.commit()
-        return jsonify({'success': True}), 200
-
-    @app.route('/api/process/<int:id>/delete_composition/<int:component_process_id>', methods=['POST'])
-    @auth_required
-    def delete_composition(id, component_process_id):
-        composition = Composition.query.filter_by(composed_process_id=id, component_process_id=component_process_id).first()
-        if not composition:
-            return jsonify({'error': 'Composition not found'}), 404
-
-        db.session.delete(composition)
-        db.session.commit()
-        return jsonify({'success': True}), 200
-
 
 
     def guard_get_id():
@@ -1020,11 +1044,6 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 session['user_id'] = new_user.id
                 return redirect(url_for('dashboard'))
         return render_template('login.html')
-
-    @app.route('/dashboard', methods=['GET'])
-    @login_required
-    def dashboard():
-        return render_template('dashboard.html')
 
     @app.route('/logout')
     @login_required
