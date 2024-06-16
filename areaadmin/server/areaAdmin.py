@@ -354,7 +354,19 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                     return float('inf')
             else:
                 return abs(resource_amount / net_usage) 
-            
+
+        @staticmethod
+        def process_usage(area,process,state):
+            process_usage = ProcessUsage.query.filter_by(area_id=area.id, process_id=process.id).first()
+            if state:
+                if not process_usage:
+                    new_process_usage = ProcessUsage(area_id=area.id, process_id=process.id, usage_count=1)
+                    db.session.add(new_process_usage)
+            else:
+                if process_usage:
+                    db.session.delete(process_usage)
+            return process_usage
+
         @staticmethod
         def metrics():
             area = Area.query.first()
@@ -518,7 +530,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         processes = Process.query.filter(Process.id.in_(ids)).all()
         if processes and len(processes) == len(states):
             for process, state in zip(processes, states):
-                area_process_usage(area,process,state)
+                Area.process_usage(area,process,state)
 
             db.session.commit()
 
@@ -575,7 +587,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             area = Area.query.first()
             if not area:
                 return jsonify({'error': 'Area not found'}), 404
-            process_usage = area_process_usage(area,new_process,selected)
+            process_usage = Area.process_usage(area,new_process,selected)
             if process_usage:
                 process_usage.amount = amount
 
@@ -854,17 +866,6 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 session['user_id'] = new_user.id
                 return redirect(url_for('dashboard'))
         return render_template('login.html')
-
-    def area_process_usage(area,process,state):
-        process_usage = ProcessUsage.query.filter_by(area_id=area.id, process_id=process.id).first()
-        if state:
-            if not process_usage:
-                new_process_usage = ProcessUsage(area_id=area.id, process_id=process.id, usage_count=1)
-                db.session.add(new_process_usage)
-        else:
-            if process_usage:
-                db.session.delete(process_usage)
-        return process_usage
 
     @app.route('/dashboard', methods=['GET'])
     @login_required
