@@ -84,6 +84,9 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         user = db.relationship('User', backref='interactions')
         __table_args__ = (DB.UniqueConstraint('user_id', 'process_id', name='_user_process_uc'),)
 
+        area_id = DB.Column(DB.Integer, DB.ForeignKey('area.id'), nullable=False)
+        area = db.relationship('Area')
+
     class ProcessComment(db.Model):
         id = DB.Column(DB.Integer, primary_key=True)
         user_id = DB.Column(DB.Integer, DB.ForeignKey('user.id'), nullable=False)
@@ -92,6 +95,9 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         timestamp = DB.Column(DB.DateTime, default=datetime.utcnow)
         user = db.relationship('User', backref='comments')
         process = db.relationship('Process', back_populates='comments')
+        
+        area_id = DB.Column(DB.Integer, DB.ForeignKey('area.id'), nullable=False)
+        area = db.relationship('Area')
 
     class ProcessTag(db.Model):
         __tablename__ = 'process_tag'
@@ -468,6 +474,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
         @app.route('/api/area/<int:id>/update_process_usage/<int:process_id>', methods=['POST'])
         @auth_required
+        @staticmethod
         def update_process_usage(id,process_id):
             data = request.json
             new_usage_count = data.get('usage_count')
@@ -485,6 +492,78 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             db.session.commit()
             return jsonify({'success': True, 'id': process_id, 'new_usage_count': new_usage_count})
 
+        @app.route('/api/area/<int:id>/process/<int:process_id>/like', methods=['POST'])
+        @auth_required
+        @staticmethod
+        def like_process(id,process_id):
+            if 'user_id' not in session:
+                return jsonify({'success': False, 'error': 'User not logged in'}), 403
+
+            user_id = session['user_id']
+            process = Process.query.get(process_id)
+            if not process:
+                return jsonify({'success': False, 'error': 'Process not found'}), 404
+
+            interaction = ProcessInteraction.query.filter_by(user_id=user_id, process_id=process_id, area_id=id).first()
+
+            if interaction:
+                if interaction.interaction_type == 'dislike':
+                    interaction.interaction_type = 'like'
+                else:
+                    return jsonify({'success': False, 'error': 'Already liked'}), 400
+            else:
+                new_interaction = ProcessInteraction(user_id=user_id, process_id=process_id, interaction_type='like',area_id=id)
+                db.session.add(new_interaction)
+            
+            db.session.commit()
+            return jsonify({'success': True})
+
+        @app.route('/api/area/<int:id>/process/<int:process_id>/dislike', methods=['POST'])
+        @auth_required
+        @staticmethod
+        def dislike_process(id,process_id):
+            if 'user_id' not in session:
+                return jsonify({'success': False, 'error': 'User not logged in'}), 403
+
+            user_id = session['user_id']
+            process = Process.query.get(process_id)
+            if not process:
+                return jsonify({'success': False, 'error': 'Process not found'}), 404
+
+            interaction = ProcessInteraction.query.filter_by(user_id=user_id, process_id=process_id, area_id=id).first()
+
+            if interaction:
+                if interaction.interaction_type == 'like':
+                    interaction.interaction_type = 'dislike'
+                else:
+                    return jsonify({'success': False, 'error': 'Already disliked'}), 400
+            else:
+                new_interaction = ProcessInteraction(user_id=user_id, area_id=id, process_id=process_id, interaction_type='dislike')
+                db.session.add(new_interaction)
+
+            db.session.commit()
+            return jsonify({'success': True})
+
+        @app.route('/api/area/<int:id>/process/<int:process_id>/add_comment', methods=['POST'])
+        @auth_required
+        @staticmethod
+        def comment_process(id,process_id):
+            if 'user_id' not in session:
+                return jsonify({'success': False, 'error': 'User not logged in'}), 403
+
+            user_id = session['user_id']
+            process = Process.query.get(process_id)
+            if not process:
+                return jsonify({'success': False, 'error': 'Process not found'}), 404
+
+            comment_text = request.json.get('comment')
+            if not comment_text:
+                return jsonify({'success': False, 'error': 'Comment is required'}), 400
+
+            comment = ProcessComment(user_id=user_id, process_id=process_id, comment=comment_text, area_id=id)
+            db.session.add(comment)
+            db.session.commit()
+            return jsonify({'success': True})
 
     class MainArea():
 
@@ -492,10 +571,28 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         def get():
             return Area.query.first()
         
+        @app.route('/api/process/<int:id>/add_comment', methods=['POST'])
+        @auth_required
+        @staticmethod
+        def comment_process(id):
+            return Area.comment_process(MainArea.get().id,id)
+        
+        @app.route('/api/process/<int:id>/dislike', methods=['POST'])
+        @auth_required
+        @staticmethod
+        def dislike_process(process_id):
+            return Area.dislike_process(MainArea.get().id, process_id)
+        
+        @app.route('/api/process/<int:process_id>/like', methods=['POST'])
+        @auth_required
+        @staticmethod
+        def like_process(process_id):
+            return Area.like_process(MainArea.get().id, process_id)
+        
         @app.route('/api/update_process_usage/<int:process_id>', methods=['POST'])
         @auth_required
         @staticmethod
-        def main_update_process_usage(process_id):
+        def update_process_usage(process_id):
             area = MainArea.get() 
             if not area:
                 return jsonify({'error': 'Area not found'}), 404
@@ -504,7 +601,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         @app.route('/api/area/metrics', methods=['GET'])
         @auth_required
         @staticmethod
-        def main_are_metrics():
+        def metrics():
             area = MainArea.get()
             if not area:
                 return jsonify({'error': 'Area not found'}), 404
@@ -533,76 +630,6 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         db.session.commit()
         Area.set_area_data({})
         return redirect(url_for('logout'))
-
-    @app.route('/api/process/<int:process_id>/like', methods=['POST'])
-    @auth_required
-    def like_process(process_id):
-        if 'user_id' not in session:
-            return jsonify({'success': False, 'error': 'User not logged in'}), 403
-
-        user_id = session['user_id']
-        process = Process.query.get(process_id)
-        if not process:
-            return jsonify({'success': False, 'error': 'Process not found'}), 404
-
-        interaction = ProcessInteraction.query.filter_by(user_id=user_id, process_id=process_id).first()
-
-        if interaction:
-            if interaction.interaction_type == 'dislike':
-                interaction.interaction_type = 'like'
-            else:
-                return jsonify({'success': False, 'error': 'Already liked'}), 400
-        else:
-            new_interaction = ProcessInteraction(user_id=user_id, process_id=process_id, interaction_type='like')
-            db.session.add(new_interaction)
-        
-        db.session.commit()
-        return jsonify({'success': True})
-
-    @app.route('/api/process/<int:id>/dislike', methods=['POST'])
-    @auth_required
-    def dislike_process(id):
-        if 'user_id' not in session:
-            return jsonify({'success': False, 'error': 'User not logged in'}), 403
-
-        user_id = session['user_id']
-        process = Process.query.get(id)
-        if not process:
-            return jsonify({'success': False, 'error': 'Process not found'}), 404
-
-        interaction = ProcessInteraction.query.filter_by(user_id=user_id, process_id=id).first()
-
-        if interaction:
-            if interaction.interaction_type == 'like':
-                interaction.interaction_type = 'dislike'
-            else:
-                return jsonify({'success': False, 'error': 'Already disliked'}), 400
-        else:
-            new_interaction = ProcessInteraction(user_id=user_id, process_id=id, interaction_type='dislike')
-            db.session.add(new_interaction)
-
-        db.session.commit()
-        return jsonify({'success': True})
-
-    @app.route('/api/process/<int:id>/add_comment', methods=['POST'])
-    @auth_required
-    def comment_process(id):
-        if 'user_id' not in session:
-            return jsonify({'success': False, 'error': 'User not logged in'}), 403
-
-        user_id = session['user_id']
-        process = Process.query.get(id)
-        if not process:
-            return jsonify({'success': False, 'error': 'Process not found'}), 404
-
-        comment_text = request.json.get('comment')
-        if not comment_text:
-            return jsonify({'success': False, 'error': 'Comment is required'}), 400
-
-        comment = ProcessComment(user_id=user_id, process_id=id, comment=comment_text)
-        db.session.add(comment)
-        db.session.commit()
-        return jsonify({'success': True})
     
     @app.route('/api/select_process', methods=['POST'])
     @auth_required
