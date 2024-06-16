@@ -67,13 +67,34 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         comments = db.relationship('ProcessComment', back_populates='process', lazy=True)
         usages = db.relationship('ProcessUsage', back_populates='process', cascade='delete')
 
-        @staticmethod
-        def get_usage(process):
-            area = MainArea.get()
-            if not area:
-                return jsonify({'error': 'Area not found'}), 404
-            process_usage = next((pu for pu in process.usages if pu.area_id == area.id), None)
+        def get_usage(self, area=None):
+            process_usage = next((pu for pu in self.usages if area == None or pu.area_id == area.id), None)
             return process_usage.usage_count if process_usage else 0
+        
+        def wrap_for_response(self, area=None):
+            """Helper function to format the process data for JSON response."""
+            amount = self.get_usage(area)
+            selected = 0 < amount
+
+            return {
+                'id': self.id,
+                'title': self.title,
+                'selected': selected,
+                'amount': amount,
+                'metrics': self.metrics,
+                'tags': [tag.tag.name for tag in self.tags],
+                'composition': [{
+                    'id': comp.component_process_id,
+                    'amount': comp.amount
+                } for comp in self.composition],
+                'like_count': len([i for i in self.interactions if i.interaction_type == 'like']) -
+                            len([i for i in self.interactions if i.interaction_type == 'dislike']),
+                'comments': [{
+                    'user': comment.user.username,
+                    'date': comment.timestamp.isoformat(),
+                    'text': comment.comment
+                } for comment in self.comments if comment.user]
+            }
 
     class ProcessInteraction(db.Model):
         id = DB.Column(DB.Integer, primary_key=True)
@@ -564,6 +585,74 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             db.session.add(comment)
             db.session.commit()
             return jsonify({'success': True})
+        
+        @app.route('/api/area/<int:id>/set_process', methods=['POST'])
+        @auth_required
+        @staticmethod
+        def set_process(id):
+            data = request.json
+            if not data:
+                return jsonify({'error': 'No data provided'}), 400
+
+            if isinstance(data, dict):
+                data = [data]
+
+            for process_data in data:
+                id = process_data.get('id')
+                if id is not None:
+                    id = int(id)
+                
+                metrics = process_data.get('metrics', {})
+                if isinstance(metrics, dict):
+                    input_metrics = metrics.get('input', {})
+                    output_metrics = metrics.get('output', {})
+                else:
+                    return jsonify({'error': 'Invalid metrics format'}), 400
+                
+                selected = process_data.get('selected', True)
+                if isinstance(selected, str):
+                    selected = ast.literal_eval(selected.capitalize())
+
+                title = process_data.get('title', '')
+                tags = process_data.get('tags', [])
+
+                new_process = Process(id=id, title=title, metrics={
+                    "input": input_metrics,
+                    "output": output_metrics
+                })
+
+                for tag_name in tags:
+                    tag_name = tag_name.strip()
+                    if tag_name:
+                        tag = Tag.query.filter_by(name=tag_name).first()
+                        if not tag:
+                            tag = Tag(name=tag_name)
+                            db.session.add(tag)
+                        new_process.tags.append(tag)
+                
+                db.session.add(new_process)
+                db.session.commit()
+
+                if process_data.get('amount') is not None:
+                    area = Area.query.filter_by(id)
+                    if not area:
+                        return jsonify({'error': 'Area not found'}), 404
+                    process_usage = area.process_usage(new_process,selected)
+                    if process_usage:
+                        process_usage.amount = process_data.get('amount')
+
+                composition_data = process_data.get('composition', [])
+                for item in composition_data:
+                    comp_id = item['id']
+                    comp_amount = item['amount']
+                    if comp_id and comp_amount:
+                        new_composition = Composition(component_process_id=comp_id, composed_process_id=new_process.id, amount=comp_amount)
+                        db.session.add(new_composition)
+                    else:
+                        return jsonify({'error': 'Wrong missing keys in composition'}), 400
+
+            db.session.commit()
+            return jsonify({'success': True})
 
     class MainArea():
 
@@ -606,6 +695,12 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             if not area:
                 return jsonify({'error': 'Area not found'}), 404
             return Area.area_metrics(area.id)
+        
+        @app.route('/api/set_process', methods=['POST'])
+        @auth_required
+        @staticmethod
+        def set_process():
+            return Area.set_process(MainArea.get().id)
 
     @app.route('/')
     def index():
@@ -658,80 +753,11 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
         return jsonify({'success': True})
 
-    @app.route('/api/set_process', methods=['POST'])
-    @auth_required
-    def set_process():
-        data = request.json
-        if not data:
-            return jsonify({'error': 'No data provided'}), 400
-
-        if isinstance(data, dict):
-            data = [data]
-
-        response_processes = []
-        for process_data in data:
-            id = process_data.get('id')
-            if id is not None:
-                id = int(id)
-            
-            metrics = process_data.get('metrics', {})
-            if isinstance(metrics, dict):
-                input_metrics = metrics.get('input', {})
-                output_metrics = metrics.get('output', {})
-            else:
-                return jsonify({'error': 'Invalid metrics format'}), 400
-            
-            selected = process_data.get('selected', True)
-            if isinstance(selected, str):
-                selected = ast.literal_eval(selected.capitalize())
-            amount = process_data.get('amount', 0)
-
-            title = process_data.get('title', '')
-            tags = process_data.get('tags', [])
-
-            new_process = Process(id=id, title=title, metrics={
-                "input": input_metrics,
-                "output": output_metrics
-            })
-
-            for tag_name in tags:
-                tag_name = tag_name.strip()
-                if tag_name:
-                    tag = Tag.query.filter_by(name=tag_name).first()
-                    if not tag:
-                        tag = Tag(name=tag_name)
-                        db.session.add(tag)
-                    new_process.tags.append(tag)
-            
-            db.session.add(new_process)
-            db.session.commit()
-
-            area = MainArea.get()
-            if not area:
-                return jsonify({'error': 'Area not found'}), 404
-            process_usage = area.process_usage(new_process,selected)
-            if process_usage:
-                process_usage.amount = amount
-
-            composition_data = process_data.get('composition', [])
-            for item in composition_data:
-                comp_id = item['id']
-                comp_amount = item['amount']
-                if comp_id and comp_amount:
-                    new_composition = Composition(component_process_id=comp_id, composed_process_id=new_process.id, amount=comp_amount)
-                    db.session.add(new_composition)
-                else:
-                    return jsonify({'error': 'Wrong missing keys in composition'}), 400
-            response_processes.append(process_wrap_for_response(new_process))
-
-        db.session.commit()
-        return jsonify({'success': True, 'processes': response_processes})
-
     @app.route('/api/processes', methods=['GET'])
     @auth_required
     def get_processes():
         processes = Process.query.all()
-        process_list = [process_wrap_for_response(process) for process in processes]
+        process_list = [process.wrap_for_response() for process in processes]
         return jsonify(process_list)
 
     @app.route('/api/process/<int:id>', methods=['GET','DELETE'])
@@ -741,7 +767,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         if not process:
             return jsonify({'error': 'Process not found'}), 404
         if request.method == 'GET':
-            process_data = process_wrap_for_response(process)
+            process_data = process.wrap_for_response()
             return jsonify(process_data)
         elif request.method == 'DELETE':
             Composition.query.filter_by(composed_process_id=id).delete()
@@ -993,31 +1019,6 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
     @login_required
     def dashboard():
         return render_template('dashboard.html')
-
-    def process_wrap_for_response(process):
-        """Helper function to format the process data for JSON response."""
-        amount = Process.get_usage(process)
-        selected = 0 < amount
-
-        return {
-            'id': process.id,
-            'title': process.title,
-            'selected': selected,
-            'amount': amount,
-            'metrics': process.metrics,
-            'tags': [tag.tag.name for tag in process.tags],
-            'composition': [{
-                'id': comp.component_process_id,
-                'amount': comp.amount
-            } for comp in process.composition],
-            'like_count': len([i for i in process.interactions if i.interaction_type == 'like']) -
-                        len([i for i in process.interactions if i.interaction_type == 'dislike']),
-            'comments': [{
-                'user': comment.user.username,
-                'date': comment.timestamp.isoformat(),
-                'text': comment.comment
-            } for comment in process.comments if comment.user]
-        }
 
     @app.route('/logout')
     @login_required
