@@ -303,8 +303,9 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         trades = db.relationship('Trade', foreign_keys='Trade.home_area_id', back_populates='home_area')
         compositions = db.relationship('AreaComposition', foreign_keys='AreaComposition.area_id', back_populates='area')
 
-        @staticmethod
-        def get_time_to_depletion(resource_amount, renew_rate, usage_balance):
+        def get_time_to_depletion(self, metric, usage_balance):
+            resource_amount = self.resources[metric]['amount']
+            renew_rate = self.resources[metric]['renew_rate']
             resource_renew_amount = resource_amount * renew_rate
             net_usage = resource_renew_amount + usage_balance
 
@@ -361,7 +362,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             for metric in Processes.metrics_get_ids_list():
                 usage_balance = flow['output'][metric] - flow['input'][metric]
                 if area_resources.get(metric):
-                    resources_depletion[metric] = Area.get_time_to_depletion(area_resources[metric]['amount'], area_resources[metric]['renew_rate'], usage_balance)
+                    resources_depletion[metric] = self.get_time_to_depletion(metric, usage_balance)
                 else:
                     resources_depletion[metric] = float('inf') if usage_balance > 0 else 0
 
