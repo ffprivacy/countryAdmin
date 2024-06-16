@@ -12,32 +12,13 @@ import flask, json
 import threading, time
 import random
 import sqlalchemy as DB
+from areaadmin.server.custom.flask import jsonify
+from areaadmin.server.custom.tools import *
 
 DEFAULT_DB_NAME = "area"
 DEFAULT_PORT = 5000
 DEFAULT_COUNTRY_NAME = "Template name"
 DEFAULT_COUNTRY_DESCRIPTION = "Template description"
-def jsonify(data):
-    def replace_special_floats(obj):
-        if isinstance(obj, float):
-            if obj == float('inf'):
-                return "Infinity"
-            elif obj == float('-inf'):
-                return "-Infinity"
-            elif obj != obj: 
-                return "NaN"
-        return obj
-
-    def recursive_replace(data):
-        if isinstance(data, dict):
-            return {k: recursive_replace(v) for k, v in data.items()}
-        elif isinstance(data, list):
-            return [recursive_replace(item) for item in data]
-        else:
-            return replace_special_floats(data)
-
-    processed_data = recursive_replace(data)
-    return flask.jsonify(processed_data)
 
 def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEFAULT_COUNTRY_DESCRIPTION):
 
@@ -47,27 +28,6 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + db_name_fname
     db = SQLAlchemy(app)
     CORS(app)
-
-    def debug_print(obj, indent=0):
-        indent_str = '  ' * indent
-        if isinstance(obj, dict):
-            print(f"{indent_str}{{")
-            for key, value in obj.items():
-                print(f"{indent_str}  {key}: ", end="")
-                debug_print(value, indent + 1)
-            print(f"{indent_str}}}")
-        elif isinstance(obj, list):
-            print(f"{indent_str}[")
-            for value in obj:
-                debug_print(value, indent + 1)
-            print(f"{indent_str}]")
-        elif isinstance(obj, tuple):
-            print(f"{indent_str}(")
-            for value in obj:
-                debug_print(value, indent + 1)
-            print(f"{indent_str})")
-        else:
-            print(f"{indent_str}{repr(obj)}")
 
     def login_required(f):
         @wraps(f)
