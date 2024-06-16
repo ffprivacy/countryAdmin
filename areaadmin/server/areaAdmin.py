@@ -369,7 +369,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 if data.get('name') is not None:
                     area.name = data.get('name')
                 if data.get('description') is not None:
-                    area.name = data.get('description')
+                    area.description = data.get('description')
                 area.resources = area_resources
 
             compositions = data.get('compositions')
