@@ -19,6 +19,9 @@ DEFAULT_DB_NAME = "area"
 DEFAULT_PORT = 5000
 DEFAULT_COUNTRY_NAME = "Template name"
 DEFAULT_COUNTRY_DESCRIPTION = "Template description"
+def IS_LOCAL_AREA_REGEX(uri):
+    rex = re.compile(r'^\s*\d+\s*$')
+    return rex.match(uri) is not None
 
 def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEFAULT_COUNTRY_DESCRIPTION):
 
@@ -1003,14 +1006,13 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         
         def daemon_loop(self_id):
             print("Guard background task started")
-            uriRE = re.compile(r'^\s*\d+\s*$')
             with app.app_context():
                 self = Guard.query.get(self_id)
                 while True:
                     countries = []
                     for uri in self.area_uris:
                         area_path = "/api/area"
-                        if uriRE.match(uri) is not None:
+                        if IS_LOCAL_AREA_REGEX(uri):
                             area_path = f"/api/area/{int(uri)}"
                             uri = ""
 
