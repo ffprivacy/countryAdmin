@@ -110,16 +110,10 @@ function guardFrontRefresh() {
 document.getElementById('refresh-btn').addEventListener('click', function() {
     guardFrontRefresh();
 });
-
 const fetchAreaData = async () => {
     let areaData = [];
     for(let uri of guard.area_uris) {
-        let areaPath = "/api/area";
-        if ( uri.match(/^[ \t]*\d+[ \t]*$/) == null ) {
-            areaPath = `/api/area/${parseInt(uri)}`
-            uri = ""
-        }
-        areaData.push(await fetch(`${uri}/${areaPath}`, {
+        areaData.push(await fetch(area_generate_uri_from_database(uri), {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',

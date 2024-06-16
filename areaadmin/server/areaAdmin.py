@@ -32,6 +32,9 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
     db = SQLAlchemy(app)
     CORS(app)
 
+    def DEFAULT_HOST():
+        return f'http://127.0.0.1:{app.config["SERVING_PORT"]}'
+
     def login_required(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
@@ -234,7 +237,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
         def send(self):
             tradeJSON = self.toJson()
-            tradeJSON['uri'] = f'http://127.0.0.1:{app.config["SERVING_PORT"]}'
+            tradeJSON['uri'] = DEFAULT_HOST()
             response = requests.post(f"{self.to_area_uri}/api/trade/receive", json=tradeJSON)
             return jsonify(response.json())
 
@@ -1014,7 +1017,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                         area_path = "/api/area"
                         if IS_LOCAL_AREA_REGEX(uri):
                             area_path = f"/api/area/{int(uri)}"
-                            uri = ""
+                            uri = DEFAULT_HOST()
 
                         response = requests.get(f"{uri}/{area_path}")
                         response.raise_for_status()
