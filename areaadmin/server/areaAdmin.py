@@ -69,7 +69,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
         @staticmethod
         def get_usage(process):
-            area = Area.query.first()
+            area = Area.get_main()
             if not area:
                 return jsonify({'error': 'Area not found'}), 404
             process_usage = next((pu for pu in process.usages if pu.area_id == area.id), None)
@@ -168,7 +168,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
     @app.route('/api/trade/receive', methods=['POST'])
     @auth_required
     def trade_receive():
-        area = Area.query.first()
+        area = Area.get_main()
         if not area:
             return jsonify({'error': 'Area not found'}), 404
 
@@ -210,7 +210,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
     @app.route('/api/trade', methods=['POST'])
     @auth_required
     def initiate_trade():
-        area = Area.query.first()
+        area = Area.get_main()
         if not area:
             return jsonify({'error': 'Home area not found'}), 404
         
@@ -272,7 +272,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
     @app.route('/api/trades', methods=['GET'])
     @auth_required
     def get_trades():
-        area = Area.query.first()
+        area = Area.get_main()
         if not area:
             return jsonify({'error': 'Area not found'}), 404
 
@@ -302,6 +302,10 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         process_usages = db.relationship('ProcessUsage', back_populates='area')
         trades = db.relationship('Trade', foreign_keys='Trade.home_area_id', back_populates='home_area')
         compositions = db.relationship('AreaComposition', foreign_keys='AreaComposition.area_id', back_populates='area')
+
+        @staticmethod
+        def get_main():
+            return Area.query.first()
 
         def get_time_to_depletion(self, metric, usage_balance):
             resource_amount = self.resources[metric]['amount']
@@ -387,7 +391,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
     @app.route('/api/area/<int:id>/metrics', methods=['GET'])
     @auth_required
-    def area_metrics():
+    def area_metrics(id):
         area = Area.query.filter_by(id=id).first()
         if area:
             metrics = area.metrics()
@@ -398,10 +402,10 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
     @app.route('/api/area/metrics', methods=['GET'])
     @auth_required
     def get_flow():
-        area = Area.query.first()
+        area = Area.get_main()
         if not area:
             return jsonify({'error': 'Area not found'}), 404
-        return redirect(f'/api/area/${area.id}/metrics')
+        return area_metrics(area.id)
     
     @app.route('/api/areas', methods=['GET'])
     @auth_required
@@ -412,20 +416,30 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             areas_response.append(area.toJson())
         return jsonify(areas_response)
     
-    @app.route('/api/area', methods=['POST','GET'])
+
+    @app.route('/api/area/<int:id>', methods=['GET','POST'])
     @auth_required
-    def handle_area():
+    def get_area(id):
+        area = Area.query.filter_by(id=id)
+        if not area:
+            return jsonify({'error': 'Area not found'}), 404
         if request.method == 'POST':
             data = request.json
             return jsonify(Area.set_area_data(data))
         elif request.method == 'GET':
-            area = Area.query.first()
-
-            if not area:
-                return jsonify({'error': 'No area in db'}), 404
-
             return jsonify(area.toJson())
-            
+
+    @app.route('/api/area', methods=['POST','GET'])
+    @auth_required
+    def handle_area():
+        area = Area.get_main()
+        if not area:
+            return jsonify({'error': 'Area not found'}), 404
+        if request.method == 'POST':
+            data = request.json
+            return jsonify(Area.set_area_data(data))
+        elif request.method == 'GET':
+            return get_area(area.id)
 
     def set_area_data(data):
         area_resources = data.get('resources', {})
@@ -438,7 +452,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         area_name = data.get('name', DEFAULT_COUNTRY_NAME)
         area_description = data.get('description', DEFAULT_COUNTRY_DESCRIPTION)
 
-        area = Area.query.first()
+        area = Area.get_main()
         if not area:
             area = Area(name=area_name, description=area_description, resources=area_resources)
             db.session.add(area)
@@ -558,7 +572,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             states = request.form.getlist('selected[]')
         states = [ast.literal_eval(value.capitalize()) for value in states]
 
-        area = Area.query.first()
+        area = Area.get_main()
         if not area:
             return jsonify({'error': 'Area not found'}), 404
 
@@ -619,7 +633,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             db.session.add(new_process)
             db.session.commit()
 
-            area = Area.query.first()
+            area = Area.get_main()
             if not area:
                 return jsonify({'error': 'Area not found'}), 404
             process_usage = area.process_usage(new_process,selected)
@@ -1023,7 +1037,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         if new_usage_count is None:
             return jsonify({'error': 'Missing usage count'}), 400
 
-        area = Area.query.first()  # Assuming you're dealing with a single area scenario
+        area = Area.get_main()  # Assuming you're dealing with a single area scenario
         if not area:
             return jsonify({'error': 'Area not found'}), 404
 
@@ -1040,7 +1054,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
     with app.app_context():
         db.create_all()
-        if not Area.query.first():
+        if not Area.get_main():
             Area.set_area_data({'name': name, 'description': description})
         Guard.guard_daemon()
 
