@@ -160,15 +160,17 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
     class ProcessComment(db.Model):
         id = DB.Column(DB.Integer, primary_key=True)
-        user_id = DB.Column(DB.Integer, DB.ForeignKey('user.id'), nullable=False)
-        process_id = DB.Column(DB.Integer, DB.ForeignKey('process.id'), nullable=False)
         comment = DB.Column(DB.Text, nullable=False)
         timestamp = DB.Column(DB.DateTime, default=datetime.utcnow)
-        user = db.relationship('User', backref='comments')
-        process = db.relationship('Process', back_populates='comments')
+
+        user_id = DB.Column(DB.Integer, DB.ForeignKey('user.id'), nullable=False)
+        user = db.relationship('User', foreign_keys='ProcessComment.user_id')
+
+        process_id = DB.Column(DB.Integer, DB.ForeignKey('process.id'), nullable=False)
+        process = db.relationship('Process', foreign_keys='ProcessComment.process_id', back_populates='comments')
         
         area_id = DB.Column(DB.Integer, DB.ForeignKey('area.id'), nullable=False)
-        area = db.relationship('Area')
+        area = db.relationship('Area', foreign_keys='ProcessComment.area_id')
 
     class ProcessTag(db.Model):
         __tablename__ = 'process_tag'
@@ -367,7 +369,6 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             return process_usage
 
         def metrics(self):
-            area_resources = self.resources
             processes = Process.query.all()
             trades = Trade.query.all()
             flow = {'input': {}, 'output': {}}
@@ -399,7 +400,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             resources_depletion = {}
             for metric in Processes.metrics_get_ids_list():
                 usage_balance = flow['output'][metric] - flow['input'][metric]
-                if area_resources.get(metric):
+                if self.resources.get(metric):
                     resources_depletion[metric] = self.get_time_to_depletion(metric, usage_balance)
                 else:
                     resources_depletion[metric] = float('inf') if usage_balance > 0 else 0
@@ -897,7 +898,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         @app.route('/dashboard', methods=['GET'])
         @login_required
         @staticmethod
-        def main_dashboard():
+        def dashboard():
             return render_template('dashboard.html')
 
         class Guard():
