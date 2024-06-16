@@ -162,7 +162,7 @@ function selectProcesses() {
 		formData.append('selected[]', process.selected);
 	});
 
-	fetch('/api/select_process', {
+	fetch(`/api/area/${dashboard_data['area_id']}/select_process`, {
 		method: 'POST',
 		body: formData
 	})
@@ -194,7 +194,7 @@ function dashboardRefresh() {
             const allProcesses = data;
             processList.innerHTML = '';
 
-            fetch('/api/area/metrics')
+            fetch(`/api/area/${dashboard_data['area_id']}/metrics`)
             .then(response => JSON_parse(response))
             .then(metrics => {
                 const areaMetrics = metrics.flow;
@@ -303,7 +303,7 @@ function submitTrade() {
         });
     });
 
-    fetch('/api/trade', {
+    fetch(`/api/area/${dashboard_data['area_id']}/trade`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -320,7 +320,7 @@ function submitTrade() {
     .catch(error => console.error('Error submitting trade:', error));
 }
 function fetchTrades() {
-    fetch('/api/trades')
+    fetch(`/api/area/${dashboard_data['area_id']}/trades`)
     .then(response => JSON_parse(response))
     .then(trades => {
         const tradesList = document.getElementById('trades-list');

@@ -10,7 +10,7 @@ document.getElementById('search-area').addEventListener('keyup', function() {
 let guard = null;
 
 function guardClearAlerts() {
-    fetch('/api/guard/alerts/clear').then(response => {
+    fetch(`/api/area/${dashboard_data['area_id']}/guard/alerts/clear`).then(response => {
         guardFrontRefresh()
     })
 }
@@ -40,20 +40,20 @@ function clearPollutionDebt(alert_id, uri, emissionEnv=90) {
             to_area_uri: uri,
             foreign_processes: response.processes,
         };
-        fetch('/api/trade', {
+        fetch(`/api/area/${dashboard_data['area_id']}/trade`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(tradeData)
         }).then(response => {
-            fetch(`/api/guard/alert/${alert_id}`, {method: 'DELETE'})
+            fetch(`/api/area/${dashboard_data['area_id']}/guard/alert/${alert_id}`, {method: 'DELETE'})
             guardFrontRefresh()
         })
     })
 }
 function fetchGuardState() {
-    return fetch('/api/guard')
+    return fetch(`/api/area/${dashboard_data['area_id']}/guard`)
             .then(response => response.json())
             .then(data => {
                 guard = data;
@@ -88,7 +88,7 @@ document.getElementById('add-area-btn').addEventListener('click', function() {
     if (newUri) {
         document.getElementById('new-area-uri').value = '';
 
-        fetch(`/api/guard/subscribe`, {
+        fetch(`/api/area/${dashboard_data['area_id']}/guard/subscribe`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json'

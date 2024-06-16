@@ -153,7 +153,7 @@ function processCreateElement(allProcesses,process) {
 	const amountInput = e.querySelector(`#view-process-amount-${process.id}`);
 	amountInput.addEventListener('change', () => {
 		const newAmount = amountInput.value;
-		fetch(`/api/update_process_usage/${process.id}`, {
+		fetch(`/api/area/${dashboard_data['area_id']}/update_process_usage/${process.id}`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json'
@@ -181,7 +181,7 @@ function processCreateElement(allProcesses,process) {
 		const formData = new FormData();
 		formData.append('id', processId.value);
 		formData.append('selected', processState.value);
-		fetch('/api/select_process', {
+		fetch(`/api/area/${dashboard_data['area_id']}/select_process`, {
 			method: 'POST',
 			body: formData
 		})

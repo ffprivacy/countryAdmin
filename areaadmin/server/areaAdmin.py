@@ -898,7 +898,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             @login_required
             @staticmethod
             def dashboard():
-                return render_template('dashboard.html')
+                return render_template('dashboard.html', area_id=Area.Main.main_get().id)
 
             class Guard():
                 @app.route('/api/guard/alerts/clear')

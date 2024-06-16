@@ -72,7 +72,7 @@ function areaResourcesSetup(prefix) {
                                 <hr>`;
     }
 
-    fetch('/api/area')
+    fetch(`/api/area/${dashboard_data['area_id']}`)
     .then(response => response.json())
     .then(area => {
         const data = area.resources;
@@ -90,7 +90,7 @@ function areaResourcesSetup(prefix) {
                 renew_rate: parseFloat(document.getElementById(`${prefix}-${metric}-renew-rate`).value) || 0
             };
         }
-        fetch('/api/area', {
+        fetch(`/api/area/${dashboard_data['area_id']}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
