@@ -750,6 +750,12 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
             return jsonify(trades_data)
 
+        @app.route('/area/<int:id>/dashboard', methods=['GET'])
+        @login_required
+        @staticmethod
+        def render_dashboard(id):
+            return render_template('dashboard.html', area_id=id)
+
         class Guard():
             @app.route('/api/area/<int:id>/guard/alerts/clear')
             @auth_required
@@ -817,6 +823,13 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                     'last_check_date': guard.last_check_date,
                     'alerts': alerts
                 })
+        
+            @app.route('/area/<int:id>/guard', methods=['GET'])
+            @login_required
+            @staticmethod
+            def render_guard(id):
+                return render_template('guard.html', area_id=id)
+
         class Main():
 
             @staticmethod
@@ -898,7 +911,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             @login_required
             @staticmethod
             def dashboard():
-                return render_template('dashboard.html', area_id=Area.Main.main_get().id)
+                return Area.render_dashboard(Area.Main.main_get().id)
 
             class Guard():
                 @app.route('/api/guard/alerts/clear')
@@ -925,11 +938,11 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 def main_list():
                     return Area.Guard.list(Area.Main.main_get().id)
                 
-                @app.route('/guard')
+                @app.route('/guard', methods=['GET'])
                 @login_required
                 @staticmethod
-                def main_guard():
-                    return render_template('guard.html')
+                def guard():
+                    return Area.Guard.render_guard(Area.Main.main_get().id)    
 
     @app.route('/')
     def index():
