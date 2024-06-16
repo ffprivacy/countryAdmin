@@ -11,6 +11,7 @@ from flask_cors import CORS
 import flask, json
 import threading, time
 import random
+import sqlalchemy as DB
 
 DEFAULT_DB_NAME = "area"
 DEFAULT_PORT = 5000
@@ -85,23 +86,23 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         return decorated_function
 
     class Composition(db.Model):
-        id = db.Column(db.Integer, primary_key=True)
-        composed_process_id = db.Column(db.Integer, db.ForeignKey('process.id'), nullable=False)
-        component_process_id = db.Column(db.Integer, nullable=False)
-        amount = db.Column(db.Integer, nullable=False)
+        id = DB.Column(DB.Integer, primary_key=True)
+        composed_process_id = DB.Column(DB.Integer, DB.ForeignKey('process.id'), nullable=False)
+        component_process_id = DB.Column(DB.Integer, nullable=False)
+        amount = DB.Column(DB.Integer, nullable=False)
 
     class Tag(db.Model):
-        id = db.Column(db.Integer, primary_key=True)
-        name = db.Column(db.String(50), unique=True)
+        id = DB.Column(DB.Integer, primary_key=True)
+        name = DB.Column(DB.String(50), unique=True)
         processes = db.relationship('ProcessTag', back_populates='tag')
 
     class Process(db.Model):
-        id = db.Column(db.Integer, primary_key=True)
-        title = db.Column(db.String(100))  # Add title attribute
+        id = DB.Column(DB.Integer, primary_key=True)
+        title = DB.Column(DB.String(100))  # Add title attribute
         composition = db.relationship('Composition', backref='process', lazy=True)
         tags = db.relationship('ProcessTag', back_populates='process')
         tags_names = association_proxy('tags', 'tag.name')
-        metrics = db.Column(db.JSON)
+        metrics = DB.Column(DB.JSON)
         interactions = db.relationship('ProcessInteraction', back_populates='process', lazy=True)
         comments = db.relationship('ProcessComment', back_populates='process', lazy=True)
         usages = db.relationship('ProcessUsage', back_populates='process', cascade='delete')
@@ -115,34 +116,34 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             return process_usage.usage_count if process_usage else 0
 
     class ProcessInteraction(db.Model):
-        id = db.Column(db.Integer, primary_key=True)
-        process_id = db.Column(db.Integer, db.ForeignKey('process.id'), nullable=False)
-        interaction_type = db.Column(db.String(10), nullable=False)
-        user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+        id = DB.Column(DB.Integer, primary_key=True)
+        process_id = DB.Column(DB.Integer, DB.ForeignKey('process.id'), nullable=False)
+        interaction_type = DB.Column(DB.String(10), nullable=False)
+        user_id = DB.Column(DB.Integer, DB.ForeignKey('user.id'), nullable=False)
         process = db.relationship('Process', back_populates='interactions')
         user = db.relationship('User', backref='interactions')
-        __table_args__ = (db.UniqueConstraint('user_id', 'process_id', name='_user_process_uc'),)
+        __table_args__ = (DB.UniqueConstraint('user_id', 'process_id', name='_user_process_uc'),)
 
     class ProcessComment(db.Model):
-        id = db.Column(db.Integer, primary_key=True)
-        user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-        process_id = db.Column(db.Integer, db.ForeignKey('process.id'), nullable=False)
-        comment = db.Column(db.Text, nullable=False)
-        timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+        id = DB.Column(DB.Integer, primary_key=True)
+        user_id = DB.Column(DB.Integer, DB.ForeignKey('user.id'), nullable=False)
+        process_id = DB.Column(DB.Integer, DB.ForeignKey('process.id'), nullable=False)
+        comment = DB.Column(DB.Text, nullable=False)
+        timestamp = DB.Column(DB.DateTime, default=datetime.utcnow)
         user = db.relationship('User', backref='comments')
         process = db.relationship('Process', back_populates='comments')
 
     class ProcessTag(db.Model):
         __tablename__ = 'process_tag'
-        process_id = db.Column(db.Integer, db.ForeignKey('process.id'), primary_key=True)
-        tag_id = db.Column(db.Integer, db.ForeignKey('tag.id'), primary_key=True)
+        process_id = DB.Column(DB.Integer, DB.ForeignKey('process.id'), primary_key=True)
+        tag_id = DB.Column(DB.Integer, DB.ForeignKey('tag.id'), primary_key=True)
         process = db.relationship('Process', back_populates='tags')
         tag = db.relationship('Tag', back_populates='processes')
 
     class ProcessUsage(db.Model):
-        area_id = db.Column(db.Integer, db.ForeignKey('area.id'), primary_key=True)
-        process_id = db.Column(db.Integer, db.ForeignKey('process.id'), primary_key=True)
-        usage_count = db.Column(db.Integer, default=0)
+        area_id = DB.Column(DB.Integer, DB.ForeignKey('area.id'), primary_key=True)
+        process_id = DB.Column(DB.Integer, DB.ForeignKey('process.id'), primary_key=True)
+        usage_count = DB.Column(DB.Integer, default=0)
 
         area = db.relationship('Area', back_populates='process_usages')
         process = db.relationship('Process', back_populates='usages')
@@ -151,9 +152,9 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             return f"<ProcessUsage area_id={self.area_id} process_id={self.process_id} usage_count={self.usage_count}>"
 
     class User(db.Model):
-        id = db.Column(db.Integer, primary_key=True)
-        username = db.Column(db.String(50), unique=True, nullable=False)
-        password_hash = db.Column(db.String(128), nullable=False)
+        id = DB.Column(DB.Integer, primary_key=True)
+        username = DB.Column(DB.String(50), unique=True, nullable=False)
+        password_hash = DB.Column(DB.String(128), nullable=False)
 
         def set_password(self, password):
             self.password_hash = generate_password_hash(password)
@@ -162,14 +163,14 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             return check_password_hash(self.password_hash, password)
 
     class Trade(db.Model):
-        id = db.Column(db.Integer, primary_key=True)
-        home_area_id = db.Column(db.Integer, db.ForeignKey('area.id'), nullable=False)
-        to_area_uri = db.Column(db.String(255), nullable=False)
-        to_area_trade_id = db.Column(db.Integer, nullable=True)
-        home_processes = db.Column(db.JSON)
-        foreign_processes = db.Column(db.JSON)
-        home_confirm = db.Column(db.Boolean, default=False)
-        foreign_confirm = db.Column(db.Boolean, default=False)
+        id = DB.Column(DB.Integer, primary_key=True)
+        home_area_id = DB.Column(DB.Integer, DB.ForeignKey('area.id'), nullable=False)
+        to_area_uri = DB.Column(DB.String(255), nullable=False)
+        to_area_trade_id = DB.Column(DB.Integer, nullable=True)
+        home_processes = DB.Column(DB.JSON)
+        foreign_processes = DB.Column(DB.JSON)
+        home_confirm = DB.Column(DB.Boolean, default=False)
+        foreign_confirm = DB.Column(DB.Boolean, default=False)
 
         home_area = db.relationship('Area', foreign_keys=[home_area_id], back_populates='trades')
 
@@ -327,17 +328,17 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         return jsonify(trades_data)
     
     class AreaComposition(db.Model):
-        id = db.Column(db.Integer, primary_key=True)
-        area_id = db.Column(db.Integer, db.ForeignKey('area.id'), nullable=False)
-        child_id = db.Column(db.Integer, db.ForeignKey('area.id'), nullable=False)
+        id = DB.Column(DB.Integer, primary_key=True)
+        area_id = DB.Column(DB.Integer, DB.ForeignKey('area.id'), nullable=False)
+        child_id = DB.Column(DB.Integer, DB.ForeignKey('area.id'), nullable=False)
         area = db.relationship('Area', foreign_keys='AreaComposition.area_id', back_populates='compositions')
         child = db.relationship('Area', foreign_keys='AreaComposition.child_id')
                                
     class Area(db.Model):
-        id = db.Column(db.Integer, primary_key=True)
-        name = db.Column(db.String(100))
-        description = db.Column(db.String(100))
-        resources = db.Column(db.JSON)
+        id = DB.Column(DB.Integer, primary_key=True)
+        name = DB.Column(DB.String(100))
+        description = DB.Column(DB.String(100))
+        resources = DB.Column(DB.JSON)
         process_usages = db.relationship('ProcessUsage', back_populates='area')
         trades = db.relationship('Trade', foreign_keys='Trade.home_area_id', back_populates='home_area')
         compositions = db.relationship('AreaComposition', foreign_keys='AreaComposition.area_id', back_populates='area')
@@ -414,6 +415,67 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 'flow': flow,
                 'resources_depletion': resources_depletion
             }
+        
+        @app.route('/api/area/metrics', methods=['GET'])
+        @auth_required
+        @staticmethod
+        def get_flow():
+            metrics = Area.metrics()
+            return jsonify(metrics)
+
+        @app.route('/api/area', methods=['POST','GET'])
+        @auth_required
+        @staticmethod
+        def handle_area():
+            if request.method == 'POST':
+                data = request.json
+                return jsonify(Area.set_area_data(data))
+            elif request.method == 'GET':
+                area = Area.query.first()
+
+                if not area:
+                    return jsonify({
+                        'name': DEFAULT_COUNTRY_NAME,
+                        'description': DEFAULT_COUNTRY_DESCRIPTION,
+                        'resources': {}
+                    })
+
+                processes = [{
+                    'id': pu.process_id,
+                    'title': pu.process.title,
+                    'usage_count': pu.usage_count
+                } for pu in area.process_usages]
+
+                return jsonify({
+                    'name': area.name,
+                    'description': area.description,
+                    'resources': area.resources,
+                    'processes': processes
+                })
+
+        @staticmethod
+        def set_area_data(data):
+            area_resources = data.get('resources', {})
+            for key, resource in area_resources.items():
+                if 'amount' not in resource or resource['amount'] is None:
+                    resource['amount'] = 0
+                if 'renew_rate' not in resource or resource['renew_rate'] is None:
+                    resource['renew_rate'] = 0
+
+            area_name = data.get('name', DEFAULT_COUNTRY_NAME)
+            area_description = data.get('description', DEFAULT_COUNTRY_DESCRIPTION)
+
+            area = Area.query.first()
+            if not area:
+                area = Area(name=area_name, description=area_description, resources=area_resources)
+                db.session.add(area)
+            else:
+                area.name = area_name
+                area.description = area_description
+                area.resources = area_resources
+
+            db.session.commit()
+            return {'success': True}
 
     @app.route('/')
     def index():
@@ -436,7 +498,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         db.session.query(Guard).delete()
         db.session.query(GuardAlert).delete()
         db.session.commit()
-        set_area_data({})
+        Area.set_area_data({})
         return redirect(url_for('logout'))
 
     @app.route('/api/process/<int:process_id>/like', methods=['POST'])
@@ -664,17 +726,17 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         return Guard.get().id
 
     class GuardAlert(db.Model):
-        id = db.Column(db.Integer, primary_key=True)
-        guard_id = db.Column(db.Integer, db.ForeignKey('guard.id'), default=guard_get_id)
-        title = db.Column(db.String)
-        description = db.Column(db.String)
-        time = db.Column(db.DateTime, default=datetime.now)
-        area = db.Column(db.String)
+        id = DB.Column(DB.Integer, primary_key=True)
+        guard_id = DB.Column(DB.Integer, DB.ForeignKey('guard.id'), default=guard_get_id)
+        title = DB.Column(DB.String)
+        description = DB.Column(DB.String)
+        time = DB.Column(DB.DateTime, default=datetime.now)
+        area = DB.Column(DB.String)
 
     class Guard(db.Model):
-        id = db.Column(db.Integer, primary_key=True)
-        area_uris = db.Column(db.JSON, default=[])
-        last_check_date = db.Column(db.DateTime, default=datetime.now)
+        id = DB.Column(DB.Integer, primary_key=True)
+        area_uris = DB.Column(DB.JSON, default=[])
+        last_check_date = DB.Column(DB.DateTime, default=datetime.now)
         alerts = db.relationship('GuardAlert', backref='guard', lazy=True)
 
         @staticmethod
@@ -965,64 +1027,6 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         def metrics_get_ids_list():
             return [metric['id'] for metric in Processes.metrics_get_list()]
 
-    @app.route('/api/area/metrics', methods=['GET'])
-    @auth_required
-    def get_flow():
-        metrics = Area.metrics()
-        return jsonify(metrics)
-
-    @app.route('/api/area', methods=['POST','GET'])
-    @auth_required
-    def handle_area():
-        if request.method == 'POST':
-            data = request.json
-            return jsonify(set_area_data(data))
-        elif request.method == 'GET':
-            area = Area.query.first()
-
-            if not area:
-                return jsonify({
-                    'name': DEFAULT_COUNTRY_NAME,
-                    'description': DEFAULT_COUNTRY_DESCRIPTION,
-                    'resources': {}
-                })
-
-            processes = [{
-                'id': pu.process_id,
-                'title': pu.process.title,
-                'usage_count': pu.usage_count
-            } for pu in area.process_usages]
-
-            return jsonify({
-                'name': area.name,
-                'description': area.description,
-                'resources': area.resources,
-                'processes': processes
-            })
-
-    def set_area_data(data):
-        area_resources = data.get('resources', {})
-        for key, resource in area_resources.items():
-            if 'amount' not in resource or resource['amount'] is None:
-                resource['amount'] = 0
-            if 'renew_rate' not in resource or resource['renew_rate'] is None:
-                resource['renew_rate'] = 0
-
-        area_name = data.get('name', DEFAULT_COUNTRY_NAME)
-        area_description = data.get('description', DEFAULT_COUNTRY_DESCRIPTION)
-
-        area = Area.query.first()
-        if not area:
-            area = Area(name=area_name, description=area_description, resources=area_resources)
-            db.session.add(area)
-        else:
-            area.name = area_name
-            area.description = area_description
-            area.resources = area_resources
-
-        db.session.commit()
-        return {'success': True}
-
     @app.route('/api/database', methods=['GET','POST'])
     @auth_required
     def handle_database():
@@ -1065,7 +1069,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
     with app.app_context():
         db.create_all()
         if not Area.query.first():
-            set_area_data({'name': name, 'description': description})
+            Area.set_area_data({'name': name, 'description': description})
         Guard.guard_daemon()
 
     return app, db
