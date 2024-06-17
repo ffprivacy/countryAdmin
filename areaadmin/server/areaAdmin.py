@@ -998,7 +998,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                     return jsonify({'error': 'Area not found'}), 404
                 return Area.update_process_usage(area.id,id)
 
-            @app.route('/api/area/metrics', methods=['GET'])
+            @app.route('/api/metrics', methods=['GET'])
             @auth_required
             @staticmethod
             def main_metrics():
