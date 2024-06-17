@@ -783,8 +783,14 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         @staticmethod
         def initiate_trade(id):
             data = request.get_json()
-            if 'remote_host_uri' not in data or 'remote_area_id' not in data:
+            if 'remote_host_uri' not in data and 'remote_area_id' not in data:
                 return jsonify({'success': False, 'error': 'Incomplete data provided'}), 400
+
+            if 'remote_host_uri' in data:
+                if 'remote_area_id' not in data:
+                    if IS_LOCAL_AREA_REGEX(data['remote_host_uri']):
+                        data['remote_area_id'] = int(data['remote_host_uri'])
+                        data.pop('remote_host_uri')
 
             try:
                 trade = Trade(
