@@ -391,7 +391,6 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
         def metrics(self):
             processes = Process.query.all()
-            trades = Trade.query.all()
             flow = {'input': {}, 'output': {}}
             
             for metric in Processes.metrics_get_ids_list():
@@ -400,7 +399,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             
             self.fill_flow(flow)
 
-            for trade in trades:
+            for trade in self.trades:
                 for home_trade_process in trade.home_processes:
                     for metric in Processes.metrics_get_ids_list():
                         if 'id' in home_trade_process and 'amount' in home_trade_process:
