@@ -918,6 +918,11 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             def main_get():
                 return Area.query.first()
             
+            @app.route('/api/processes', methods=['GET'])
+            @auth_required
+            def get_processes():
+                return Area.area_get_processes(Area.Main.main_get().id)
+            
             @app.route('/api/trade/receive', methods=['POST'])
             @auth_required
             @staticmethod
@@ -1044,13 +1049,6 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         db.session.commit()
         Area.set_area_data({})
         return redirect(url_for('logout'))
-
-    @app.route('/api/processes', methods=['GET'])
-    @auth_required
-    def get_processes():
-        processes = Process.query.all()
-        process_list = [process.wrap_for_response() for process in processes]
-        return jsonify(process_list)
 
     def guard_get_id():
         return Guard.get().id
