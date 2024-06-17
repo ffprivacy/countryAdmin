@@ -262,13 +262,13 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 'remote_confirm': self.remote_confirm
             }
 
-        def get_host_and_api(self):
+        def get_remote_host_and_api(self):
             remote_host_uri = self.remote_host_uri if self.remote_host_uri else HOME_HOST_URI()
             return remote_host_uri, remote_host_uri + ("" if remote_host_uri.endswith("/") else "/") + "api/" + (f"area/{self.remote_area_id}/" if self.remote_area_id else "")
 
         def send(self):
             tradeJSON = self.toJson()
-            remoteHostURI, remoteApiURI = self.get_host_and_api()
+            remoteHostURI, remoteApiURI = self.get_remote_host_and_api()
             home_host_uri = HOME_HOST_URI()
             if remoteHostURI != home_host_uri:
                 tradeJSON['home_host_uri'] = home_host_uri
@@ -278,12 +278,15 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
         def remoteDelete(self):
             if self.remote_trade_id:
-                uri, apiURI = self.get_host_and_api()
-                response = requests.delete(f"{apiURI}/trade/{self.id}")
-                if response.status_code == 404:
-                    return jsonify({'success': True, 'message': 'Remote seem already deleted'}), 200
+                remoteHostUri, remoteApiURI = self.get_remote_host_and_api()
+                if self.remote_trade_id is not None:
+                    response = requests.delete(f"{remoteApiURI}/trade/{self.remote_trade_id}")
+                    if response.status_code == 404:
+                        return jsonify({'success': True, 'message': 'Remote seem already deleted'}), 200
+                    else:
+                        return jsonify(response.json())
                 else:
-                    return jsonify(response.json())
+                    return jsonify({'success': True, 'message': 'Remote seem already deleted'}), 200
             else:
                 return jsonify({'success': True, 'message': 'No foreign trade to delete'}), 200
 
@@ -403,7 +406,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                         if 'id' in home_trade_process and 'amount' in home_trade_process:
                             flow['output'][metric] -= Processes.retrieve_metric(processes, Processes.get_by_id(processes, home_trade_process['id']), 'output', metric) * home_trade_process['amount']
                 
-                uri, apiURI = trade.get_host_and_api()
+                uri, apiURI = trade.get_remote_host_and_api()
                 response = requests.get(f"{apiURI}/processes")
                 response.raise_for_status()
                 remote_processes = response.json()
