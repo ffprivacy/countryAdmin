@@ -270,15 +270,15 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
         def send(self):
             tradeJSON = self.toJson()
-            tradeJSON['uri'] = DEFAULT_HOST()
             uri, apiURI = generate_api_uri_from_database(self.to_area_uri)
+            tradeJSON['from_host_uri'] = apiURI
             response = requests.post(f"{apiURI}/trade/receive", json=tradeJSON)
             return jsonify(response.json())
 
         def remoteDelete(self):
             if self.to_area_trade_id:
                 uri, apiURI = generate_api_uri_from_database(self.to_area_uri)
-                response = requests.delete(f"{uri}/api/trade/{self.id}")
+                response = requests.delete(f"{apiURI}/trade/{self.id}")
                 if response.status_code == 404:
                     return jsonify({'success': True, 'message': 'Remote seem already deleted'}), 200
                 else:
@@ -732,36 +732,34 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
             home_processes = data['foreign_processes']
             foreign_processes = data['home_processes']        
-            data['foreign_confirm'] = data['home_confirm']
 
-            to_area_trade_id = data['id']
-            to_area_uri = data['uri']
-            trade = Trade.query.filter_by(id=to_area_trade_id).first()
+            remote_confirm = data['home_confirm']
+            remote_trade_id = data['id']
+            remote_host_uri = data['from_host_uri']
+            local_trade_id = data['to_area_trade_id']
+            trade = Trade.query.filter_by(id=local_trade_id).first()
 
             if trade:
-                trade.to_area_trade_id=to_area_trade_id
+                trade.to_area_trade_id=remote_trade_id
                 trade.foreign_processes = foreign_processes
-                trade.foreign_confirm = data['foreign_confirm']
+                trade.foreign_confirm = remote_confirm
                 trade.home_processes = home_processes
+                db.session.commit()
             else:
                 new_trade = Trade(
                     home_area_id=id,
-                    to_area_uri=to_area_uri,
+                    to_area_uri=remote_host_uri,
                     home_processes=home_processes,
                     foreign_processes=foreign_processes,
-                    to_area_trade_id=to_area_trade_id,
-                    foreign_confirm=data['foreign_confirm']
+                    to_area_trade_id=remote_trade_id,
+                    foreign_confirm=remote_confirm
                 )
                 db.session.add(new_trade)
-        
-            try:
                 db.session.commit()
-                # TODO notify the client
-                return jsonify({'success': True, 'message': 'Trade received and saved successfully'}), 201
-            except Exception as e:
-                db.session.rollback()
-                print(str(e))
-                return jsonify({'success': False, 'error': str(e)}), 500
+                new_trade.send()
+
+            # TODO notify the client
+            return jsonify({'success': True, 'message': 'Trade received and saved successfully'}), 201
 
         @app.route('/api/area/<int:id>/trade', methods=['POST'])
         @auth_required
