@@ -36,12 +36,15 @@
                 <li class="nav-item">
                     <button class="btn btn-info" id="export-database-btn">Export Database</button>
                 </li>
-                <li>
+                <li class="nav-item">
                     <label for="import-database-file" class="btn btn-warning ml-2">Import Database</label>
                     <input type="file" id="import-database-file" class="d-none" accept=".db" />
                 </li>
-                <li>
+                <li class="nav-item">
                     <button class="btn btn-primary" id="create-subzone">Create a subzone</button>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/area/{{ area_id }}/guard">Guard</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
