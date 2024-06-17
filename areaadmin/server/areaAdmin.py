@@ -808,6 +808,21 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             db.session.commit()
             return jsonify({'success': True})
 
+        def get_trades_internal(self):
+            trades_data = [{
+                'id': trade.id,
+                'to_area_uri': trade.to_area_uri,
+                'home_processes': trade.home_processes,
+                'foreign_processes': trade.foreign_processes,
+                'foreign_confirm': trade.foreign_confirm,
+                'home_confirm': trade.home_confirm
+            } for trade in self.trades]
+
+            for composition in self.compositions:
+                trades_data.extend(composition.child.get_trades_internal())
+            
+            return trades_data
+
         @app.route('/api/area/<int:id>/trades', methods=['GET'])
         @auth_required
         @staticmethod
@@ -816,16 +831,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             if not area:
                 return jsonify({'error': 'Area not found'}), 404
 
-            trades_data = [{
-                'id': trade.id,
-                'to_area_uri': trade.to_area_uri,
-                'home_processes': trade.home_processes,
-                'foreign_processes': trade.foreign_processes,
-                'foreign_confirm': trade.foreign_confirm,
-                'home_confirm': trade.home_confirm
-            } for trade in area.trades]
-
-            return jsonify(trades_data)
+            return jsonify(area.get_trades_internal())
 
         @app.route('/area/<int:id>/dashboard', methods=['GET'])
         @login_required
