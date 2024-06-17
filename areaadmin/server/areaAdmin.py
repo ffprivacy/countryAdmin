@@ -869,12 +869,12 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 db.session.commit()
                 return {'success': True}
 
-            @app.route('/api/guard/alert/<int:alert_id>', methods=['DELETE'])
+            @app.route('/api/area/<int:id>/guard/alert/<int:alert_id>', methods=['DELETE'])
             @auth_required
             @staticmethod
-            def alert(alert_id):
+            def alert(id,alert_id):
                 if request.method == 'DELETE':
-                    GuardAlert.query.filter(GuardAlert.id == alert_id).delete()
+                    GuardAlert.query.filter_by(id=alert_id, guard_id=id).delete()
                     db.session.commit()
                     return {'success': True}
 
