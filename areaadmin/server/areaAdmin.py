@@ -32,7 +32,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
     db = SQLAlchemy(app)
     CORS(app)
 
-    def DEFAULT_HOST():
+    def HOME_HOST_URI():
         return f'http://127.0.0.1:{app.config["SERVING_PORT"]}'
 
     def login_required(f):
@@ -263,14 +263,17 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             }
 
         def get_host_and_api(self):
-            remote_host_uri = self.remote_host_uri if self.remote_host_uri else DEFAULT_HOST()
+            remote_host_uri = self.remote_host_uri if self.remote_host_uri else HOME_HOST_URI()
             return remote_host_uri, remote_host_uri + ("" if remote_host_uri.endswith("/") else "/") + "api/" + (f"area/{self.remote_area_id}/" if self.remote_area_id else "")
 
         def send(self):
             tradeJSON = self.toJson()
-            hostURI, apiURI = self.get_host_and_api()
-            tradeJSON['from_host_uri'] = hostURI
-            response = requests.post(f"{apiURI}/trade/receive", json=tradeJSON)
+            remoteHostURI, remoteApiURI = self.get_host_and_api()
+            home_host_uri = HOME_HOST_URI()
+            if remoteHostURI != home_host_uri:
+                tradeJSON['home_host_uri'] = home_host_uri
+
+            response = requests.post(f"{remoteApiURI}/trade/receive", json=tradeJSON)
             return jsonify(response.json())
 
         def remoteDelete(self):
@@ -697,7 +700,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                     'home_area_id': id,
                     'home_processes': data['remote_processes'],
 
-                    'remote_host_uri': data['from_host_uri'],
+                    'remote_host_uri': data.get('home_host_uri'),
                     'remote_area_id': data['home_area_id'],
                     'remote_trade_id': data['id'],
                     'remote_processes': data['home_processes'],
@@ -1109,7 +1112,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             host_part = uri
             path_part = "api/"
             if ( IS_LOCAL_AREA_REGEX(uri) ):
-                host_part = DEFAULT_HOST()
+                host_part = HOME_HOST_URI()
                 path_part = f"api/area/{int(uri)}/"
             return host_part, f"{host_part}{'' if host_part.endswith('/') else '/'}{path_part}"
 
