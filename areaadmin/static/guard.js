@@ -17,8 +17,8 @@ function guardClearAlerts() {
 function clearPollutionDebt(alert_id, remote_area, emissionEnv=90) {
     const remote_uri = area_generate_uri_from_database(remote_area);
     const process = {
-        title: 'Propose area to absorbe its emissions',
-        description: 'Propose area to absorbe its emissions',
+        title: 'Remote area has capability and proposed to absorbe your emissions',
+        description: 'Clear your emissions debt (overpollution)',
         metrics: {
             input: {
                 envEmissions: emissionEnv,
