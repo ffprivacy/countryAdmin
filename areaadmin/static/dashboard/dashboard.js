@@ -355,7 +355,7 @@ function fetchTrades() {
         tradesList.innerHTML = '';
         trades.forEach(trade => {
             const listItem = document.createElement('div');
-			const remote_host_uri = dashboard_area_generate_uri_from_database(trade.remote_host_uri);
+			const remote_host_uri = dashboard_area_generate_uri_from_database(trade);
             listItem.className = 'list-group-item';
 			listItem.innerHTML = `
 				<div class="mb-3 card">

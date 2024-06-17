@@ -1087,6 +1087,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
     class Guard(db.Model):
         id = DB.Column(DB.Integer, primary_key=True)
+        # TODO: Allow to specify an area for remote hosts
         area_uris = DB.Column(DB.JSON, default=[])
         last_check_date = DB.Column(DB.DateTime, default=datetime.now)
         alerts = db.relationship('GuardAlert', back_populates='guard', lazy=True)
