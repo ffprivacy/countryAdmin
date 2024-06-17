@@ -37,8 +37,8 @@ function clearPollutionDebt(alert_id, uri, emissionEnv=90) {
     .then(response => response.json())
     .then(response => {
         const tradeData = {
-            to_area_uri: uri,
-            foreign_processes: response.processes,
+            remote_host_uri: uri,
+            remote_processes: response.processes,
         };
         fetch(`/api/area/${dashboard_data['area_id']}/trade`, {
             method: 'POST',

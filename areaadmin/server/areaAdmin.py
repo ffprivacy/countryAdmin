@@ -35,14 +35,6 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
     def DEFAULT_HOST():
         return f'http://127.0.0.1:{app.config["SERVING_PORT"]}'
 
-    def generate_api_uri_from_database(uri):
-        host_part = uri
-        path_part = "api/"
-        if ( IS_LOCAL_AREA_REGEX(uri) ):
-            host_part = DEFAULT_HOST()
-            path_part = f"api/area/{int(uri)}/"
-        return host_part, f"{host_part}{'' if host_part.endswith('/') else '/'}{path_part}"
-
     def login_required(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
@@ -244,12 +236,13 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
     class Trade(db.Model):
         id = DB.Column(DB.Integer, primary_key=True)
         home_area_id = DB.Column(DB.Integer, DB.ForeignKey('area.id'), nullable=False)
-        to_area_uri = DB.Column(DB.String(255), nullable=False)
-        to_area_trade_id = DB.Column(DB.Integer, nullable=True)
         home_processes = DB.Column(DB.JSON)
-        foreign_processes = DB.Column(DB.JSON)
         home_confirm = DB.Column(DB.Boolean, default=False)
-        foreign_confirm = DB.Column(DB.Boolean, default=False)
+        remote_host_uri = DB.Column(DB.String(255), nullable=True)
+        remote_area_id = DB.Column(DB.Integer, nullable=True)
+        remote_trade_id = DB.Column(DB.Integer, nullable=True)
+        remote_processes = DB.Column(DB.JSON)
+        remote_confirm = DB.Column(DB.Boolean, default=False)
 
         home_area = db.relationship('Area', foreign_keys=[home_area_id], back_populates='trades')
 
@@ -260,24 +253,29 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             return {
                 'id': self.id,
                 'home_area_id': self.home_area_id,
-                'to_area_uri': self.to_area_uri,
-                'to_area_trade_id': self.to_area_trade_id,
                 'home_processes': self.home_processes,
-                'foreign_processes': self.foreign_processes,
                 'home_confirm': self.home_confirm,
-                'foreign_confirm': self.foreign_confirm
+                'remote_host_uri': self.remote_host_uri,
+                'remote_area_id': self.remote_area_id,
+                'remote_trade_id': self.remote_trade_id,
+                'remote_processes': self.remote_processes,
+                'remote_confirm': self.remote_confirm
             }
+
+        def get_host_and_api(self):
+            remote_host_uri = self.remote_host_uri if self.remote_host_uri else DEFAULT_HOST()
+            return remote_host_uri, remote_host_uri + ("" if remote_host_uri.endswith("/") else "/") + "api/" + (f"area/{self.remote_area_id}/" if self.remote_area_id else "")
 
         def send(self):
             tradeJSON = self.toJson()
-            uri, apiURI = generate_api_uri_from_database(self.to_area_uri)
-            tradeJSON['from_host_uri'] = apiURI
+            hostURI, apiURI = self.get_host_and_api()
+            tradeJSON['from_host_uri'] = hostURI
             response = requests.post(f"{apiURI}/trade/receive", json=tradeJSON)
             return jsonify(response.json())
 
         def remoteDelete(self):
-            if self.to_area_trade_id:
-                uri, apiURI = generate_api_uri_from_database(self.to_area_uri)
+            if self.remote_trade_id:
+                uri, apiURI = self.get_host_and_api()
                 response = requests.delete(f"{apiURI}/trade/{self.id}")
                 if response.status_code == 404:
                     return jsonify({'success': True, 'message': 'Remote seem already deleted'}), 200
@@ -402,14 +400,14 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                         if 'id' in home_trade_process and 'amount' in home_trade_process:
                             flow['output'][metric] -= Processes.retrieve_metric(processes, Processes.get_by_id(processes, home_trade_process['id']), 'output', metric) * home_trade_process['amount']
                 
-                uri, apiURI = generate_api_uri_from_database(trade.to_area_uri)
+                uri, apiURI = trade.get_host_and_api()
                 response = requests.get(f"{apiURI}/processes")
                 response.raise_for_status()
-                foreign_processes = response.json()
-                for foreign_trade_process in trade.foreign_processes:
+                remote_processes = response.json()
+                for foreign_trade_process in trade.remote_processes:
                     for metric in Processes.metrics_get_ids_list():
                         if 'id' in foreign_trade_process and 'amount' in foreign_trade_process:
-                            flow['output'][metric] += Processes.retrieve_metric(foreign_processes, Processes.get_by_id(foreign_processes, foreign_trade_process['id']), 'output', metric) * foreign_trade_process['amount']
+                            flow['output'][metric] += Processes.retrieve_metric(remote_processes, Processes.get_by_id(remote_processes, foreign_trade_process['id']), 'output', metric) * foreign_trade_process['amount']
             
             resources_depletion = {}
             for metric in Processes.metrics_get_ids_list():
@@ -691,38 +689,55 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         @auth_required
         @staticmethod
         def trade_receive(id):
-            data = request.get_json()
+            try:
+                data = request.get_json()
 
-            home_processes = data['foreign_processes']
-            foreign_processes = data['home_processes']        
+                trade_data = {
+                    'home_trade_id': data['remote_trade_id'],
+                    'home_area_id': id,
+                    'home_processes': data['remote_processes'],
 
-            remote_confirm = data['home_confirm']
-            remote_trade_id = data['id']
-            remote_host_uri = data['from_host_uri']
-            local_trade_id = data['to_area_trade_id']
-            trade = Trade.query.filter_by(id=local_trade_id).first()
+                    'remote_host_uri': data['from_host_uri'],
+                    'remote_area_id': data['home_area_id'],
+                    'remote_trade_id': data['id'],
+                    'remote_processes': data['home_processes'],
+                    'remote_confirm': data['home_confirm']
+                }
 
-            if trade:
-                trade.to_area_trade_id=remote_trade_id
-                trade.foreign_processes = foreign_processes
-                trade.foreign_confirm = remote_confirm
-                trade.home_processes = home_processes
-                db.session.commit()
-            else:
-                new_trade = Trade(
-                    home_area_id=id,
-                    to_area_uri=remote_host_uri,
-                    home_processes=home_processes,
-                    foreign_processes=foreign_processes,
-                    to_area_trade_id=remote_trade_id,
-                    foreign_confirm=remote_confirm
-                )
-                db.session.add(new_trade)
-                db.session.commit()
-                new_trade.send()
+                trade = Trade.query.filter_by(id=trade_data['home_trade_id']).first()
 
-            # TODO notify the client
-            return jsonify({'success': True, 'message': 'Trade received and saved successfully'}), 201
+                if trade:
+                    if trade_data.get('home_area_id') is not None:
+                        trade.home_area_id     = trade_data['home_area_id']
+                    if trade_data.get('home_processes') is not None:
+                        trade.home_processes   = trade_data['home_processes']
+                    if trade_data.get('remote_trade_id') is not None:
+                        trade.remote_trade_id  = trade_data['remote_trade_id']
+                    if trade_data.get('remote_processes') is not None:
+                        trade.remote_processes = trade_data['remote_processes']
+                    if trade_data.get('remote_confirm') is not None:
+                        trade.remote_confirm   = trade_data['remote_confirm']
+                    if trade_data.get('remote_area_id') is not None:
+                        trade.remote_area_id   = trade_data['remote_area_id']
+                    db.session.commit()
+                else:
+                    new_trade = Trade(
+                        home_area_id=trade_data['home_area_id'],
+                        home_processes=trade_data['home_processes'],
+                        remote_host_uri=trade_data['remote_host_uri'],
+                        remote_trade_id=trade_data['remote_trade_id'],
+                        remote_area_id=trade_data['remote_area_id'],
+                        remote_processes=trade_data['remote_processes'],
+                        remote_confirm=trade_data['remote_confirm']
+                    )
+                    db.session.add(new_trade)
+                    db.session.commit()
+                    new_trade.send()
+
+                # TODO notify the client
+                return jsonify({'success': True, 'message': 'Trade received and saved successfully'}), 201
+            except Exception as e:
+                return jsonify({'success': False, 'error': str(e)}), 500
 
         @app.route('/api/area/<int:trash>/trade/<int:trade_id>', methods=['POST','DELETE'])
         @auth_required
@@ -743,14 +758,16 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             elif request.method == 'POST':
                 data = request.get_json()
                 try:
-                    if 'to_area_uri' in data:
-                        trade.to_area_uri = data['to_area_uri']
-                    if 'home_processes' in data:
-                        trade.home_processes = data['home_processes']
-                    if 'foreign_confirm' in data:
-                        return jsonify({'success': False, 'error': 'This is reserved to the other side'}), 400
                     if 'home_confirm' in data:
                         trade.home_confirm = data['home_confirm']
+                    if 'home_processes' in data:
+                        trade.home_processes = data['home_processes']
+                    if 'remote_host_uri' in data:
+                        trade.remote_host_uri = data['remote_host_uri']
+                    if 'remote_area_id' in data:
+                        trade.remote_area_id = data['remote_area_id']
+                    if 'remote_confirm' in data:
+                        return jsonify({'success': False, 'error': 'This is reserved to the other side'}), 400
 
                     db.session.commit()
                     trade.send()
@@ -766,15 +783,16 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         @staticmethod
         def initiate_trade(id):
             data = request.get_json()
-            if 'to_area_uri' not in data:
+            if 'remote_host_uri' not in data or 'remote_area_id' not in data:
                 return jsonify({'success': False, 'error': 'Incomplete data provided'}), 400
 
             try:
                 trade = Trade(
                     home_area_id=id,
-                    to_area_uri=data['to_area_uri'],
                     home_processes=data.get('home_processes', []),
-                    foreign_processes=data.get('foreign_processes', [])
+                    remote_host_uri=data.get('remote_host_uri'),
+                    remote_area_id=data.get('remote_area_id'),
+                    remote_processes=data.get('remote_processes', [])
                 )
                 db.session.add(trade)
                 db.session.commit()
@@ -802,14 +820,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             return jsonify({'success': True})
 
         def get_trades_internal(self):
-            trades_data = [{
-                'id': trade.id,
-                'to_area_uri': trade.to_area_uri,
-                'home_processes': trade.home_processes,
-                'foreign_processes': trade.foreign_processes,
-                'foreign_confirm': trade.foreign_confirm,
-                'home_confirm': trade.home_confirm
-            } for trade in self.trades]
+            trades_data = [trade.toJson() for trade in self.trades]
 
             for composition in self.compositions:
                 trades_data.extend(composition.child.get_trades_internal())
@@ -1087,6 +1098,14 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         def get():
             return Area.Main.main_get().guard
         
+        def generate_api_uri_from_database(uri):
+            host_part = uri
+            path_part = "api/"
+            if ( IS_LOCAL_AREA_REGEX(uri) ):
+                host_part = DEFAULT_HOST()
+                path_part = f"api/area/{int(uri)}/"
+            return host_part, f"{host_part}{'' if host_part.endswith('/') else '/'}{path_part}"
+
         def daemon_loop(self_id):
             print("Guard background task started")
             with app.app_context():
@@ -1094,7 +1113,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 while True:
                     countries = []
                     for uri in self.area_uris:
-                        hostUri, apiURI = generate_api_uri_from_database(uri)
+                        hostUri, apiURI = self.generate_api_uri_from_database(uri)
 
                         response = requests.get(f"{apiURI}/area")
                         response.raise_for_status()

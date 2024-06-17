@@ -321,7 +321,7 @@ function submitTrade() {
 	const foreignAreaUri = document.getElementById('trade-initiate-foreign-area-uri').value;
     const tradeData = {
         home_processes: [],
-		to_area_uri: foreignAreaUri
+		remote_host_uri: foreignAreaUri
     };
 
     homeProcessIds.forEach((input, index) => {
@@ -355,12 +355,12 @@ function fetchTrades() {
         tradesList.innerHTML = '';
         trades.forEach(trade => {
             const listItem = document.createElement('div');
-			const to_area_uri = dashboard_area_generate_uri_from_database(trade.to_area_uri);
+			const remote_host_uri = dashboard_area_generate_uri_from_database(trade.remote_host_uri);
             listItem.className = 'list-group-item';
 			listItem.innerHTML = `
 				<div class="mb-3 card">
 					<div class="card-body">
-						<h5 class="card-title">Trade with <a href="${to_area_uri}" target="_blank">${to_area_uri}</a></h5>
+						<h5 class="card-title">Trade with <a href="${remote_host_uri}" target="_blank">${remote_host_uri}</a></h5>
 						<div class="row">
 							<div class="col-md-6">
 								<h6>Home Area Processes</h6>
@@ -373,7 +373,7 @@ function fetchTrades() {
 							</div>
 							<div class="col-md-6">
 								<h6>Foreign Area Processes</h6>
-								<p class="badge ${trade.foreign_confirm ? 'bg-success' : 'bg-warning'}">${trade.foreign_confirm ? 'Validated' : 'Pending'}</p>
+								<p class="badge ${trade.remote_confirm ? 'bg-success' : 'bg-warning'}">${trade.remote_confirm ? 'Validated' : 'Pending'}</p>
 								<div id="trade-${trade.id}-foreign-processes" class="mb-2"></div>
 							</div>
 						</div>
@@ -397,7 +397,7 @@ function renderTrade(trade) {
 }
 function renderTradeForeignProcesses(trade) {
 	const container = document.getElementById(`trade-${trade.id}-foreign-processes`);
-    container.innerHTML = trade.foreign_processes.map(p => generateForeignProcessInput(trade.id,p.id,p.amount)).join('');
+    container.innerHTML = trade.remote_processes.map(p => generateForeignProcessInput(trade.id,p.id,p.amount)).join('');
 }
 function generateForeignProcessInput(tradeId,process_id='',process_amount=1) {
 	const uniqueId = `trade-${tradeId}-foreign-${Math.random()}${Math.random()}${Math.random()}${Math.random()}`;
