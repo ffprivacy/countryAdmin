@@ -751,13 +751,13 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 return jsonify({'error': 'Trade not found'}), 404
             if request.method == 'DELETE':
                 try:
-                    trade.remoteDelete()
                     db.session.delete(trade)
                     db.session.commit()
-                    return jsonify({'success': True, 'message': 'Trade deleted successfully'}), 200
+                    trade.remoteDelete()
                 except Exception as e:
                     db.session.rollback()
                     return jsonify({'success': False, 'error': str(e)}), 500
+                return jsonify({'success': True, 'message': 'Trade deleted successfully'}), 200
             elif request.method == 'POST':
                 data = request.get_json()
                 try:
@@ -779,6 +779,8 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                     return jsonify({'success': False, 'error': str(e)}), 500
                     
                 return jsonify({'success': True, 'message': 'Trade setup successfully'}), 200
+            
+            return jsonify({'success': False}), 500
 
             
         @app.route('/api/area/<int:id>/trade', methods=['POST'])
