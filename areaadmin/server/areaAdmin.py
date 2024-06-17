@@ -406,7 +406,6 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 composition.child.fill_flow(flow)
 
         def metrics(self):
-            processes = Process.query.all()
             flow = {'input': {}, 'output': {}}
             
             for metric in Processes.metrics_get_ids_list():
@@ -1172,6 +1171,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                             db.session.add(GuardAlert( 
                                 title="Monopole detecté",
                                 area=f"{processOffer['uri']}",
+                                guard_id=self.id,
                                 description=f"De la part de {processOffer['uri']} sur {processOffer['id']}"
                             ))
                         else:
@@ -1188,6 +1188,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                                             db.session.add(GuardAlert( 
                                                 title="Potentiel situation de vente à perte détectée",
                                                 area=f"{processOffer['uri']}",
+                                                guard_id=self.id,
                                                 description=f"sur {processOffer['id']} proposed price {sell_price} on previous {price}"
                                             ))
 
@@ -1197,6 +1198,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                             db.session.add(GuardAlert( 
                                 title="Injustice social",
                                 area=f"{processOffer['uri']}",
+                                guard_id=self.id,
                                 description=f"{processOffer['uri']} induit de la misère sociale via ses imports"
                             ))
 
@@ -1207,6 +1209,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                             db.session.add(GuardAlert( 
                                 title="Overpollution",
                                 area=f"{processOffer['uri']}",
+                                guard_id=self.id,
                                 description=f"Pays eméttant plus de CO2 que ce que sa capacité d'absorption amount={abs(atmosphereFill)}"
                             ))
 
