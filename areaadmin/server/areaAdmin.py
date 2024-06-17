@@ -35,12 +35,12 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
     def DEFAULT_HOST():
         return f'http://127.0.0.1:{app.config["SERVING_PORT"]}'
 
-    def area_generate_uri_from_database(uri):
+    def generate_api_uri_from_database(uri):
         host_part = uri
-        path_part = "/api/area"
+        path_part = "api/"
         if ( IS_LOCAL_AREA_REGEX(uri) ):
             host_part = DEFAULT_HOST()
-            path_part = f"api/area/{int(uri)}"
+            path_part = f"api/area/{int(uri)}/"
         return host_part, f"{host_part}{'' if host_part.endswith('/') else '/'}{path_part}"
 
     def login_required(f):
@@ -271,13 +271,13 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         def send(self):
             tradeJSON = self.toJson()
             tradeJSON['uri'] = DEFAULT_HOST()
-            uri, trash = area_generate_uri_from_database(self.to_area_uri)
-            response = requests.post(f"{uri}/api/trade/receive", json=tradeJSON)
+            uri, apiURI = generate_api_uri_from_database(self.to_area_uri)
+            response = requests.post(f"{apiURI}/trade/receive", json=tradeJSON)
             return jsonify(response.json())
 
         def remoteDelete(self):
             if self.to_area_trade_id:
-                uri, trash = area_generate_uri_from_database(self.to_area_uri)
+                uri, apiURI = generate_api_uri_from_database(self.to_area_uri)
                 response = requests.delete(f"{uri}/api/trade/{self.id}")
                 if response.status_code == 404:
                     return jsonify({'success': True, 'message': 'Remote seem already deleted'}), 200
@@ -439,8 +439,8 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                         if 'id' in home_trade_process and 'amount' in home_trade_process:
                             flow['output'][metric] -= Processes.retrieve_metric(processes, Processes.get_by_id(processes, home_trade_process['id']), 'output', metric) * home_trade_process['amount']
                 
-                uri, areaURI = area_generate_uri_from_database(trade.to_area_uri)
-                response = requests.get(f"{areaURI}/processes")
+                uri, apiURI = generate_api_uri_from_database(trade.to_area_uri)
+                response = requests.get(f"{apiURI}/processes")
                 response.raise_for_status()
                 foreign_processes = response.json()
                 for foreign_trade_process in trade.foreign_processes:
@@ -512,34 +512,29 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         @app.route('/api/area/<int:id>', methods=['GET','POST','DELETE'])
         @auth_required
         @staticmethod
-        def get_area(id):
+        def area_manage(id):
             area = Area.query.get(id)
             if not area:
                 return jsonify({'error': 'Area not found'}), 404
             if request.method == 'POST':
                 data = request.json
-                data['id'] = id
+                if data.get('id') == None:
+                    data['id'] = id
                 return jsonify(Area.set_area_data(data))
             elif request.method == 'GET':
                 return jsonify(area.toJson())
-            elif request.method == 'delete':
+            elif request.method == 'DELETE':
                 Area.query.get(id).delete()
                 db.session.commit()
+                return jsonify({'success': True})
+            return jsonify({'success': False}), 500
 
-        @app.route('/api/area', methods=['POST','GET'])
+        # Just to ensure compat between api of the main object and this one
+        @app.route('/api/area/<int:id>/area', methods=['POST','GET','DELETE'])
         @auth_required
         @staticmethod
-        def handle_area():
-            area = Area.Main.main_get()
-            if request.method == 'POST':
-                data = request.json
-                if area and data.get('id') == None:
-                    data['id'] = area.id
-                return jsonify(Area.set_area_data(data))
-            elif request.method == 'GET':
-                if not area:
-                    return jsonify({'error': 'Area not found'}), 404
-                return Area.get_area(area.id)
+        def area_manage_clone(id):
+            return Area.area_manage(id)
 
         @app.route('/api/area/<int:id>/update_process_usage/<int:process_id>', methods=['POST'])
         @auth_required
@@ -929,6 +924,12 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             def get_processes():
                 return Area.area_get_processes(Area.Main.main_get().id)
             
+            @app.route('/api/area', methods=['POST','GET'])
+            @auth_required
+            @staticmethod
+            def main_area_manage_clone():
+                return Area.area_manage_clone(Area.Main.main_get().id)
+            
             @app.route('/api/trade/receive', methods=['POST'])
             @auth_required
             @staticmethod
@@ -1089,17 +1090,17 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 while True:
                     countries = []
                     for uri in self.area_uris:
-                        hostUri, areaURI = area_generate_uri_from_database(uri)
+                        hostUri, apiURI = generate_api_uri_from_database(uri)
 
-                        response = requests.get(f"{areaURI}")
+                        response = requests.get(f"{apiURI}/area")
                         response.raise_for_status()
                         area = response.json()
 
-                        response = requests.get(f"{areaURI}/processes")
+                        response = requests.get(f"{apiURI}/processes")
                         response.raise_for_status()
                         processes = response.json()
 
-                        response = requests.get(f"{areaURI}/metrics")
+                        response = requests.get(f"{apiURI}/metrics")
                         response.raise_for_status()
                         metrics = response.json()
 
