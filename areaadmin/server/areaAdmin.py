@@ -1115,10 +1115,10 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         
         def generate_api_uri_from_database(uri):
             host_part = uri
-            path_part = "api/"
+            path_part = "api"
             if ( IS_LOCAL_AREA_REGEX(uri) ):
                 host_part = HOME_HOST_URI()
-                path_part = f"api/area/{int(uri)}/"
+                path_part = f"api/area/{int(uri)}"
             return host_part, f"{host_part}{'' if host_part.endswith('/') else '/'}{path_part}"
 
         def daemon_loop(self_id):
