@@ -31,7 +31,7 @@ function dashboard_area_generate_uri_from_database(o) {
     }
 
     if ( area_id != null ) {
-        path = `area/${parseInt(uri)}/dashboard`;
+        path = `area/${area_id}/dashboard`;
     }
     return `${uri}${uri.endsWith("/") ? "" : "/"}${path}`;
 
