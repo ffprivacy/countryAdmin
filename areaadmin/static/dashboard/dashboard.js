@@ -162,7 +162,7 @@ function selectProcesses() {
 		formData.append('selected[]', process.selected);
 	});
 
-	fetch(`/api/area/${dashboard_data['area_id']}/select_process`, {
+	fetch(`/api/area/${AREA_DATA['area_id']}/select_process`, {
 		method: 'POST',
 		body: formData
 	})
@@ -182,7 +182,7 @@ function JSON_parse(response) {
     });
 }
 function dashboardRefresh() {
-    return fetch(`/api/area/${dashboard_data['area_id']}/processes`)
+    return fetch(`/api/area/${AREA_DATA['area_id']}/processes`)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -194,7 +194,7 @@ function dashboardRefresh() {
             const allProcesses = data;
             processList.innerHTML = '';
 
-            fetch(`/api/area/${dashboard_data['area_id']}/metrics`)
+            fetch(`/api/area/${AREA_DATA['area_id']}/metrics`)
             .then(response => JSON_parse(response))
             .then(metrics => {
                 const areaMetrics = metrics.flow;
@@ -234,7 +234,7 @@ function dashboardRefresh() {
 
                 updateRadarChart(areaMetrics['output'].economic, areaMetrics['input'].envEmissions - areaMetrics['output'].envEmissions, areaMetrics['output'].social);
 
-				fetch(`/api/area/${dashboard_data['area_id']}`)
+				fetch(`/api/area/${AREA_DATA['area_id']}`)
 				.then(response => JSON_parse(response))
 				.then(async function(area) {
 					
@@ -331,7 +331,7 @@ function submitTrade() {
         });
     });
 
-    fetch(`/api/area/${dashboard_data['area_id']}/trade`, {
+    fetch(`/api/area/${AREA_DATA['area_id']}/trade`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -348,7 +348,7 @@ function submitTrade() {
     .catch(error => console.error('Error submitting trade:', error));
 }
 function fetchTrades() {
-    fetch(`/api/area/${dashboard_data['area_id']}/trades`)
+    fetch(`/api/area/${AREA_DATA['area_id']}/trades`)
     .then(response => JSON_parse(response))
     .then(trades => {
         const tradesList = document.getElementById('trades-list');
@@ -439,7 +439,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	addProcessSetup();
 
 	document.getElementById("create-subzone").addEventListener("click", function(e) {
-		fetch(`/api/area/${dashboard_data['area_id']}/create_sub`, {
+		fetch(`/api/area/${AREA_DATA['area_id']}/create_sub`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -454,12 +454,12 @@ document.addEventListener('DOMContentLoaded', function () {
 		const areaTitle = document.getElementById("area-data-title");
 		const areaDescription = document.getElementById("area-data-description");
 
-		fetch(`/api/area/${dashboard_data['area_id']}`, {
+		fetch(`/api/area/${AREA_DATA['area_id']}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({name: areaTitle.value,description: areaDescription.value, id: dashboard_data['area_id']})
+            body: JSON.stringify({name: areaTitle.value,description: areaDescription.value, id: AREA_DATA['area_id']})
         }).then(response => dashboardRefresh())
 	});
 
@@ -515,7 +515,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	});	
 		
 	document.getElementById('export-btn').addEventListener('click', function() {
-		fetch(`/api/area/${dashboard_data['area_id']}/processes`)
+		fetch(`/api/area/${AREA_DATA['area_id']}/processes`)
 		.then(response => {
 		if (!response.ok) {
 			throw new Error('Network response was not ok');

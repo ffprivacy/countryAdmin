@@ -27,6 +27,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
     db_name_fname = f'{db_name}.db'
     app = Flask(__name__, template_folder='../static/', static_folder='../static/')
+    app.url_map.strict_slashes = False
     app.secret_key = 'your_secret_key'
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + db_name_fname
     db = SQLAlchemy(app)

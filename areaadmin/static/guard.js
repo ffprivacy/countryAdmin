@@ -10,7 +10,7 @@ document.getElementById('search-area').addEventListener('keyup', function() {
 let guard = null;
 
 function guardClearAlerts() {
-    fetch(`/api/area/${dashboard_data['area_id']}/guard/alerts/clear`).then(response => {
+    fetch(`/api/area/${AREA_DATA['area_id']}/guard/alerts/clear`).then(response => {
         guardFrontRefresh()
     })
 }
@@ -40,20 +40,20 @@ function clearPollutionDebt(alert_id, uri, emissionEnv=90) {
             remote_host_uri: uri,
             remote_processes: response.processes,
         };
-        fetch(`/api/area/${dashboard_data['area_id']}/trade`, {
+        fetch(`/api/area/${AREA_DATA['area_id']}/trade`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(tradeData)
         }).then(response => {
-            fetch(`/api/area/${dashboard_data['area_id']}/guard/alert/${alert_id}`, {method: 'DELETE'})
+            fetch(`/api/area/${AREA_DATA['area_id']}/guard/alert/${alert_id}`, {method: 'DELETE'})
             guardFrontRefresh()
         })
     })
 }
 function fetchGuardState() {
-    return fetch(`/api/area/${dashboard_data['area_id']}/guard`)
+    return fetch(`/api/area/${AREA_DATA['area_id']}/guard`)
             .then(response => response.json())
             .then(data => {
                 guard = data;
@@ -88,7 +88,7 @@ document.getElementById('add-area-btn').addEventListener('click', function() {
     if (newUri) {
         document.getElementById('new-area-uri').value = '';
 
-        fetch(`/api/area/${dashboard_data['area_id']}/guard/subscribe`, {
+        fetch(`/api/area/${AREA_DATA['area_id']}/guard/subscribe`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json'
@@ -112,6 +112,8 @@ document.getElementById('refresh-btn').addEventListener('click', function() {
 });
 const fetchAreaData = async () => {
     let areaData = [];
+    const currentArea = await fetch(`/api/area/${AREA_DATA['area_id']}/`).then(response => response.json());
+    document.getElementById("guard-title").innerText = ` - ${currentArea.name}`;
     for(let uri of guard.area_uris) {
         areaData.push(await fetch(area_generate_uri_from_database(uri), {
             method: 'GET',
