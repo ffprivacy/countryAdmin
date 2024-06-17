@@ -285,43 +285,6 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                     return jsonify(response.json())
             else:
                 return jsonify({'success': True, 'message': 'No foreign trade to delete'}), 200
-    
-        @app.route('/api/trade/<int:id>', methods=['POST','DELETE'])
-        @auth_required
-        @staticmethod
-        def handle_trade(id):
-            trade = Trade.query.get(id)
-            if not trade:
-                return jsonify({'error': 'Trade not found'}), 404
-        
-            if request.method == 'POST':
-                data = request.get_json()
-                try:
-                    if 'to_area_uri' in data:
-                        trade.to_area_uri = data['to_area_uri']
-                    if 'home_processes' in data:
-                        trade.home_processes = data['home_processes']
-                    if 'foreign_confirm' in data:
-                        return jsonify({'success': False, 'error': 'This is reserved to the other side'}), 400
-                    if 'home_confirm' in data:
-                        trade.home_confirm = data['home_confirm']
-
-                    db.session.commit()
-                    trade.send()
-                except Exception as e:
-                    db.session.rollback()
-                    return jsonify({'success': False, 'error': str(e)}), 500
-                    
-                return jsonify({'success': True, 'message': 'Trade setup successfully'}), 200
-            elif request.method == 'DELETE':
-                try:
-                    trade.remoteDelete()
-                    db.session.delete(trade)
-                    db.session.commit()
-                    return jsonify({'success': True, 'message': 'Trade deleted successfully'}), 200
-                except Exception as e:
-                    db.session.rollback()
-                    return jsonify({'success': False, 'error': str(e)}), 500
 
     class AreaComposition(db.Model):
         id = DB.Column(DB.Integer, primary_key=True)
@@ -761,6 +724,43 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             # TODO notify the client
             return jsonify({'success': True, 'message': 'Trade received and saved successfully'}), 201
 
+        @app.route('/api/area/<int:trash>/trade/<int:trade_id>', methods=['POST','DELETE'])
+        @auth_required
+        @staticmethod
+        def handle_trade(trash, trade_id):
+            trade = Trade.query.get(trade_id)
+            if not trade:
+                return jsonify({'error': 'Trade not found'}), 404
+            if request.method == 'DELETE':
+                try:
+                    trade.remoteDelete()
+                    db.session.delete(trade)
+                    db.session.commit()
+                    return jsonify({'success': True, 'message': 'Trade deleted successfully'}), 200
+                except Exception as e:
+                    db.session.rollback()
+                    return jsonify({'success': False, 'error': str(e)}), 500
+            elif request.method == 'POST':
+                data = request.get_json()
+                try:
+                    if 'to_area_uri' in data:
+                        trade.to_area_uri = data['to_area_uri']
+                    if 'home_processes' in data:
+                        trade.home_processes = data['home_processes']
+                    if 'foreign_confirm' in data:
+                        return jsonify({'success': False, 'error': 'This is reserved to the other side'}), 400
+                    if 'home_confirm' in data:
+                        trade.home_confirm = data['home_confirm']
+
+                    db.session.commit()
+                    trade.send()
+                except Exception as e:
+                    db.session.rollback()
+                    return jsonify({'success': False, 'error': str(e)}), 500
+                    
+                return jsonify({'success': True, 'message': 'Trade setup successfully'}), 200
+
+            
         @app.route('/api/area/<int:id>/trade', methods=['POST'])
         @auth_required
         @staticmethod
@@ -934,6 +934,12 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             def main_trade_receive():
                 return Area.trade_receive(Area.Main.main_get().id)
 
+            @app.route('/api/trade/<int:id>', methods=['POST','DELETE'])
+            @auth_required
+            @staticmethod
+            def main_handle_trade(id):
+                return Area.handle_trade(None,id)
+            
             @app.route('/api/trade', methods=['POST'])
             @auth_required
             @staticmethod
