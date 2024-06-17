@@ -602,10 +602,15 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             data = request.json
             if not data:
                 return jsonify({'error': 'No data provided'}), 400
+            
+            area = Area.query.get(area_id)
+            if not area:
+                return jsonify({'error': 'Area not found'}), 404
 
             if isinstance(data, dict):
                 data = [data]
 
+            processes = []
             for process_data in data:
                 id = process_data.get('id')
                 if id is not None:
@@ -643,9 +648,6 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 db.session.commit()
 
                 if process_data.get('amount') is not None:
-                    area = Area.query.get(area_id)
-                    if not area:
-                        return jsonify({'error': 'Area not found'}), 404
                     process_usage = area.process_set_usage(new_process,selected)
                     if process_usage:
                         process_usage.amount = process_data.get('amount')
@@ -659,9 +661,11 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                         db.session.add(new_composition)
                     else:
                         return jsonify({'error': 'Wrong missing keys in composition'}), 400
+                    
+                processes.append(new_process.wrap_for_response(area))
 
             db.session.commit()
-            return jsonify({'success': True})
+            return jsonify({'processes': processes})
 
         @app.route('/api/area/<int:id>/select_process', methods=['POST'])
         @auth_required
@@ -1121,6 +1125,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             return host_part, f"{host_part}{'' if host_part.endswith('/') else '/'}{path_part}"
 
         def daemon_loop(self_id):
+            time.sleep(5)
             print("Guard background task started")
             with app.app_context():
                 self = Guard.query.get(self_id)
