@@ -1127,7 +1127,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 while True:
                     countries = []
                     for uri in self.area_uris:
-                        hostUri, apiURI = self.generate_api_uri_from_database(uri)
+                        hostUri, apiURI = Guard.generate_api_uri_from_database(uri)
 
                         response = requests.get(f"{apiURI}/area")
                         response.raise_for_status()
