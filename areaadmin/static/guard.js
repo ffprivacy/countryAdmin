@@ -40,6 +40,7 @@ class Guard {
         for(let uri of this.state.area_uris) {
             const area = await fetchAreaAPI('/area', undefined, uri);
             area['metrics'] = await fetchAreaAPI('/metrics', undefined, uri);
+            area['uri'] = uri;
             this.areas.push(area);
         }
     
@@ -54,7 +55,7 @@ class Guard {
         this.areas.forEach(area => {
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td>${area.name}</td>
+                <td><a target="_blank" href="${dashboard_area_generate_uri_from_database(area.uri)}">${area.name}</a></td>
                 <td>${area.metrics.flow.output[this.selected_metric]}</td>
                 <td>${area.metrics.resources_depletion[this.selected_metric]}</td>
                 <td><button class="btn btn-primary">Details</button></td>
@@ -253,7 +254,17 @@ document.getElementById('refresh-btn').addEventListener('click', function() {
 });
 
 document.addEventListener('DOMContentLoaded', async () => {
-    await Processes.fetchMetricsGetList();
+    const metrics = await Processes.fetchMetricsGetList();
+    const selectElement = document.getElementById('metric-select');
+
+    selectElement.innerHTML = '';
+
+    metrics.forEach(metric => {
+        const option = document.createElement('option');
+        option.value = metric.id;
+        option.textContent = metric.id;
+        selectElement.appendChild(option);
+    });
     guard.refresh();
 });
 

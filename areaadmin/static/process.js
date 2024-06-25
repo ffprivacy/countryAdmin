@@ -21,25 +21,26 @@ class Processes {
     static area_metrics_list = [];
     
     static async fetchMetricsGetList() {
-        const area_metrics_list = await fetchAreaAPI('/processes/metrics');
-        Processes.area_metrics_list = area_metrics_list.map(item => {
-            const iconMapping = {
-                social: 'human.png',
-                economic: 'economic.png',
-                envEmissions: 'carbon.png',
-                human: 'human.png',
-                ground: 'land.png',
-                ores: 'ore2.png',
-                water: 'water_drop.png',
-                oil: 'oil.png',
-                gas: 'gas.png',
-                pm25: 'smoke.png'
-            };
-            return {
-                ...item,
-                icon: iconMapping[item.id] || 'default_icon.png'
-            };
-        });
+        return fetchAreaAPI('/processes/metrics').then(area_metrics_list => {
+            return (Processes.area_metrics_list = area_metrics_list.map(item => {
+                const iconMapping = {
+                    social: 'human.png',
+                    economic: 'economic.png',
+                    envEmissions: 'carbon.png',
+                    human: 'human.png',
+                    ground: 'land.png',
+                    ores: 'ore2.png',
+                    water: 'water_drop.png',
+                    oil: 'oil.png',
+                    gas: 'gas.png',
+                    pm25: 'smoke.png'
+                };
+                return {
+                    ...item,
+                    icon: iconMapping[item.id] || 'default_icon.png'
+                };
+            }));
+        })
     }
     
     static metricsGetList() {
