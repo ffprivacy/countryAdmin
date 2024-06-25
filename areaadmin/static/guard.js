@@ -7,8 +7,7 @@ class Guard {
     }
 
     async refresh() {
-        this.state = await fetch(`${area_api_generate_from_database()}/guard`)
-        .then(response => response.json());
+        this.state = await fetchAreaAPI('/guard');
         
         document.getElementById("guard-last-seen").innerText = this.state.last_check_date;
         let guardAlerts = document.getElementById("guard-alerts");
@@ -34,20 +33,13 @@ class Guard {
             guardAlerts.appendChild(alertElement);
         }
 
-        const currentArea = await fetch(area_api_generate_from_database()).then(response => response.json());
+        const currentArea = await fetchAreaAPI('/area');
         document.getElementById("guard-title").innerText = ` - ${currentArea.name}`;
 
         this.areas = [];
         for(let uri of this.state.area_uris) {
-            const area_uri = area_api_generate_from_database(uri);
-            const area = await fetch(`${area_uri}/area`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer your_access_token'
-                }
-            }).then(response => response.json());
-            area['metrics'] = await fetch(`${area_uri}/metrics`).then(response => JSON_parse(response));
+            const area = await fetchAreaAPI('/area', undefined, uri);
+            area['metrics'] = await fetchAreaAPI('/metrics', undefined, uri);
             this.areas.push(area);
         }
     
@@ -201,7 +193,7 @@ document.getElementById('search-area').addEventListener('keyup', function() {
 });
 
 function guardClearAlerts() {
-    fetch(`${area_api_generate_from_database()}/guard/alerts/clear`).then(response => {
+    fetchAreaAPI('/guard/alerts/clear').then(response => {
         guard.refresh()
     })
 }
@@ -221,25 +213,20 @@ function clearPollutionDebt(alert_id, remote_area, emissionEnv=90) {
             }
         }
     }
-    fetch(`${remote_uri}/set_process`, {
+    fetchAreaAPI('/set_process',{
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(process)
-    })
-    .then(response => response.json())
+    },remote_uri)
     .then(response => {
         const tradeData = {
             remote_host_uri: remote_area,
             remote_processes: response.processes.map(obj => ({id: obj.id, amount: 1}))
         };
-        fetch(`${area_api_generate_from_database()}/trade`, {
+        fetchAreaAPI('/trade',{
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
             body: JSON.stringify(tradeData)
-        }).then(response => {
-            fetch(`${area_api_generate_from_database()}/guard/alert/${alert_id}`, {method: 'DELETE'})
+        }).then(async function (response) {
+            await fetchAreaAPI(`/guard/alert/${alert_id}`,{method: 'DELETE'})
             guard.refresh()
         })
     })
@@ -250,11 +237,8 @@ document.getElementById('add-area-btn').addEventListener('click', function() {
     if (newUri) {
         document.getElementById('new-area-uri').value = '';
 
-        fetch(`${area_api_generate_from_database()}/guard/subscribe`, {
+        fetchAreaAPI('/guard/subscribe',{
 			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json'
-			},
 			body: JSON.stringify({
 				uri: newUri
 			})

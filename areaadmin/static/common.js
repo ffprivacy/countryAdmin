@@ -53,3 +53,21 @@ function JSON_parse(response) {
         });
     });
 }
+/**
+ * Query on the API endpoint of the selected API.
+ */
+function fetchAreaAPI(path="", parameters=undefined, uri=undefined) {
+    const area_uri = area_api_generate_from_database(uri);
+    if ( parameters == undefined ) {
+        parameters = {};
+    }
+    if ( parameters['headers'] == undefined ) {
+        parameters['headers'] = {};
+    }
+    if ( parameters['method'] == undefined ) {
+        parameters['method'] = 'GET';
+    }
+    parameters['headers']['Content-Type'] = 'application/json';
+    parameters['headers']['Authorization'] = 'Bearer your_access_token';
+    return fetch(`${area_uri}/${path}`, parameters).then(response => JSON_parse(response));
+}
