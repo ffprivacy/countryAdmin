@@ -72,8 +72,7 @@ function areaResourcesSetup(prefix) {
                                 <hr>`;
     }
 
-    fetch(`${area_api_generate_from_database()}`)
-    .then(response => response.json())
+    fetchAreaAPI('/area')
     .then(area => {
         const data = area.resources;
         for(let metric of Processes.metricsGetIdsList()) {
@@ -90,14 +89,10 @@ function areaResourcesSetup(prefix) {
                 renew_rate: parseFloat(document.getElementById(`${prefix}-${metric}-renew-rate`).value) || 0
             };
         }
-        fetch(`${area_api_generate_from_database()}`, {
+        fetchAreaAPI('/area', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
             body: JSON.stringify({resources: resources})
-        }).then(response => response.json())
-            .then(data => {
+        }).then(data => {
                 if (data.success) {
                     dashboardRefresh();
                 }
@@ -112,14 +107,10 @@ function updateTrade(tradeId) {
         home_confirm: document.getElementById(`trade-status-${tradeId}`).checked
     };
 
-    fetch(`/api/trade/${tradeId}`, {
+    fetchAreaAPI(`/trade/${tradeId}`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
         body: JSON.stringify(data)
     })
-    .then(response => response.json())
     .then(data => {
         if ( ! data.message ) {
             alert(data.error);
@@ -129,10 +120,9 @@ function updateTrade(tradeId) {
     .catch(error => console.error('Error updating trade:', error));
 }
 function deleteTrade(tradeId) {
-    fetch(`/api/trade/${tradeId}`, {
+    fetchAreaAPI(`/trade/${tradeId}`, {
         method: 'DELETE'
     })
-    .then(response => response.json())
     .then(data => {
         if ( ! data.message ) {
             alert(data.error);

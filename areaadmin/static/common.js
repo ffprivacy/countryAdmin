@@ -69,5 +69,10 @@ function fetchAreaAPI(path="", parameters=undefined, uri=undefined) {
     }
     parameters['headers']['Content-Type'] = 'application/json';
     parameters['headers']['Authorization'] = 'Bearer your_access_token';
-    return fetch(`${area_uri}/${path}`, parameters).then(response => JSON_parse(response));
+    return fetch(`${area_uri}${area_uri.endsWith("/") || path.startsWith("/") ? "" : "/"}${path}`, parameters).then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return JSON_parse(response);
+    });
 }

@@ -162,7 +162,7 @@ function selectProcesses() {
 		formData.append('selected[]', process.selected);
 	});
 
-	fetch(`${area_api_generate_from_database()}/select_process`, {
+	fetchAreaAPI('/select_process', {
 		method: 'POST',
 		body: formData
 	})
@@ -172,20 +172,13 @@ function selectProcesses() {
 		});
 }
 function dashboardRefresh() {
-    return fetch(`${area_api_generate_from_database()}/processes`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return JSON_parse(response);
-        })
+    return fetchAreaAPI('/processes')
         .then(async function (data) {
             const processList = document.getElementById('process-list');
             const allProcesses = data;
             processList.innerHTML = '';
 
-            fetch(`${area_api_generate_from_database()}/metrics`)
-            .then(response => JSON_parse(response))
+            fetchAreaAPI('/metrics')
             .then(metrics => {
                 const areaMetrics = metrics.flow;
                 const resourcesDepletion = metrics.resources_depletion;
@@ -224,8 +217,7 @@ function dashboardRefresh() {
 
                 updateRadarChart(areaMetrics['output'].economic, areaMetrics['input'].envEmissions - areaMetrics['output'].envEmissions, areaMetrics['output'].social);
 
-				fetch(`${area_api_generate_from_database()}`)
-				.then(response => JSON_parse(response))
+				fetchAreaAPI('/area')
 				.then(async function(area) {
 					
 					const pageTitle = document.getElementById("dashboard-title");
@@ -240,7 +232,7 @@ function dashboardRefresh() {
 					subzones.innerHTML = '';
 					for(let composition of area.compositions) {
 						const id = composition['id'];
-						let child = await fetch(`/api/area/${id}`).then(response => JSON_parse(response));
+						let child = await fetchAreaAPI('/area',undefined, `${id}`);
 						let childElement = document.createElement('div');
 						childElement.className = "card card-body";
 						let childUri = dashboard_area_generate_uri_from_database("" + id);
@@ -321,14 +313,10 @@ function submitTrade() {
         });
     });
 
-    fetch(`${area_api_generate_from_database()}/trade`, {
+    fetchAreaAPI('/trade', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
         body: JSON.stringify(tradeData)
     })
-    .then(response => JSON_parse(response))
     .then(data => {
 		if ( ! data.message ) {
 			alert(data.error);
@@ -338,8 +326,7 @@ function submitTrade() {
     .catch(error => console.error('Error submitting trade:', error));
 }
 function fetchTrades() {
-    fetch(`${area_api_generate_from_database()}/trades`)
-    .then(response => JSON_parse(response))
+    fetchAreaAPI('/trades')
     .then(trades => {
         const tradesList = document.getElementById('trades-list');
         tradesList.innerHTML = '';
@@ -430,11 +417,8 @@ document.addEventListener('DOMContentLoaded', async function () {
 	addProcessSetup();
 
 	document.getElementById("create-subzone").addEventListener("click", function(e) {
-		fetch(`${area_api_generate_from_database()}/create_sub`, {
+		fetchAreaAPI('/create_sub', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
             body: JSON.stringify({})
         })
 		.then(response => {
@@ -445,11 +429,8 @@ document.addEventListener('DOMContentLoaded', async function () {
 		const areaTitle = document.getElementById("area-data-title");
 		const areaDescription = document.getElementById("area-data-description");
 
-		fetch(`${area_api_generate_from_database()}`, {
+		fetchAreaAPI('/area', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
             body: JSON.stringify({name: areaTitle.value,description: areaDescription.value, id: AREA_DATA['area_id']})
         }).then(response => dashboardRefresh())
 	});
@@ -506,13 +487,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 	});	
 		
 	document.getElementById('export-btn').addEventListener('click', function() {
-		fetch(`${area_api_generate_from_database()}/processes`)
-		.then(response => {
-		if (!response.ok) {
-			throw new Error('Network response was not ok');
-		}
-		return JSON_parse(response);
-		})
+		fetchAreaAPI('/processes')
 		.then(data => {
 			const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
 			const url = URL.createObjectURL(blob);

@@ -18,40 +18,34 @@ class Processes {
         return total + process.metrics[sens][metric];
     }
 
-    static area_metrics_list = []
+    static area_metrics_list = [];
+    
     static async fetchMetricsGetList() {
-        Processes.area_metrics_list = await fetch(`/api/processes/metrics`).then(response => response.json());
-        return new Promise((resolve, reject) => {
-            try {
-                const iconMapping = {
-                    social: 'human.png',
-                    economic: 'economic.png',
-                    envEmissions: 'carbon.png',
-                    human: 'human.png',
-                    ground: 'land.png',
-                    ores: 'ore2.png',
-                    water: 'water_drop.png',
-                    oil: 'oil.png',
-                    gas: 'gas.png',
-                    pm25: 'smoke.png'
-                };
-    
-                Processes.area_metrics_list = Processes.area_metrics_list.map(item => {
-                    return {
-                        ...item,
-                        icon: iconMapping[item.id] || 'default_icon.png'
-                    };
-                });
-    
-                resolve(Processes.area_metrics_list);
-            } catch (error) {
-                reject(error);
-            }
+        Processes.area_metrics_list = await fetchAreaAPI('/processes/metrics');
+        return Processes.area_metrics_list.map(item => {
+            const iconMapping = {
+                social: 'human.png',
+                economic: 'economic.png',
+                envEmissions: 'carbon.png',
+                human: 'human.png',
+                ground: 'land.png',
+                ores: 'ore2.png',
+                water: 'water_drop.png',
+                oil: 'oil.png',
+                gas: 'gas.png',
+                pm25: 'smoke.png'
+            };
+            return {
+                ...item,
+                icon: iconMapping[item.id] || 'default_icon.png'
+            };
         });
     }
+    
     static metricsGetList() {
         return Processes.area_metrics_list;
     }
+
     static metricsGetIdsList() {
         return Processes.metricsGetList().map(obj => obj.id);
     }
@@ -69,118 +63,95 @@ class Processes {
         return total;
     }
 
-    static async delete(process_id) {
-        try {
-            const response = await fetch(`/api/process/${process_id}`, { method: 'DELETE' });
-            const data = await response.json();
-            if (data.success) {
-                dashboardRefresh();
-                console.log('Process deleted successfully.');
-            } else {
-                console.error('Error deleting process:', data.error);
-            }
-        } catch (error) {
-            console.error('Error deleting process:', error);
-        }
-    }
-
-    static async set(process) {
-        try {
-            const response = await fetch(`${area_api_generate_from_database()}/set_process`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(process)
-            });
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(`HTTP error: ${response.statusText}`);
-            }
-            if (data.success) {
-                console.log('Process submitted successfully:', data);
-            } else {
-                console.error('Error submitting process:', data.error);
-            }
-        } catch (error) {
-            console.error('There was a problem with the process submission:', error);
-        }
-    }
-
-    static async addComment(process_id, comment) {
-        try {
-            const response = await fetch(`${area_api_generate_from_database()}/process/${process_id}/add_comment`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ comment: comment })
-            });
-            const data = await response.json();
-            if (data.success) {
-                dashboardRefresh();
-                console.log('Comment added successfully.');
-            } else {
-                console.error('Error adding comment:', data.error);
-            }
-        } catch (error) {
-            console.error('Error adding comment:', error);
-        }
-    }
-    static dislike(process_id) {
-        fetch(`${area_api_generate_from_database()}/process/${process_id}/dislike`, {
-            method: 'POST'
-        }).then(response => response.json())
+    static delete(process_id) {
+        return fetchAreaAPI(`/process/${process_id}`, { method: 'DELETE' })
         .then(data => {
+            dashboardRefresh();
+            console.log('Process deleted successfully.');
+        }).catch(error => {
+            console.error('Error deleting process:', error);
+        });
+    }
+
+    static set(process) {
+        return fetchAreaAPI(`/set_process`, {
+            method: 'POST',
+            body: JSON.stringify(process)
+        }).then(data => {
+            console.log('Process submitted successfully:', data);
+        }).catch(error => {
+            console.error('Error submitting process:', error);
+        });
+    }
+
+    static addComment(process_id, comment) {
+        return fetchAreaAPI(`/process/${process_id}/add_comment`, {
+            method: 'POST',
+            body: JSON.stringify({ comment: comment })
+        }).then(data => {
+            dashboardRefresh();
+            console.log('Comment added successfully.');
+        }).catch(error => {
+            console.error('Error adding comment:', error);
+        });
+    }
+
+    static dislike(process_id) {
+        return fetchAreaAPI(`/process/${process_id}/dislike`, {
+            method: 'POST'
+        }).then(data => {
             if (data.success) {
                 dashboardRefresh();
             } else {
                 console.error('Error disliking process:', data.error);
             }
+        }).catch(error => {
+            console.error('Error disliking process:', error);
         });
     }
 
     static like(process_id) {
-            fetch(`${area_api_generate_from_database()}/process/${process_id}/like`, {
-                method: 'POST'
-            }).then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    dashboardRefresh();
-                } else {
-                    console.error('Error liking process:', data.error);
-                }
-            }).catch(error => console.error('Error liking process:', error));
+        return fetchAreaAPI(`/process/${process_id}/like`, {
+            method: 'POST'
+        }).then(data => {
+            if (data.success) {
+                dashboardRefresh();
+            } else {
+                console.error('Error liking process:', data.error);
+            }
+        }).catch(error => {
+            console.error('Error liking process:', error);
+        });
     }
 
     static compositionUpdate(process_id, composition) {
-        fetch(`/api/process/${process_id}/update_composition`, {
+        return fetchAreaAPI(`/process/${process_id}/update_composition`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
             body: JSON.stringify(composition)
         })
-        .then(response => response.json())
         .then(data => {
             if (data.success) {
                 dashboardRefresh();
             } else {
                 console.error('Error updating composition:', data.error);
             }
-        })
-        .catch(error => console.error('Error updating composition:', error));
+        }).catch(error => {
+            console.error('Error updating composition:', error);
+        });
     }
     
     static compositionDelete(process_id, compositionId) {
-        fetch(`/api/process/${process_id}/delete_composition/${compositionId}`, {
+        return fetchAreaAPI(`/process/${process_id}/delete_composition/${compositionId}`, {
             method: 'POST'
         })
-        .then(response => response.json())
         .then(data => {
             if (data.success) {
                 dashboardRefresh();
             } else {
                 console.error('Error deleting composition:', data.error);
             }
-        })
-        .catch(error => console.error('Error deleting composition:', error));
+        }).catch(error => {
+            console.error('Error deleting composition:', error);
+        });
     }
-
 }
