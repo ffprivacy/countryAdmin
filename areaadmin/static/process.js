@@ -21,8 +21,8 @@ class Processes {
     static area_metrics_list = [];
     
     static async fetchMetricsGetList() {
-        Processes.area_metrics_list = await fetchAreaAPI('/processes/metrics');
-        return Processes.area_metrics_list.map(item => {
+        const area_metrics_list = await fetchAreaAPI('/processes/metrics');
+        Processes.area_metrics_list = area_metrics_list.map(item => {
             const iconMapping = {
                 social: 'human.png',
                 economic: 'economic.png',

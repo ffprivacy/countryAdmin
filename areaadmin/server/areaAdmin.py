@@ -502,198 +502,6 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         def area_manage_clone(id):
             return Area.area_manage(id)
 
-        @app.route('/api/area/<int:id>/update_process_usage/<int:process_id>', methods=['POST'])
-        @auth_required
-        @staticmethod
-        def update_process_usage(id,process_id):
-            data = request.json
-            new_usage_count = data.get('usage_count')
-
-            if new_usage_count is None:
-                return jsonify({'error': 'Missing usage count'}), 400
-
-            process_usage = ProcessUsage.query.filter_by(area_id=id, process_id=process_id).first()
-            if not process_usage:
-                process_usage = ProcessUsage(area_id=id, process_id=process_id, usage_count=new_usage_count)
-                db.session.add(process_usage)
-            else:
-                process_usage.usage_count = new_usage_count
-
-            db.session.commit()
-            return jsonify({'success': True, 'id': process_id, 'new_usage_count': new_usage_count})
-
-        @app.route('/api/area/<int:id>/process/<int:process_id>/like', methods=['POST'])
-        @auth_required
-        @staticmethod
-        def like_process(id,process_id):
-            if 'user_id' not in session:
-                return jsonify({'success': False, 'error': 'User not logged in'}), 403
-
-            user_id = session['user_id']
-            process = Process.query.get(process_id)
-            if not process:
-                return jsonify({'success': False, 'error': 'Process not found'}), 404
-
-            interaction = ProcessInteraction.query.filter_by(user_id=user_id, process_id=process_id, area_id=id).first()
-
-            if interaction:
-                if interaction.interaction_type == 'dislike':
-                    interaction.interaction_type = 'like'
-                else:
-                    return jsonify({'success': False, 'error': 'Already liked'}), 400
-            else:
-                new_interaction = ProcessInteraction(user_id=user_id, process_id=process_id, interaction_type='like',area_id=id)
-                db.session.add(new_interaction)
-            
-            db.session.commit()
-            return jsonify({'success': True})
-
-        @app.route('/api/area/<int:id>/process/<int:process_id>/dislike', methods=['POST'])
-        @auth_required
-        @staticmethod
-        def dislike_process(id,process_id):
-            if 'user_id' not in session:
-                return jsonify({'success': False, 'error': 'User not logged in'}), 403
-
-            user_id = session['user_id']
-            process = Process.query.get(process_id)
-            if not process:
-                return jsonify({'success': False, 'error': 'Process not found'}), 404
-
-            interaction = ProcessInteraction.query.filter_by(user_id=user_id, process_id=process_id, area_id=id).first()
-
-            if interaction:
-                if interaction.interaction_type == 'like':
-                    interaction.interaction_type = 'dislike'
-                else:
-                    return jsonify({'success': False, 'error': 'Already disliked'}), 400
-            else:
-                new_interaction = ProcessInteraction(user_id=user_id, area_id=id, process_id=process_id, interaction_type='dislike')
-                db.session.add(new_interaction)
-
-            db.session.commit()
-            return jsonify({'success': True})
-
-        @app.route('/api/area/<int:id>/process/<int:process_id>/add_comment', methods=['POST'])
-        @auth_required
-        @staticmethod
-        def comment_process(id,process_id):
-            if 'user_id' not in session:
-                return jsonify({'success': False, 'error': 'User not logged in'}), 403
-
-            user_id = session['user_id']
-            process = Process.query.get(process_id)
-            if not process:
-                return jsonify({'success': False, 'error': 'Process not found'}), 404
-
-            comment_text = request.json.get('comment')
-            if not comment_text:
-                return jsonify({'success': False, 'error': 'Comment is required'}), 400
-
-            comment = ProcessComment(user_id=user_id, process_id=process_id, comment=comment_text, area_id=id)
-            db.session.add(comment)
-            db.session.commit()
-            return jsonify({'success': True})
-        
-        @app.route('/api/area/<int:area_id>/set_process', methods=['POST'])
-        @auth_required
-        @staticmethod
-        def set_process(area_id):
-            data = request.json
-            if not data:
-                return jsonify({'error': 'No data provided'}), 400
-            
-            area = Area.query.get(area_id)
-            if not area:
-                return jsonify({'error': 'Area not found'}), 404
-
-            if isinstance(data, dict):
-                data = [data]
-
-            processes = []
-            for process_data in data:
-                id = process_data.get('id')
-                if id is not None:
-                    id = int(id)
-                
-                metrics = process_data.get('metrics', {})
-                if isinstance(metrics, dict):
-                    input_metrics = metrics.get('input', {})
-                    output_metrics = metrics.get('output', {})
-                else:
-                    return jsonify({'error': 'Invalid metrics format'}), 400
-                
-                selected = process_data.get('selected', True)
-                if isinstance(selected, str):
-                    selected = ast.literal_eval(selected.capitalize())
-
-                title = process_data.get('title', '')
-                tags = process_data.get('tags', [])
-
-                new_process = Process(id=id, title=title, metrics={
-                    "input": input_metrics,
-                    "output": output_metrics
-                })
-
-                for tag_name in tags:
-                    tag_name = tag_name.strip()
-                    if tag_name:
-                        tag = Tag.query.filter_by(name=tag_name).first()
-                        if not tag:
-                            tag = Tag(name=tag_name)
-                            db.session.add(tag)
-                        new_process.tags.append(tag)
-                
-                db.session.add(new_process)
-                db.session.commit()
-
-                if process_data.get('amount') is not None:
-                    process_usage = area.process_set_usage(new_process,selected)
-                    if process_usage:
-                        process_usage.amount = process_data.get('amount')
-
-                composition_data = process_data.get('composition', [])
-                for item in composition_data:
-                    comp_id = item['id']
-                    comp_amount = item['amount']
-                    if comp_id and comp_amount:
-                        new_composition = Composition(component_process_id=comp_id, composed_process_id=new_process.id, amount=comp_amount)
-                        db.session.add(new_composition)
-                    else:
-                        return jsonify({'error': 'Wrong missing keys in composition'}), 400
-                    
-                processes.append(new_process.wrap_for_response(area))
-
-            db.session.commit()
-            return jsonify({'processes': processes})
-
-        @app.route('/api/area/<int:id>/select_process', methods=['POST'])
-        @auth_required
-        @staticmethod
-        def select_process(id):
-            ids = []
-            states = []
-            id_single = request.form.get('id')
-            if id_single:
-                ids.append(id_single)
-                states.append(request.form.get('selected'))
-            else:
-                ids = request.form.getlist('id[]')
-                states = request.form.getlist('selected[]')
-            states = [ast.literal_eval(value.capitalize()) for value in states]
-
-            area = Area.query.get(id)
-            if not area:
-                return jsonify({'error': 'Area not found'}), 404
-
-            processes = Process.query.filter(Process.id.in_(ids)).all()
-            if processes and len(processes) == len(states):
-                for process, state in zip(processes, states):
-                    area.process_set_usage(process,state)
-
-            db.session.commit()
-            return jsonify({'success': True})
-
         @app.route('/api/area/<int:id>/trade/receive', methods=['POST'])
         @auth_required
         @staticmethod
@@ -889,6 +697,218 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         def metrics_get_ids_list():
             return [metric['id'] for metric in Area.metrics_get_list()]
 
+        class Process():
+            
+            @app.route('/api/area/<int:trash>/process/<int:id>', methods=['GET','DELETE'])
+            @auth_required
+            @staticmethod
+            def process_handle(trash,id):
+                return Process.handle(id)
+
+            @app.route('/api/area/<int:trash>/process/<int:id>/update_composition', methods=['POST'])
+            @auth_required
+            @staticmethod
+            def process_update_composition(trash, id):
+                return Process.update_composition(id)
+
+            @app.route('/api/area/<int:trash>/process/<int:id>/delete_composition/<int:component_process_id>', methods=['POST'])
+            @auth_required
+            @staticmethod
+            def process_delete_composition(trash, id, component_process_id):
+                return Process.delete_composition(id,component_process_id)
+            
+            @app.route('/api/area/<int:id>/update_process_usage/<int:process_id>', methods=['POST'])
+            @auth_required
+            @staticmethod
+            def update_process_usage(id,process_id):
+                data = request.json
+                new_usage_count = data.get('usage_count')
+
+                if new_usage_count is None:
+                    return jsonify({'error': 'Missing usage count'}), 400
+
+                process_usage = ProcessUsage.query.filter_by(area_id=id, process_id=process_id).first()
+                if not process_usage:
+                    process_usage = ProcessUsage(area_id=id, process_id=process_id, usage_count=new_usage_count)
+                    db.session.add(process_usage)
+                else:
+                    process_usage.usage_count = new_usage_count
+
+                db.session.commit()
+                return jsonify({'success': True, 'id': process_id, 'new_usage_count': new_usage_count})
+
+            @app.route('/api/area/<int:id>/process/<int:process_id>/like', methods=['POST'])
+            @auth_required
+            @staticmethod
+            def like_process(id,process_id):
+                if 'user_id' not in session:
+                    return jsonify({'success': False, 'error': 'User not logged in'}), 403
+
+                user_id = session['user_id']
+                process = Process.query.get(process_id)
+                if not process:
+                    return jsonify({'success': False, 'error': 'Process not found'}), 404
+
+                interaction = ProcessInteraction.query.filter_by(user_id=user_id, process_id=process_id, area_id=id).first()
+
+                if interaction:
+                    if interaction.interaction_type == 'dislike':
+                        interaction.interaction_type = 'like'
+                    else:
+                        return jsonify({'success': False, 'error': 'Already liked'}), 400
+                else:
+                    new_interaction = ProcessInteraction(user_id=user_id, process_id=process_id, interaction_type='like',area_id=id)
+                    db.session.add(new_interaction)
+                
+                db.session.commit()
+                return jsonify({'success': True})
+
+            @app.route('/api/area/<int:id>/process/<int:process_id>/dislike', methods=['POST'])
+            @auth_required
+            @staticmethod
+            def dislike_process(id,process_id):
+                if 'user_id' not in session:
+                    return jsonify({'success': False, 'error': 'User not logged in'}), 403
+
+                user_id = session['user_id']
+                process = Process.query.get(process_id)
+                if not process:
+                    return jsonify({'success': False, 'error': 'Process not found'}), 404
+
+                interaction = ProcessInteraction.query.filter_by(user_id=user_id, process_id=process_id, area_id=id).first()
+
+                if interaction:
+                    if interaction.interaction_type == 'like':
+                        interaction.interaction_type = 'dislike'
+                    else:
+                        return jsonify({'success': False, 'error': 'Already disliked'}), 400
+                else:
+                    new_interaction = ProcessInteraction(user_id=user_id, area_id=id, process_id=process_id, interaction_type='dislike')
+                    db.session.add(new_interaction)
+
+                db.session.commit()
+                return jsonify({'success': True})
+
+            @app.route('/api/area/<int:id>/process/<int:process_id>/add_comment', methods=['POST'])
+            @auth_required
+            @staticmethod
+            def comment_process(id,process_id):
+                if 'user_id' not in session:
+                    return jsonify({'success': False, 'error': 'User not logged in'}), 403
+
+                user_id = session['user_id']
+                process = Process.query.get(process_id)
+                if not process:
+                    return jsonify({'success': False, 'error': 'Process not found'}), 404
+
+                comment_text = request.json.get('comment')
+                if not comment_text:
+                    return jsonify({'success': False, 'error': 'Comment is required'}), 400
+
+                comment = ProcessComment(user_id=user_id, process_id=process_id, comment=comment_text, area_id=id)
+                db.session.add(comment)
+                db.session.commit()
+                return jsonify({'success': True})
+            
+            @app.route('/api/area/<int:area_id>/set_process', methods=['POST'])
+            @auth_required
+            @staticmethod
+            def set_process(area_id):
+                data = request.json
+                if not data:
+                    return jsonify({'error': 'No data provided'}), 400
+                
+                area = Area.query.get(area_id)
+                if not area:
+                    return jsonify({'error': 'Area not found'}), 404
+
+                if isinstance(data, dict):
+                    data = [data]
+
+                processes = []
+                for process_data in data:
+                    id = process_data.get('id')
+                    if id is not None:
+                        id = int(id)
+                    
+                    metrics = process_data.get('metrics', {})
+                    if isinstance(metrics, dict):
+                        input_metrics = metrics.get('input', {})
+                        output_metrics = metrics.get('output', {})
+                    else:
+                        return jsonify({'error': 'Invalid metrics format'}), 400
+                    
+                    selected = process_data.get('selected', True)
+                    if isinstance(selected, str):
+                        selected = ast.literal_eval(selected.capitalize())
+
+                    title = process_data.get('title', '')
+                    tags = process_data.get('tags', [])
+
+                    new_process = Process(id=id, title=title, metrics={
+                        "input": input_metrics,
+                        "output": output_metrics
+                    })
+
+                    for tag_name in tags:
+                        tag_name = tag_name.strip()
+                        if tag_name:
+                            tag = Tag.query.filter_by(name=tag_name).first()
+                            if not tag:
+                                tag = Tag(name=tag_name)
+                                db.session.add(tag)
+                            new_process.tags.append(tag)
+                    
+                    db.session.add(new_process)
+                    db.session.commit()
+
+                    if process_data.get('amount') is not None:
+                        process_usage = area.process_set_usage(new_process,selected)
+                        if process_usage:
+                            process_usage.amount = process_data.get('amount')
+
+                    composition_data = process_data.get('composition', [])
+                    for item in composition_data:
+                        comp_id = item['id']
+                        comp_amount = item['amount']
+                        if comp_id and comp_amount:
+                            new_composition = Composition(component_process_id=comp_id, composed_process_id=new_process.id, amount=comp_amount)
+                            db.session.add(new_composition)
+                        else:
+                            return jsonify({'error': 'Wrong missing keys in composition'}), 400
+                        
+                    processes.append(new_process.wrap_for_response(area))
+
+                db.session.commit()
+                return jsonify({'processes': processes})
+
+            @app.route('/api/area/<int:id>/select_process', methods=['POST'])
+            @auth_required
+            @staticmethod
+            def select_process(id):
+                ids = []
+                states = []
+                id_single = request.form.get('id')
+                if id_single:
+                    ids.append(id_single)
+                    states.append(request.form.get('selected'))
+                else:
+                    ids = request.form.getlist('id[]')
+                    states = request.form.getlist('selected[]')
+                states = [ast.literal_eval(value.capitalize()) for value in states]
+
+                area = Area.query.get(id)
+                if not area:
+                    return jsonify({'error': 'Area not found'}), 404
+
+                processes = Process.query.filter(Process.id.in_(ids)).all()
+                if processes and len(processes) == len(states):
+                    for process, state in zip(processes, states):
+                        area.process_set_usage(process,state)
+
+                db.session.commit()
+                return jsonify({'success': True})
+
         class Guard():
             @app.route('/api/area/<int:id>/guard/alerts/clear')
             @auth_required
@@ -1002,33 +1022,6 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             @staticmethod
             def main_initiate_trade():
                 return Area.initiate_trade(Area.Main.main_get().id)
-            
-            @app.route('/api/process/<int:id>/add_comment', methods=['POST'])
-            @auth_required
-            @staticmethod
-            def main_comment_process(id):
-                return Area.comment_process(Area.Main.main_get().id,id)
-            
-            @app.route('/api/process/<int:id>/dislike', methods=['POST'])
-            @auth_required
-            @staticmethod
-            def main_dislike_process(id):
-                return Area.dislike_process(Area.Main.main_get().id, id)
-            
-            @app.route('/api/process/<int:id>/like', methods=['POST'])
-            @auth_required
-            @staticmethod
-            def main_like_process(id):
-                return Area.like_process(Area.Main.main_get().id, id)
-            
-            @app.route('/api/update_process_usage/<int:id>', methods=['POST'])
-            @auth_required
-            @staticmethod
-            def main_update_process_usage(id):
-                area = Area.Main.main_get() 
-                if not area:
-                    return jsonify({'error': 'Area not found'}), 404
-                return Area.update_process_usage(area.id,id)
 
             @app.route('/api/metrics', methods=['GET'])
             @auth_required
@@ -1038,18 +1031,6 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 if not area:
                     return jsonify({'error': 'Area not found'}), 404
                 return Area.area_metrics(area.id)
-            
-            @app.route('/api/set_process', methods=['POST'])
-            @auth_required
-            @staticmethod
-            def main_set_process():
-                return Area.set_process(Area.Main.main_get().id)
-            
-            @app.route('/api/select_process', methods=['POST'])
-            @auth_required
-            @staticmethod
-            def main_select_process():
-                return Area.select_process(Area.Main.main_get().id)
             
             @app.route('/api/trades', methods=['GET'])
             @auth_required
@@ -1072,6 +1053,46 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             @auth_required
             def main_endpoint_metrics_get_ids_list(): 
                 return Area.endpoint_metrics_get_ids_list(Area.Main.main_get().id)
+
+            class Process():
+                @app.route('/api/process/<int:id>/add_comment', methods=['POST'])
+                @auth_required
+                @staticmethod
+                def main_comment_process(id):
+                    return Area.Process.comment_process(Area.Main.main_get().id,id)
+                
+                @app.route('/api/process/<int:id>/dislike', methods=['POST'])
+                @auth_required
+                @staticmethod
+                def main_dislike_process(id):
+                    return Area.Process.dislike_process(Area.Main.main_get().id, id)
+                
+                @app.route('/api/process/<int:id>/like', methods=['POST'])
+                @auth_required
+                @staticmethod
+                def main_like_process(id):
+                    return Area.Process.like_process(Area.Main.main_get().id, id)
+                
+                @app.route('/api/update_process_usage/<int:id>', methods=['POST'])
+                @auth_required
+                @staticmethod
+                def main_update_process_usage(id):
+                    area = Area.Main.main_get() 
+                    if not area:
+                        return jsonify({'error': 'Area not found'}), 404
+                    return Area.Process.update_process_usage(area.id,id)
+                
+                @app.route('/api/set_process', methods=['POST'])
+                @auth_required
+                @staticmethod
+                def main_set_process():
+                    return Area.Process.set_process(Area.Main.main_get().id)
+                
+                @app.route('/api/select_process', methods=['POST'])
+                @auth_required
+                @staticmethod
+                def main_select_process():
+                    return Area.Process.select_process(Area.Main.main_get().id)
 
             class Guard():
                 @app.route('/api/guard/alerts/clear')
