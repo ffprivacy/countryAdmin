@@ -429,8 +429,9 @@ function generateHomeProcessInput(tradeId,process_id='',process_amount=1,home_co
 		</div>
 	`
 }
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', async function () {
 
+	await Processes.fetchMetricsGetList();
 	tradesSetup();
 	setupExportDatabaseElement(document.getElementById('export-database-btn'));
 	setupImportDatabaseElement(document.getElementById('import-database-file'));

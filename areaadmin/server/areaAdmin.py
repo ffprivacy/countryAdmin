@@ -383,13 +383,13 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             processes = Process.query.all()
             for usage in self.process_usages:
                 process = usage.process
-                for metric in Processes.metrics_get_ids_list():
+                for metric in Area.metrics_get_ids_list():
                     for sens in ['input','output']:
                         flow[sens][metric] += Processes.retrieve_metric(processes, process, sens, metric) * usage.usage_count
             
             for trade in self.trades:
                 for home_trade_process in trade.home_processes:
-                    for metric in Processes.metrics_get_ids_list():
+                    for metric in Area.metrics_get_ids_list():
                         if 'id' in home_trade_process and 'amount' in home_trade_process:
                             flow['output'][metric] -= Processes.retrieve_metric(processes, Processes.get_by_id(processes, home_trade_process['id']), 'output', metric) * home_trade_process['amount']
                 
@@ -398,7 +398,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 response.raise_for_status()
                 remote_processes = response.json()
                 for foreign_trade_process in trade.remote_processes:
-                    for metric in Processes.metrics_get_ids_list():
+                    for metric in Area.metrics_get_ids_list():
                         if 'id' in foreign_trade_process and 'amount' in foreign_trade_process:
                             flow['output'][metric] += Processes.retrieve_metric(remote_processes, Processes.get_by_id(remote_processes, foreign_trade_process['id']), 'output', metric) * foreign_trade_process['amount']
 
@@ -408,14 +408,14 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         def metrics(self):
             flow = {'input': {}, 'output': {}}
             
-            for metric in Processes.metrics_get_ids_list():
+            for metric in Area.metrics_get_ids_list():
                 flow['input'][metric] = 0
                 flow['output'][metric] = 0
             
             self.fill_flow(flow)
             
             resources_depletion = {}
-            for metric in Processes.metrics_get_ids_list():
+            for metric in Area.metrics_get_ids_list():
                 usage_balance = flow['output'][metric] - flow['input'][metric]
                 if self.resources.get(metric):
                     resources_depletion[metric] = self.get_time_to_depletion(metric, usage_balance)
@@ -860,6 +860,35 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         def render_dashboard(id):
             return render_template('dashboard.html', area_id=id)
 
+        @app.route('/api/area/<int:id>/processes/metrics', methods=['GET'])
+        @auth_required
+        def endpoint_metrics_get_list(id): 
+            return jsonify(Area.metrics_get_list())
+        
+        @app.route('/api/area/<int:id>/processes/metrics/ids', methods=['GET'])
+        @auth_required
+        def endpoint_metrics_get_ids_list(id): 
+            return jsonify(Area.metrics_get_ids_list())
+        
+        @staticmethod
+        def metrics_get_list():
+            return [
+                {'id': 'social', 'label': 'Social', 'unit': ''},
+                {'id': 'economic', 'label': 'Economic', 'unit': '$'},
+                {'id': 'envEmissions', 'label': 'GES emissions in kgCO2eq', 'unit': 'kgCO2eq'},
+                {'id': 'human', 'label': 'Human', 'unit': 'people'},
+                {'id': 'ground', 'label': 'Ground', 'unit': 'km2'},
+                {'id': 'ores', 'label': 'Ores', 'unit': 'tonnes'},
+                {'id': 'water', 'label': 'Water', 'unit': 'L'},
+                {'id': 'oil', 'label': 'Oil', 'unit': 'L'},
+                {'id': 'gas', 'label': 'Gas', 'unit': 'L'},
+                {'id': 'pm25', 'label': 'PM2.5', 'unit': 'µg/m3'}
+            ]
+
+        @staticmethod
+        def metrics_get_ids_list():
+            return [metric['id'] for metric in Area.metrics_get_list()]
+
         class Guard():
             @app.route('/api/area/<int:id>/guard/alerts/clear')
             @auth_required
@@ -1033,6 +1062,16 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             @staticmethod
             def dashboard():
                 return Area.render_dashboard(Area.Main.main_get().id)
+            
+            @app.route('/api/processes/metrics', methods=['GET'])
+            @auth_required
+            def main_endpoint_metrics_get_list(): 
+                return Area.endpoint_metrics_get_list(Area.Main.main_get().id)
+            
+            @app.route('/api/processes/metrics/ids', methods=['GET'])
+            @auth_required
+            def main_endpoint_metrics_get_ids_list(): 
+                return Area.endpoint_metrics_get_ids_list(Area.Main.main_get().id)
 
             class Guard():
                 @app.route('/api/guard/alerts/clear')
@@ -1292,25 +1331,6 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                         print(f"Process with id {child_process_id} is not in the retrieved processes.")
 
             return total + metricValue
-
-        @staticmethod
-        def metrics_get_list():
-            return [
-                {'id': 'social', 'label': 'Social', 'icon': 'human.png', 'unit': ''},
-                {'id': 'economic', 'label': 'Economic', 'icon': 'economic.png', 'unit': '$'},
-                {'id': 'envEmissions', 'label': 'GES emissions in kgCO2eq', 'icon': 'carbon.png', 'unit': 'kgCO2eq'},
-                {'id': 'human', 'label': 'Human', 'icon': 'human.png', 'unit': 'people'},
-                {'id': 'ground', 'label': 'Ground', 'icon': 'land.png', 'unit': 'km2'},
-                {'id': 'ores', 'label': 'Ores', 'icon': 'ore2.png', 'unit': 'tonnes'},
-                {'id': 'water', 'label': 'Water', 'icon': 'water_drop.png', 'unit': 'L'},
-                {'id': 'oil', 'label': 'Oil', 'icon': 'oil.png', 'unit': 'L'},
-                {'id': 'gas', 'label': 'Gas', 'icon': 'gas.png', 'unit': 'L'},
-                {'id': 'pm25', 'label': 'PM2.5', 'icon': 'smoke.png', 'unit': 'µg/m3'}
-            ]
-
-        @staticmethod
-        def metrics_get_ids_list():
-            return [metric['id'] for metric in Processes.metrics_get_list()]
 
     @app.route('/api/database', methods=['GET','POST'])
     @auth_required

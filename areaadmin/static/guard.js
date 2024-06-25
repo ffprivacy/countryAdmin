@@ -194,7 +194,8 @@ const updateCharts = (areaData) => {
 
 };
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    await Processes.fetchMetricsGetList();
     guardFrontRefresh();
 });
 
