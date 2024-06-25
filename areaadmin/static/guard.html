@@ -40,48 +40,55 @@
     </nav>
     <div class="container mt-5">
 
-        <!-- Form to Add New Area URI -->
-        <div class="mb-3">
+        
+        <div class="row">
             <label for="new-area-uri" class="form-label">Add Area URI:</label>
             <input type="text" id="new-area-uri" class="form-control" placeholder="Enter Area API URI or area id">
             <button id="add-area-btn" class="btn btn-primary mt-2">Add Area</button>
         </div>
 
-        <!-- Button for Manual Refresh -->
-        <button id="refresh-btn" class="btn btn-secondary">Refresh Data</button>
-
-        <div class="mb-3">
-            Guard last seen<p id="guard-last-seen">unsee</p>
-            <div>
-                <div>Alerts<button onclick="guardClearAlerts()" class="btn btn-primary mt-2">clear all</button></div>
-                <div id="guard-alerts"></div>
-            </div>
-        </div>
-        <div class="mb-3">
-            <input type="text" id="search-area" class="form-control" placeholder="Search area...">
+        <div class="row">
+            <button id="refresh-btn" class="btn btn-secondary">Refresh Data</button>
         </div>
 
-        <div class="col-md-6">
-            <div class="mb-3">
-                <label for="metric-select" class="form-label">Select Metric:</label>
-                <select id="metric-select" class="form-control"></select>
+        <div class="row">
+            <div class="col">
+                Guard last seen<p id="guard-last-seen">unsee</p>
+                <div>
+                    <div>Alerts<button onclick="guardClearAlerts()" class="btn btn-primary mt-2">clear all</button></div>
+                    <div id="guard-alerts"></div>
+                </div>
             </div>
         </div>
 
-        <div class="table-responsive">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th scope="col">Area</th>
-                        <th scope="col">Total Metric</th>
-                        <th scope="col">Depletion Time</th>
-                        <th scope="col">Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="area-table">
-                </tbody>
-            </table>
+        <div class="row">
+            <div class="row">
+                <div class="col">
+                    <input type="text" id="search-area" class="form-control" placeholder="Search area...">
+                </div>
+                <div class="col">
+                    <div class="mb-3">
+                        <label for="metric-select" class="form-label">Select Metric:</label>
+                        <select id="metric-select" class="form-control"></select>
+                    </div>
+                </div>
+            </div>
+            <div class="row table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Area</th>
+                            <th scope="col">Total Metric</th>
+                            <th scope="col">Depletion Time</th>
+                            <th scope="col">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="area-table">
+                    </tbody>
+                </table>
+            </div>
         </div>
+
 
         <div class="row">
             <div class="col-md-6">
@@ -95,6 +102,7 @@
         </div>
         <div class="row">
             <div class="col">
+                <h3>Areas weight relative each others</h3>
                 <svg id="graphSvg" width="960" height="600"></svg>
             </div>
         </div>
