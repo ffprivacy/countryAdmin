@@ -162,7 +162,7 @@ function selectProcesses() {
 		formData.append('selected[]', process.selected);
 	});
 
-	fetch(`/api/area/${AREA_DATA['area_id']}/select_process`, {
+	fetch(`${area_api_generate_from_database()}/select_process`, {
 		method: 'POST',
 		body: formData
 	})
@@ -171,18 +171,8 @@ function selectProcesses() {
 			console.warn(e);
 		});
 }
-function JSON_parse(response) {
-	return response.text().then(text => {
-        return JSON.parse(text, (key, value) => {
-            if (value === "Infinity") return Infinity;
-            if (value === "-Infinity") return -Infinity;
-            if (value === "NaN") return NaN;
-            return value;
-        });
-    });
-}
 function dashboardRefresh() {
-    return fetch(`/api/area/${AREA_DATA['area_id']}/processes`)
+    return fetch(`${area_api_generate_from_database()}/processes`)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -194,7 +184,7 @@ function dashboardRefresh() {
             const allProcesses = data;
             processList.innerHTML = '';
 
-            fetch(`/api/area/${AREA_DATA['area_id']}/metrics`)
+            fetch(`${area_api_generate_from_database()}/metrics`)
             .then(response => JSON_parse(response))
             .then(metrics => {
                 const areaMetrics = metrics.flow;
@@ -234,7 +224,7 @@ function dashboardRefresh() {
 
                 updateRadarChart(areaMetrics['output'].economic, areaMetrics['input'].envEmissions - areaMetrics['output'].envEmissions, areaMetrics['output'].social);
 
-				fetch(`/api/area/${AREA_DATA['area_id']}`)
+				fetch(`${area_api_generate_from_database()}`)
 				.then(response => JSON_parse(response))
 				.then(async function(area) {
 					
@@ -331,7 +321,7 @@ function submitTrade() {
         });
     });
 
-    fetch(`/api/area/${AREA_DATA['area_id']}/trade`, {
+    fetch(`${area_api_generate_from_database()}/trade`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -348,7 +338,7 @@ function submitTrade() {
     .catch(error => console.error('Error submitting trade:', error));
 }
 function fetchTrades() {
-    fetch(`/api/area/${AREA_DATA['area_id']}/trades`)
+    fetch(`${area_api_generate_from_database()}/trades`)
     .then(response => JSON_parse(response))
     .then(trades => {
         const tradesList = document.getElementById('trades-list');
@@ -440,7 +430,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 	addProcessSetup();
 
 	document.getElementById("create-subzone").addEventListener("click", function(e) {
-		fetch(`/api/area/${AREA_DATA['area_id']}/create_sub`, {
+		fetch(`${area_api_generate_from_database()}/create_sub`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -455,7 +445,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 		const areaTitle = document.getElementById("area-data-title");
 		const areaDescription = document.getElementById("area-data-description");
 
-		fetch(`/api/area/${AREA_DATA['area_id']}`, {
+		fetch(`${area_api_generate_from_database()}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -516,7 +506,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 	});	
 		
 	document.getElementById('export-btn').addEventListener('click', function() {
-		fetch(`/api/area/${AREA_DATA['area_id']}/processes`)
+		fetch(`${area_api_generate_from_database()}/processes`)
 		.then(response => {
 		if (!response.ok) {
 			throw new Error('Network response was not ok');

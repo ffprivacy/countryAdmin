@@ -1,11 +1,18 @@
 function IS_LOCAL_AREA_REGEX(uri) {
     return uri.match(/^[ \t]*\d+[ \t]*$/) != null;
 }
-function area_generate_uri_from_database(uri) {
+function area_api_generate_from_database(uri=undefined) {
+    if ( uri == undefined ) {
+        if ( AREA_DATA != undefined && AREA_DATA['area_id'] != undefined ) {
+            uri = `${AREA_DATA['area_id']}`;
+        } else {
+            throw "Must provide uri or loadVars";
+        }
+    }
     if ( IS_LOCAL_AREA_REGEX(uri) ) {
         return `/api/area/${parseInt(uri)}`;
     } else {
-        return `${uri}${uri.endsWith("/") ? "" : "/"}api/area`;
+        return `${uri}${uri.endsWith("/") ? "" : "/"}api`;
     } 
 }
 function dashboard_area_generate_uri_from_database(o) {
@@ -35,4 +42,14 @@ function dashboard_area_generate_uri_from_database(o) {
     }
     return `${uri}${uri.endsWith("/") ? "" : "/"}${path}`;
 
+}
+function JSON_parse(response) {
+	return response.text().then(text => {
+        return JSON.parse(text, (key, value) => {
+            if (value === "Infinity") return Infinity;
+            if (value === "-Infinity") return -Infinity;
+            if (value === "NaN") return NaN;
+            return value;
+        });
+    });
 }

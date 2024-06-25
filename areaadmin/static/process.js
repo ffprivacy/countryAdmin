@@ -86,7 +86,7 @@ class Processes {
 
     static async set(process) {
         try {
-            const response = await fetch(`/api/area/${AREA_DATA['area_id']}/set_process`, {
+            const response = await fetch(`${area_api_generate_from_database()}/set_process`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(process)
@@ -107,7 +107,7 @@ class Processes {
 
     static async addComment(process_id, comment) {
         try {
-            const response = await fetch(`/api/area/${AREA_DATA['area_id']}/process/${process_id}/add_comment`, {
+            const response = await fetch(`${area_api_generate_from_database()}/process/${process_id}/add_comment`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ comment: comment })
@@ -124,7 +124,7 @@ class Processes {
         }
     }
     static dislike(process_id) {
-        fetch(`/api/area/${AREA_DATA['area_id']}/process/${process_id}/dislike`, {
+        fetch(`${area_api_generate_from_database()}/process/${process_id}/dislike`, {
             method: 'POST'
         }).then(response => response.json())
         .then(data => {
@@ -137,7 +137,7 @@ class Processes {
     }
 
     static like(process_id) {
-            fetch(`/api/area/${AREA_DATA['area_id']}/process/${process_id}/like`, {
+            fetch(`${area_api_generate_from_database()}/process/${process_id}/like`, {
                 method: 'POST'
             }).then(response => response.json())
             .then(data => {

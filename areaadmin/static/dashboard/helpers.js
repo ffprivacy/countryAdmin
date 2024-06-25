@@ -72,7 +72,7 @@ function areaResourcesSetup(prefix) {
                                 <hr>`;
     }
 
-    fetch(`/api/area/${AREA_DATA['area_id']}`)
+    fetch(`${area_api_generate_from_database()}`)
     .then(response => response.json())
     .then(area => {
         const data = area.resources;
@@ -90,7 +90,7 @@ function areaResourcesSetup(prefix) {
                 renew_rate: parseFloat(document.getElementById(`${prefix}-${metric}-renew-rate`).value) || 0
             };
         }
-        fetch(`/api/area/${AREA_DATA['area_id']}`, {
+        fetch(`${area_api_generate_from_database()}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
