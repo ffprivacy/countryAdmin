@@ -4,6 +4,8 @@ class Guard {
         this.selected_metric = null;
         this.state = null;
         this.areas = [];
+        this.puzzleChart = null;
+        this.tradeChart = null;
     }
 
     async refresh() {
@@ -67,31 +69,53 @@ class Guard {
     updateCharts() {
         const labels = this.areas.map(area => area.name);
     
-        const ctxPuzzle = document.getElementById('puzzleChart').getContext('2d');
-        const puzzleChart = new Chart(ctxPuzzle, {
-            type: 'pie',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Metric Comparison',
-                    data: this.areas.map(area => area.metrics.flow.output[this.selected_metric]),
-                    backgroundColor: ['red', 'blue', 'green'],
-                }]
+        {
+            const data = this.areas.map(area => area.metrics.flow.output[this.selected_metric]);
+            if ( this.puzzleChart == null ) {
+                const ctxPuzzle = document.getElementById('puzzleChart').getContext('2d');
+                this.puzzleChart = new Chart(ctxPuzzle, {
+                    type: 'pie',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Metric Comparison',
+                            data: data,
+                            backgroundColor: ['red', 'blue', 'green'],
+                        }]
+                    }
+                });
+            } else {
+                this.puzzleChart.data.labels = labels;
+                this.puzzleChart.data.datasets.forEach((dataset) => {
+                    dataset.data = data;
+                });
+                this.puzzleChart.update();
             }
-        });
+        }
     
-        const ctxTrade = document.getElementById('tradeChart').getContext('2d');
-        const tradeChart = new Chart(ctxTrade, {
-            type: 'doughnut',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Trade Volume',
-                    data: this.areas.map(area => area.metrics.resources_depletion[this.selected_metric]),
-                    backgroundColor: ['purple', 'orange', 'yellow'],
-                }]
+        {
+            const data = this.areas.map(area => area.metrics.resources_depletion[this.selected_metric]);
+            if ( this.tradeChart == null ) {
+                const ctxTrade = document.getElementById('tradeChart').getContext('2d');
+                this.tradeChart = new Chart(ctxTrade, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Trade Volume',
+                            data: data,
+                            backgroundColor: ['purple', 'orange', 'yellow'],
+                        }]
+                    }
+                });
+            } else {
+                this.tradeChart.data.labels = labels;
+                this.tradeChart.data.datasets.forEach((dataset) => {
+                    dataset.data = data;
+                });
+                this.tradeChart.update();
             }
-        });
+        }
     
         this.updateGraph();
     
