@@ -123,8 +123,10 @@ class Guard {
     }
     
     flowGraphUpdate() {
-        const svg = d3.select('#graphSvg');
+        const svg = d3.select('#flowGraph');
         svg.selectAll('*').remove();
+        const title = document.getElementById("flowGraphTitle");
+        title.innerText = `${this.selected_metric} flow and amount per area`;
     
         const width = +svg.attr('width');
         const height = +svg.attr('height');
@@ -141,22 +143,30 @@ class Guard {
     
         const nodes = this.areas.map((area, index) => ({
             id: genGraphId(area.uri, area.id),
-            radius: area.metrics.flow.output[this.selected_metric] - area.metrics.flow.input[this.selected_metric],
+            radius:      area.metrics.flow.output[this.selected_metric] - area.metrics.flow.input[this.selected_metric],
+            metricValue: area.metrics.flow.output[this.selected_metric] - area.metrics.flow.input[this.selected_metric],
             name: area.name,
             area: area
         }));
     
         const maxRadius = d3.max(nodes, d => d.radius);
         nodes.forEach(node => node.radius = Math.log(node.radius + 1) / Math.log(maxRadius + 1) * 10);
-            
+
+        const nodeIds = new Set(nodes.map(node => node.id));
+        
         const graphEdges = [];
         for (let area of this.areas) {
             for (let trade of area.trades) {
-                graphEdges.push({
-                    source: genGraphId(area.uri, area.id),
-                    target: genGraphId(trade.remote_host_uri, trade.remote_area_id),
-                    value: 2
-                });
+                const sourceId = genGraphId(area.uri, area.id);
+                const targetId = genGraphId(trade.remote_host_uri, trade.remote_area_id);
+
+                if (nodeIds.has(sourceId) && nodeIds.has(targetId)) {
+                    graphEdges.push({
+                        source: sourceId,
+                        target: targetId,
+                        value: 2
+                    });
+                }
             }
         }
     
@@ -231,12 +241,14 @@ class Guard {
             event.subject.fy = null;
         }
     
+        const this_selected_metric = this.selected_metric;
         function showModal(nodeData) {
             const modal = new bootstrap.Modal(document.getElementById('nodeDetailModal'), {});
-            document.getElementById('nodeDetailModalLabel').innerText = `Node Details: ${nodeData.name}`;
+            const metricObj = Processes.metricsGetList().find((o) => o.id == this_selected_metric);
+            document.getElementById('nodeDetailModalLabel').innerText = `Area ${nodeData.name} - ${metricObj.label}:`;
             document.getElementById('nodeDetailModalBody').innerHTML = `
                 <p><strong>Name:</strong> <a href="${dashboard_area_generate_uri_from_database(nodeData.area.uri)}" target="_blank">${nodeData.name}</a></p>
-                <p><strong>Metric relative strength:</strong> ${nodeData.radius}</p>
+                <p><strong>${metricObj.label}:</strong> ${nodeData.metricValue} ${metricObj.unit}</p>
             `;
             modal.show();
         }
