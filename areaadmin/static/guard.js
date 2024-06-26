@@ -178,6 +178,23 @@ class Guard {
                     }
                 },
                 {
+                    selector: 'node:parent',
+                    style: {
+                        'background-color': '#ffcc00',
+                        'border-color': '#000',
+                        'border-width': 2,
+                        'label': 'data(name)'
+                    }
+                },
+                {
+                    selector: 'node.expanded',
+                    style: {
+                        'background-color': '#ffa500',
+                        'border-color': '#ff0000',
+                        'border-width': 2
+                    }
+                },
+                {
                     selector: 'edge',
                     style: {
                         'width': 2,
@@ -233,7 +250,7 @@ class Guard {
                 const sourceId = genGraphId(area.uri, area.id);
                 const targetId = genGraphId(trade.remote_host_uri, trade.remote_area_id);
 
-                // should set a weight based on processes
+                console.info("should set a weight based on processes");
                 return { data: { source: sourceId, target: targetId } };
             }
         }
@@ -271,7 +288,7 @@ class Guard {
                 
                     node.on('cxttap', function (event) {
                         const node = event.target;
-                        if (node.data('expanded')) {
+                        if (node.hasClass('expanded')) {
                             collapseNode(node);
                         } else {
                             expandNode(node);
@@ -287,11 +304,12 @@ class Guard {
         flowGraphAppendData(cy,nodes,edges);
 
         async function expandNode(node) {
-            node.data('expanded', true);
+            node.addClass('expanded');
             const area = node.data('area');
             let nodes = [];
             let edges = [];
             const node_id = node.id();
+
             for(let composition of area.compositions) {
                 const child_area = await _this.area_retrieve(area.uri, composition.id);
                 const newNode = buildNodeFor(child_area);
@@ -304,7 +322,7 @@ class Guard {
                     }
                 }
             }
-            console.warn(cy,nodes,edges);
+
             flowGraphAppendData(cy,nodes,edges);
     
             node.style('background-color', '#ffa500'); // Adjust the color
@@ -312,7 +330,7 @@ class Guard {
         }
     
         function collapseNode(node) {
-            node.data('expanded', false);
+            node.removeClass('expanded');
             const area = node.data('area');
             const compositions = area.compositions.map(compo => genGraphId(area.uri, compo.id));
             cy.remove(cy.nodes().filter(n => compositions.includes(n.id())));
