@@ -179,7 +179,7 @@ class Guard {
             .selectAll('circle')
             .data(nodes)
             .join('circle')
-            .attr('r', d => d.radius)
+            .attr('r', d => isNaN(d.radius) ? 0 : d.radius )
             .attr('fill', this.flowGraphColorNode)
             .call(this.flowGraphDrag(simulation))
             .on('click', function(event, d) {
@@ -211,6 +211,7 @@ class Guard {
             modal.show();
         }
     }
+
     flowGraphColorNode(d) {
         return d.radius > 20 ? '#ff7f0e' : '#1f77b4';
     }
