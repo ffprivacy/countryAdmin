@@ -275,7 +275,6 @@ function guardClearAlerts() {
     })
 }
 function clearPollutionDebt(alert_id, remote_area, emissionEnv=90) {
-    const remote_uri = area_api_generate_from_database(remote_area);
     const process = {
         title: 'Remote area has capability and proposed to absorbe your emissions',
         description: 'Clear your emissions debt (overpollution)',
@@ -293,7 +292,7 @@ function clearPollutionDebt(alert_id, remote_area, emissionEnv=90) {
     fetchAreaAPI('/set_process',{
         method: 'POST',
         body: JSON.stringify(process)
-    },remote_uri)
+    },remote_area)
     .then(response => {
         const tradeData = {
             remote_host_uri: remote_area,

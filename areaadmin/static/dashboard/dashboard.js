@@ -262,20 +262,9 @@ function attachSelectedEvent() {
 			event.stopPropagation();
 						
 			const formData = new FormData(this);
-			fetch(this.action, {
+			fetchAreaAPI(this.action, {
 				method: 'POST',
 				body: formData
-			})
-			.then(response => {
-				if (response.ok) {
-					  dashboardRefresh();
-				  return response.text();
-				}
-				throw new Error('Network response was not ok.');
-			})
-			.then(data => {
-				console.log(data);
-				// Optionally handle response data
 			})
 			.catch(error => {
 				console.error('There was a problem with the fetch operation:', error);
