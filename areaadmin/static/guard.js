@@ -131,10 +131,6 @@ class Guard {
     
     }
 
-    flowGraphColorNode(d) {
-        return d.radius > 20 ? '#ff7f0e' : '#1f77b4';
-    }
-    
     async flowGraphUpdate() {
         const title = document.getElementById("flowGraphTitle");
         const metricObj = Processes.metricsGetList().find((o) => o.id == this.selected_metric);
@@ -235,6 +231,8 @@ class Guard {
                 if (!node.data('flowGraphEventsAttached')) {
                     
                     node.on('dblclick', function (event) {
+                        event.stopPropagation();
+                        event.preventDefault();
                         showModal(event.target.data());
                     });
                 
@@ -271,13 +269,16 @@ class Guard {
             const area = node.data('area');
             let nodes = [];
             let edges = [];
+            const node_id = node.id();
             for(let composition of area.compositions) {
                 let compo_area = _this.areas.find((area) => area.id == composition.id);
                 if ( ! compo_area ) {
                     compo_area = await Guard.areaFetchAllData({uri: area.uri, id: composition.id});
                     _this.areas.push(compo_area);
                 }
-                nodes.push(buildNodeFor(compo_area));
+                const newNode = buildNodeFor(compo_area);
+                newNode.data.parent = node_id;
+                nodes.push(newNode);
                 for (let trade of compo_area.trades) {
                     const edge = buildEdgeFor(compo_area,trade);
                     if ( edge ) {
