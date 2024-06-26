@@ -130,43 +130,41 @@ class Guard {
         const height = +svg.attr('height');
     
         function genGraphId(uri, area_id) {
-            if ( uri == null || uri == undefined ) {
+            if (uri == null || uri == undefined) {
                 return `${area_id}`;
-            } else if ( area_id == null || area_id == undefined ) {
+            } else if (area_id == null || area_id == undefined) {
                 return `${uri}`;
             } else {
                 return `${uri} - ${area_id}`;
             }
         }
-
+    
         const nodes = this.areas.map((area, index) => ({
             id: genGraphId(area.uri, area.id),
-            radius: area.metrics.flow.output[this.selected_metric]
+            radius: area.metrics.flow.output[this.selected_metric] - area.metrics.flow.input[this.selected_metric],
+            name: area.name,
+            area: area
         }));
-
-        const x = d3.scaleLog()
-            .domain([1, d3.max(nodes, d => d.radius)])
-            .range([0, width]);
-
-        const y = d3.scaleLog()
-            .domain([1, d3.max(nodes, d => d.radius)])
-            .range([height, 0]);
+    
+        const maxRadius = d3.max(nodes, d => d.radius);
+        nodes.forEach(node => node.radius = Math.log(node.radius + 1) / Math.log(maxRadius + 1) * 10);
             
         const graphEdges = [];
-        for(let area of this.areas) {
-            for(let trade of area.trades) {
+        for (let area of this.areas) {
+            for (let trade of area.trades) {
                 graphEdges.push({
-                    source: genGraphId(area.uri,area.id), 
-                    target: genGraphId(trade.remote_host_uri,trade.remote_area_id),
+                    source: genGraphId(area.uri, area.id),
+                    target: genGraphId(trade.remote_host_uri, trade.remote_area_id),
                     value: 2
-                })
+                });
             }
         }
     
         const simulation = d3.forceSimulation(nodes)
-            .force('link', d3.forceLink(graphEdges).id(d => d.id).distance(200))
-            .force('charge', d3.forceManyBody().strength(-400))
-            .force('center', d3.forceCenter(width / 2, height / 2));
+            .force('link', d3.forceLink(graphEdges).id(d => d.id).distance(150))
+            .force('charge', d3.forceManyBody().strength(-50))
+            .force('center', d3.forceCenter(width / 2, height / 2))
+            .force('collision', d3.forceCollide().radius(d => d.radius + 5));
     
         const link = svg.append('g')
             .attr('stroke', '#999')
@@ -181,26 +179,38 @@ class Guard {
             .selectAll('circle')
             .data(nodes)
             .join('circle')
-            .attr('r', d => x(d.radius))
+            .attr('r', d => d.radius)
             .attr('fill', this.flowGraphColorNode)
-            .call(this.flowGraphDrag(simulation));
-
+            .call(this.flowGraphDrag(simulation))
+            .on('click', function(event, d) {
+                showModal(d);
+            });
+    
         node.append('title')
-            .text(d => d.id);
+            .text(d => d.name);
     
         simulation.on('tick', () => {
             link
-                .attr('x1', d => x(d.source.x))
-                .attr('y1', d => y(d.source.y))
-                .attr('x2', d => x(d.target.x))
-                .attr('y2', d => y(d.target.y));
+                .attr('x1', d => d.source.x)
+                .attr('y1', d => d.source.y)
+                .attr('x2', d => d.target.x)
+                .attr('y2', d => d.target.y);
     
             node
-                .attr('cx', d => x(d.x))
-                .attr('cy', d => y(d.y));
+                .attr('cx', d => d.x)
+                .attr('cy', d => d.y);
         });
+    
+        function showModal(nodeData) {
+            const modal = new bootstrap.Modal(document.getElementById('nodeDetailModal'), {});
+            document.getElementById('nodeDetailModalLabel').innerText = `Node Details: ${nodeData.name}`;
+            document.getElementById('nodeDetailModalBody').innerHTML = `
+                <p><strong>Name:</strong> <a href="${dashboard_area_generate_uri_from_database(nodeData.area.uri)}" target="_blank">${nodeData.name}</a></p>
+                <p><strong>Metric relative strength:</strong> ${nodeData.radius}</p>
+            `;
+            modal.show();
+        }
     }
-
     flowGraphColorNode(d) {
         return d.radius > 20 ? '#ff7f0e' : '#1f77b4';
     }
