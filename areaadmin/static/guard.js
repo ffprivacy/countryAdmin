@@ -130,7 +130,7 @@ class Guard {
         title.innerHTML = `
             <h3><img src="/static/${metricObj == undefined ? '' : metricObj.icon}" class="ms-2" style="max-width: 50px;" />${this.selected_metric} flow and amount per area</h3>
         `;
-
+    
         const width = +svg.attr('width');
         const height = +svg.attr('height');
     
@@ -144,25 +144,26 @@ class Guard {
             }
         }
     
-        const nodes = this.areas.map((area, index) => ({
+        let nodes = this.areas.map((area, index) => ({
             id: genGraphId(area.uri, area.id),
-            radius:      area.metrics.flow.output[this.selected_metric] - area.metrics.flow.input[this.selected_metric],
+            radius: area.metrics.flow.output[this.selected_metric] - area.metrics.flow.input[this.selected_metric],
             metricValue: area.metrics.flow.output[this.selected_metric] - area.metrics.flow.input[this.selected_metric],
             name: area.name,
-            area: area
+            area: area,
+            expanded: false
         }));
     
         const maxRadius = d3.max(nodes, d => d.radius);
         nodes.forEach(node => node.radius = Math.log(node.radius + 1) / Math.log(maxRadius + 1) * 10);
-
-        const nodeIds = new Set(nodes.map(node => node.id));
-        
-        const graphEdges = [];
+    
+        let nodeIds = new Set(nodes.map(node => node.id));
+    
+        let graphEdges = [];
         for (let area of this.areas) {
             for (let trade of area.trades) {
                 const sourceId = genGraphId(area.uri, area.id);
                 const targetId = genGraphId(trade.remote_host_uri, trade.remote_area_id);
-
+    
                 if (nodeIds.has(sourceId) && nodeIds.has(targetId)) {
                     graphEdges.push({
                         source: sourceId,
@@ -183,33 +184,41 @@ class Guard {
     
         const svgGroup = svg.append('g');
     
-        const simulation = d3.forceSimulation(nodes)
+        let simulation = d3.forceSimulation(nodes)
             .force('link', d3.forceLink(graphEdges).id(d => d.id).distance(150))
             .force('charge', d3.forceManyBody().strength(-50))
             .force('center', d3.forceCenter(width / 2, height / 2))
             .force('collision', d3.forceCollide().radius(d => d.radius + 5));
     
-        const link = svgGroup.append('g')
+        let link = svgGroup.append('g')
             .attr('stroke', '#999')
             .selectAll('line')
             .data(graphEdges)
             .join('line')
             .attr('stroke-width', d => d.value * 0.1);
     
-        const node = svgGroup.append('g')
+        let node = svgGroup.append('g')
             .attr('stroke', '#fff')
             .attr('stroke-width', 1.5)
             .selectAll('circle')
             .data(nodes)
             .join('circle')
-            .attr('r', d => isNaN(d.radius) ? 0 : d.radius )
+            .attr('r', d => isNaN(d.radius) ? 0 : d.radius)
             .attr('fill', this.flowGraphColorNode)
             .call(d3.drag()
                 .on('start', dragstarted)
                 .on('drag', dragged)
                 .on('end', dragended))
-            .on('click', function(event, d) {
+            .on('dblclick', function(event, d) {
                 showModal(d);
+            })
+            .on('contextmenu', function(event, d) {
+                event.preventDefault();
+                if (d.expanded) {
+                    collapseNode(d);
+                } else {
+                    expandNode(d);
+                }
             });
     
         node.append('title')
@@ -255,7 +264,78 @@ class Guard {
             `;
             modal.show();
         }
+    
+        function expandNode(nodeData) {
+            nodeData.expanded = true;
+            const compositions = nodeData.area.compositions;
+            console.warn(nodeData.area);
+            const newNodes = compositions.map(compo => ({
+                id: genGraphId(null, compo.id),
+                radius: compo.metrics[this_selected_metric],
+                metricValue: compo.metrics[this_selected_metric],
+                name: `Compo ${compo.id}`,
+                area: nodeData.area,
+                expanded: false
+            }));
+            nodes = nodes.concat(newNodes);
+            nodeIds = new Set(nodes.map(node => node.id));
+            simulation.nodes(nodes);
+    
+            const newEdges = newNodes.map(newNode => ({
+                source: nodeData.id,
+                target: newNode.id,
+                value: 2
+            }));
+            graphEdges = graphEdges.concat(newEdges);
+            simulation.force('link').links(graphEdges);
+    
+            updateGraph();
+        }
+    
+        function collapseNode(nodeData) {
+            nodeData.expanded = false;
+            const compositions = nodeData.area.compositions.map(compo => genGraphId(null, compo.id));
+            nodes = nodes.filter(node => !compositions.includes(node.id));
+            nodeIds = new Set(nodes.map(node => node.id));
+            simulation.nodes(nodes);
+    
+            graphEdges = graphEdges.filter(edge => edge.source.id !== nodeData.id && !compositions.includes(edge.target.id));
+            simulation.force('link').links(graphEdges);
+    
+            updateGraph();
+        }
+    
+        function updateGraph() {
+            link = link.data(graphEdges);
+            link.exit().remove();
+            link = link.enter().append('line').attr('stroke-width', d => d.value * 0.1).merge(link);
+    
+            node = node.data(nodes);
+            node.exit().remove();
+            node = node.enter().append('circle')
+                .attr('r', d => isNaN(d.radius) ? 0 : d.radius)
+                .attr('fill', this.flowGraphColorNode)
+                .call(d3.drag()
+                    .on('start', dragstarted)
+                    .on('drag', dragged)
+                    .on('end', dragended))
+                .on('dblclick', function(event, d) {
+                    showModal(d);
+                })
+                .on('contextmenu', function(event, d) {
+                    event.preventDefault();
+                    if (d.expanded) {
+                        collapseNode(d);
+                    } else {
+                        expandNode(d);
+                    }
+                })
+                .merge(node);
+    
+            simulation.alpha(1).restart();
+        }
     }
+
 }
 
 const guard = new Guard()
@@ -331,6 +411,7 @@ document.getElementById('refresh-btn').addEventListener('click', function() {
 document.addEventListener('DOMContentLoaded', async () => {
     const metrics = await Processes.fetchMetricsGetList();
     const selectElement = document.getElementById('metric-select');
+    selectElement.value = 'envEmissions';
 
     selectElement.innerHTML = '';
 
