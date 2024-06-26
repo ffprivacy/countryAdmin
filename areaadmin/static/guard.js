@@ -146,11 +146,14 @@ class Guard {
     }
 
     flowGraphShowModal(nodeData) {
+        const area = nodeData.area;
         const modal = new bootstrap.Modal(document.getElementById('nodeDetailModal'), {});
         const metricObj = Processes.metricsGetList().find((o) => o.id == this.selected_metric);
-        document.getElementById('nodeDetailModalLabel').innerText = `Area ${nodeData.name} - ${metricObj.label}:`;
+        const url = area_dashboard_url(area);
+        document.getElementById('nodeDetailModalLabel').innerHTML = `
+            <a href="${url}" target="_blank">${nodeData.name}</a> - ${metricObj.label}
+        `;
         document.getElementById('nodeDetailModalBody').innerHTML = `
-            <p><strong>Name:</strong> ${nodeData.name}</p>
             <p><strong>${metricObj.label}:</strong> ${nodeData.metricValue} ${metricObj.unit}</p>
         `;
         modal.show();
