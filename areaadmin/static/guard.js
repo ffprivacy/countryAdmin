@@ -126,8 +126,11 @@ class Guard {
         const svg = d3.select('#flowGraph');
         svg.selectAll('*').remove();
         const title = document.getElementById("flowGraphTitle");
-        title.innerText = `${this.selected_metric} flow and amount per area`;
-    
+        const metricObj = Processes.metricsGetList().find((o) => o.id == this.selected_metric);
+        title.innerHTML = `
+            <h3><img src="/static/${metricObj == undefined ? '' : metricObj.icon}" class="ms-2" style="max-width: 50px;" />${this.selected_metric} flow and amount per area</h3>
+        `;
+
         const width = +svg.attr('width');
         const height = +svg.attr('height');
     
