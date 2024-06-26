@@ -132,6 +132,7 @@ class Guard {
         title.innerHTML = `
             <h3><img src="/static/${metricObj == undefined ? '' : metricObj.icon}" class="ms-2" style="max-width: 50px;" />${this.selected_metric} flow and amount per area</h3>
         `;
+        const _this = this;
     
         const cy = cytoscape({
             container: document.getElementById('flowGraph'),
@@ -159,17 +160,26 @@ class Guard {
         });
     
         function genGraphId(uri, area_id) {
+            const uri_parsed = URL.parse(uri);
             if (uri == null || uri == undefined) {
                 return `${area_id}`;
             } else if (area_id == null || area_id == undefined) {
-                return `${uri}`;
+                if ( uri_parsed != null && uri_parsed.origin == HOME_HOST_URI() ) {
+                    return '1';
+                } else {
+                    return `${uri}`;
+                }
             } else {
-                return `${uri} - ${area_id}`;
+                if ( URL.parse(uri).origin == HOME_HOST_URI() ) {
+                    return `${area_id}`;
+                } else {
+                    return `${uri} - ${area_id}`;
+                }
             }
         }
-    
-        let nodes = this.areas.map((area) => {
-            let metricValue = area.metrics.flow.output[this.selected_metric] - area.metrics.flow.input[this.selected_metric];
+
+        function nodeFromArea(area) {
+            let metricValue = area.metrics.flow.output[_this.selected_metric] - area.metrics.flow.input[_this.selected_metric];
             metricValue = isNaN(metricValue) ? 0 : metricValue < 0 ? 0 : metricValue;
             return {
                 data: {
@@ -181,27 +191,30 @@ class Guard {
                 },
                 position: { x: Math.random() * 800, y: Math.random() * 600 }
             }
-        });
-    
-        let nodeIds = new Set(nodes.map(node => node.data.id));
-    
+        }
+
+        function edgeFromAreaTrade(area,trade) {
+            const sourceId = genGraphId(area.uri, area.id);
+            const targetId = genGraphId(trade.remote_host_uri, trade.remote_area_id);
+            return { data: { source: sourceId, target: targetId } };
+        }
+
+        let nodes = [];
         let edges = [];
         for (let area of this.areas) {
+            nodes.push(nodeFromArea(area));
             for (let trade of area.trades) {
-                const sourceId = genGraphId(area.uri, area.id);
-                const targetId = genGraphId(trade.remote_host_uri, trade.remote_area_id);
-    
-                if (nodeIds.has(sourceId) && nodeIds.has(targetId)) {
-                    edges.push({ data: { source: sourceId, target: targetId } });
+                const edge = edgeFromAreaTrade(area,trade);
+                if ( edge ) {
+                    edges.push(edge);
                 }
             }
         }
-    
+        console.warn(nodes, edges);
         cy.add(nodes);
         cy.add(edges);
     
         cy.nodes().on('dblclick', function (event) {
-            console.warn(event);
             showModal(event.target.data());
         });
     
@@ -214,40 +227,43 @@ class Guard {
             }
         });
     
-        const this_selected_metric = this.selected_metric;
         function showModal(nodeData) {
             const modal = new bootstrap.Modal(document.getElementById('nodeDetailModal'), {});
-            const metricObj = Processes.metricsGetList().find((o) => o.id == this_selected_metric);
+            const metricObj = Processes.metricsGetList().find((o) => o.id == _this.selected_metric);
             document.getElementById('nodeDetailModalLabel').innerText = `Area ${nodeData.name} - ${metricObj.label}:`;
             document.getElementById('nodeDetailModalBody').innerHTML = `
                 <p><strong>Name:</strong> ${nodeData.name}</p>
-                <p><strong>${metricObj.label}:</strong> ${nodeData.radius}</p>
+                <p><strong>${metricObj.label}:</strong> ${nodeData.metricValue} ${metricObj.unit}</p>
             `;
             modal.show();
         }
     
         function expandNode(node) {
             node.data('expanded', true);
-            const compositions = node.data('area').compositions;
-            const newNodes = compositions.map((compo, index) => ({
-                data: {
-                    id: genGraphId(null, compo.id),
-                    name: `Compo ${compo.id}`,
-                    radius: 5
-                },
-                position: { x: node.position().x + (index * 20), y: node.position().y + (index * 20) },
-                classes: 'composition'
-            }));
-    
-            cy.add(newNodes);
-            const newEdges = newNodes.map(newNode => ({
-                data: {
-                    source: node.id(),
-                    target: newNode.data.id
+            const area = node.data('area');
+            const compositions = area.compositions;
+            let nodes = [];
+            let edges = [];
+            for(let composition of area.compositions) {
+                const compo_area = _this.areas.find((area) => area.id == composition.id);
+                if ( compo_area ) {
+                    nodes.push(nodeFromArea(compo_area));
+                } else {
+                    console.warn("should fetch on the remote or local the area");
                 }
-            }));
+                if ( compo_area ) {
+                    for (let trade of compo_area.trades) {
+                        const edge = edgeFromAreaTrade(compo_area,trade);
+                        if ( edge ) {
+                            edges.push(edge);
+                        }
+                    }
+                }
+            }
+
+            cy.add(nodes);
+            cy.add(edges);
     
-            cy.add(newEdges);
             node.style('background-color', '#ffa500'); // Adjust the color
             cy.layout({ name: 'cose' }).run();
         }

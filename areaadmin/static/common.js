@@ -1,6 +1,9 @@
 function IS_LOCAL_AREA_REGEX(uri) {
     return uri.match(/^[ \t]*\d+[ \t]*$/) != null;
 }
+function HOME_HOST_URI() {
+    return URL.parse(document.location.origin).origin;
+}
 function area_api_generate_from_database(uri=undefined) {
     if ( uri == undefined ) {
         if ( AREA_DATA != undefined && AREA_DATA['area_id'] != undefined ) {
