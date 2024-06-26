@@ -121,6 +121,10 @@ class Guard {
         this.flowGraphUpdate();
     
     }
+
+    flowGraphColorNode(d) {
+        return d.radius > 20 ? '#ff7f0e' : '#1f77b4';
+    }
     
     flowGraphUpdate() {
         const svg = d3.select('#flowGraph');
@@ -204,7 +208,7 @@ class Guard {
             .data(nodes)
             .join('circle')
             .attr('r', d => isNaN(d.radius) ? 0 : d.radius)
-            .attr('fill', this.flowGraphColorNode)
+            .attr('fill', Guard.flowGraphColorNode)
             .call(d3.drag()
                 .on('start', dragstarted)
                 .on('drag', dragged)
@@ -268,11 +272,10 @@ class Guard {
         function expandNode(nodeData) {
             nodeData.expanded = true;
             const compositions = nodeData.area.compositions;
-            console.warn(nodeData.area);
             const newNodes = compositions.map(compo => ({
                 id: genGraphId(null, compo.id),
-                radius: compo.metrics[this_selected_metric],
-                metricValue: compo.metrics[this_selected_metric],
+                radius: 10,
+                metricValue: 10,
                 name: `Compo ${compo.id}`,
                 area: nodeData.area,
                 expanded: false
@@ -314,7 +317,7 @@ class Guard {
             node.exit().remove();
             node = node.enter().append('circle')
                 .attr('r', d => isNaN(d.radius) ? 0 : d.radius)
-                .attr('fill', this.flowGraphColorNode)
+                .attr('fill', Guard.flowGraphColorNode)
                 .call(d3.drag()
                     .on('start', dragstarted)
                     .on('drag', dragged)
