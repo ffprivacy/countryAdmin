@@ -8,6 +8,13 @@ class Guard {
         this.tradeChart = null;
     }
 
+    static async areaFetchAllData(areaData) {
+        const area = await fetchAreaAPI('/area', undefined, areaData);
+        area['trades'] = await fetchAreaAPI('/trades', undefined, areaData);
+        area['metrics'] = await fetchAreaAPI('/metrics', undefined, areaData);
+        return area;
+    }
+
     async refresh() {
         this.state = await fetchAreaAPI('/guard');
         
@@ -46,10 +53,7 @@ class Guard {
             } else {
                 areaData['uri'] = area_uri;
             }
-            const area = await fetchAreaAPI('/area', undefined, areaData);
-            area['trades'] = await fetchAreaAPI('/trades', undefined, areaData);
-            area['metrics'] = await fetchAreaAPI('/metrics', undefined, areaData);
-            this.areas.push(area);
+            this.areas.push(await Guard.areaFetchAllData(areaData));
         }
     
         this.updateTable();
@@ -221,22 +225,36 @@ class Guard {
                 }
             }
         }
-        cy.add(nodes);
-        cy.add(edges);
-    
-        cy.nodes().on('dblclick', function (event) {
-            showModal(event.target.data());
-        });
-    
-        cy.nodes().on('cxttap', function (event) {
-            const node = event.target;
-            if (node.data('expanded')) {
-                collapseNode(node);
-            } else {
-                expandNode(node);
-            }
-        });
-    
+
+        function flowGraphAppendData(cy,nodes,edges) {
+            cy.add(nodes);
+            cy.add(edges);
+        
+            cy.nodes().each(function(node) {
+
+                if (!node.data('flowGraphEventsAttached')) {
+                    
+                    node.on('dblclick', function (event) {
+                        showModal(event.target.data());
+                    });
+                
+                    node.on('cxttap', function (event) {
+                        const node = event.target;
+                        if (node.data('expanded')) {
+                            collapseNode(node);
+                        } else {
+                            expandNode(node);
+                        }
+                    });
+                    
+                    node.data('flowGraphEventsAttached', true);
+                }
+            });
+
+        }
+        
+        flowGraphAppendData(cy,nodes,edges);
+
         function showModal(nodeData) {
             const modal = new bootstrap.Modal(document.getElementById('nodeDetailModal'), {});
             const metricObj = Processes.metricsGetList().find((o) => o.id == _this.selected_metric);
@@ -248,30 +266,27 @@ class Guard {
             modal.show();
         }
     
-        function expandNode(node) {
+        async function expandNode(node) {
             node.data('expanded', true);
             const area = node.data('area');
             let nodes = [];
             let edges = [];
             for(let composition of area.compositions) {
-                const compo_area = _this.areas.find((area) => area.id == composition.id);
-                if ( compo_area ) {
-                    nodes.push(buildNodeFor(compo_area));
-                } else {
-                    console.warn("should fetch on the remote or local the area", composition.id);
+                let compo_area = _this.areas.find((area) => area.id == composition.id);
+                if ( ! compo_area ) {
+                    compo_area = await Guard.areaFetchAllData({uri: area.uri, id: composition.id});
+                    _this.areas.push(compo_area);
                 }
-                if ( compo_area ) {
-                    for (let trade of compo_area.trades) {
-                        const edge = buildEdgeFor(compo_area,trade);
-                        if ( edge ) {
-                            edges.push(edge);
-                        }
+                nodes.push(buildNodeFor(compo_area));
+                for (let trade of compo_area.trades) {
+                    const edge = buildEdgeFor(compo_area,trade);
+                    if ( edge ) {
+                        edges.push(edge);
                     }
                 }
             }
 
-            cy.add(nodes);
-            cy.add(edges);
+            flowGraphAppendData(cy,nodes,edges);
     
             node.style('background-color', '#ffa500'); // Adjust the color
             cy.layout({ name: 'cose' }).run();
