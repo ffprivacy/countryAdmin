@@ -39,11 +39,16 @@ class Guard {
         document.getElementById("guard-title").innerText = ` - ${currentArea.name}`;
 
         this.areas = [];
-        for(let uri of this.state.area_uris) {
-            const area = await fetchAreaAPI('/area', undefined, uri);
-            area['trades'] = await fetchAreaAPI('/trades', undefined, uri);
-            area['metrics'] = await fetchAreaAPI('/metrics', undefined, uri);
-            area['uri'] = uri;
+        for(let area_uri of this.state.area_uris) {
+            let areaData = {};
+            if ( IS_LOCAL_AREA_REGEX(area_uri) ) {
+                areaData['id'] = parseInt(area_uri);
+            } else {
+                areaData['uri'] = area_uri;
+            }
+            const area = await fetchAreaAPI('/area', undefined, areaData);
+            area['trades'] = await fetchAreaAPI('/trades', undefined, areaData);
+            area['metrics'] = await fetchAreaAPI('/metrics', undefined, areaData);
             this.areas.push(area);
         }
     
@@ -58,7 +63,7 @@ class Guard {
         this.areas.forEach(area => {
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td><a target="_blank" href="${dashboard_area_generate_uri_from_database(area.uri)}">${area.name}</a></td>
+                <td><a target="_blank" href="${area_dashboard_url(area)}">${area.name}</a></td>
                 <td>${area.metrics.flow.output[this.selected_metric]}</td>
                 <td>${area.metrics.resources_depletion[this.selected_metric]}</td>
                 <td><button class="btn btn-primary">Details</button></td>
@@ -253,7 +258,7 @@ class Guard {
                 if ( compo_area ) {
                     nodes.push(buildNodeFor(compo_area));
                 } else {
-                    console.warn("should fetch on the remote or local the area");
+                    console.warn("should fetch on the remote or local the area", composition.id);
                 }
                 if ( compo_area ) {
                     for (let trade of compo_area.trades) {
@@ -314,10 +319,16 @@ function clearPollutionDebt(alert_id, remote_area, emissionEnv=90) {
             }
         }
     }
+    let areaData = {};
+    if ( IS_LOCAL_AREA_REGEX(area_uri) ) {
+        areaData['id'] = parseInt(area_uri);
+    } else {
+        areaData['uri'] = area_uri;
+    }
     fetchAreaAPI('/set_process',{
         method: 'POST',
         body: JSON.stringify(process)
-    },remote_area)
+    },areaData)
     .then(response => {
         const tradeData = {
             remote_host_uri: remote_area,

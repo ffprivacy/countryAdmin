@@ -4,36 +4,16 @@ function IS_LOCAL_AREA_REGEX(uri) {
 function HOME_HOST_URI() {
     return URL.parse(document.location.origin).origin;
 }
-function area_api_generate_from_database(uri=undefined) {
-    if ( uri == undefined ) {
-        if ( AREA_DATA != undefined && AREA_DATA['area_id'] != undefined ) {
-            uri = `${AREA_DATA['area_id']}`;
-        } else {
-            throw "Must provide uri or loadVars";
-        }
-    }
-    if ( IS_LOCAL_AREA_REGEX(uri) ) {
-        return `/api/area/${parseInt(uri)}`;
-    } else {
-        return `${uri}${uri.endsWith("/") ? "" : "/"}api`;
-    } 
-}
-function dashboard_area_generate_uri_from_database(o) {
+function area_dashboard_url(area) {
     let uri = "";
     let path = "dashboard"
     let area_id = null;
     
-    if ( typeof(o) === typeof("") ) {
-        if ( IS_LOCAL_AREA_REGEX(o) ) {
-            area_id = parseInt(o)
-        } else {
-            uri = o
-        }
-    } else if (typeof(o) === typeof({})) {
-        
-        area_id = o.remote_area_id;
-        if ( o.remote_host_uri ) {
-            uri = o.remote_host_uri;
+    if (typeof(area) === typeof({})) {
+
+        area_id = area.id;
+        if ( area.uri ) {
+            uri = area.uri;
         }
 
     } else {
@@ -56,11 +36,32 @@ function JSON_parse(response) {
         });
     });
 }
+function area_api_url(area={}) {
+    let uri = area.uri;
+    let id = area.id;
+    if ( uri == undefined ) {
+        if ( id == undefined ) {
+            if ( AREA_DATA != undefined && AREA_DATA['area_id'] != undefined ) {
+                id = `${AREA_DATA['area_id']}`;
+            } else {
+                throw "Must provide uri or loadVars";
+            }
+        }
+        uri = "";
+    } else {
+        if ( id == undefined ) {
+            id = 1;
+        }
+    }
+    return `${uri}${uri.endsWith("/") ? "" : "/"}api/area/${id}/`;
+}
 /**
  * Query on the API endpoint of the selected API.
  */
-function fetchAreaAPI(path="", parameters=undefined, uri=undefined) {
-    const area_uri = area_api_generate_from_database(uri);
+function fetchAreaAPI(path="", parameters=undefined, area={}) {
+
+    const area_api = area_api_url(area);
+
     if ( parameters == undefined ) {
         parameters = {};
     }
@@ -72,7 +73,10 @@ function fetchAreaAPI(path="", parameters=undefined, uri=undefined) {
     }
     parameters['headers']['Content-Type'] = 'application/json';
     parameters['headers']['Authorization'] = 'Bearer your_access_token';
-    return fetch(`${area_uri}${area_uri.endsWith("/") || path.startsWith("/") ? "" : "/"}${path}`, parameters).then(response => {
+    if ( path.startsWith("/") && area_api.endsWith("/") ) {
+        path = path.substring(1);
+    }
+    return fetch(`${area_api}${path}`, parameters).then(response => {
         if (!response.ok) {
             throw new Error('Network response was not ok');
         }

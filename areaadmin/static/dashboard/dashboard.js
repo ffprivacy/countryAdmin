@@ -232,10 +232,10 @@ function dashboardRefresh() {
 					subzones.innerHTML = '';
 					for(let composition of area.compositions) {
 						const id = composition['id'];
-						let child = await fetchAreaAPI('/area',undefined, `${id}`);
+						let child = await fetchAreaAPI('/area',undefined, {id: id});
 						let childElement = document.createElement('div');
 						childElement.className = "card card-body";
-						let childUri = dashboard_area_generate_uri_from_database("" + id);
+						let childUri = area_dashboard_url(child);
 						childElement.innerHTML = `
 							<div><a href="${childUri}" target="_blank">${child.name}</a></div>
 							<div>${child.description}</div>
@@ -290,9 +290,18 @@ function submitTrade() {
     const homeProcessIds = document.querySelectorAll('input[name="homeProcessId[]"]');
     const homeAmounts = document.querySelectorAll('input[name="homeAmount[]"]');
 	const foreignAreaUri = document.getElementById('trade-initiate-foreign-area-uri').value;
-    const tradeData = {
+    let remote_host_uri, remote_area_id;
+	if ( IS_LOCAL_AREA_REGEX(foreignAreaUri) ) {
+		remote_host_uri = null;
+		remote_area_id = parseInt(foreignAreaUri);
+	} else {
+		remote_host_uri = foreignAreaUri;
+		remote_area_id = 1;
+	}
+	const tradeData = {
         home_processes: [],
-		remote_host_uri: foreignAreaUri
+		remote_host_uri: remote_host_uri,
+		remote_area_id: remote_area_id
     };
 
     homeProcessIds.forEach((input, index) => {
@@ -321,12 +330,12 @@ function fetchTrades() {
         tradesList.innerHTML = '';
         trades.forEach(trade => {
             const listItem = document.createElement('div');
-			const remote_host_uri = dashboard_area_generate_uri_from_database(trade);
+			const remote_dashboard_url = area_dashboard_url({uri: trade.remote_host_uri, id: trade.remote_area_id});
             listItem.className = 'list-group-item';
 			listItem.innerHTML = `
 				<div class="mb-3 card">
 					<div class="card-body">
-						<h5 class="card-title">Trade with <a href="${remote_host_uri}" target="_blank">${remote_host_uri}</a></h5>
+						<h5 class="card-title">Trade with <a href="${remote_dashboard_url}" target="_blank">${remote_dashboard_url}</a></h5>
 						<div class="row">
 							<div class="col-md-6">
 								<h6>Home Area Processes</h6>
