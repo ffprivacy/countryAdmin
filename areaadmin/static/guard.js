@@ -171,7 +171,6 @@ class Guard {
         let nodes = this.areas.map((area) => {
             let metricValue = area.metrics.flow.output[this.selected_metric] - area.metrics.flow.input[this.selected_metric];
             metricValue = isNaN(metricValue) ? 0 : metricValue < 0 ? 0 : metricValue;
-            console.warn(metricValue, Math.log(metricValue + 1), (metricValue + 1));
             return {
                 data: {
                     id: genGraphId(area.uri, area.id),
