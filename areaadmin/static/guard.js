@@ -160,20 +160,30 @@ class Guard {
             }
         }
     
+        const zoom = d3.zoom()
+            .scaleExtent([1, 10])
+            .on('zoom', (event) => {
+                svgGroup.attr('transform', event.transform);
+            });
+    
+        svg.call(zoom);
+    
+        const svgGroup = svg.append('g');
+    
         const simulation = d3.forceSimulation(nodes)
             .force('link', d3.forceLink(graphEdges).id(d => d.id).distance(150))
             .force('charge', d3.forceManyBody().strength(-50))
             .force('center', d3.forceCenter(width / 2, height / 2))
             .force('collision', d3.forceCollide().radius(d => d.radius + 5));
     
-        const link = svg.append('g')
+        const link = svgGroup.append('g')
             .attr('stroke', '#999')
             .selectAll('line')
             .data(graphEdges)
             .join('line')
             .attr('stroke-width', d => d.value * 0.1);
     
-        const node = svg.append('g')
+        const node = svgGroup.append('g')
             .attr('stroke', '#fff')
             .attr('stroke-width', 1.5)
             .selectAll('circle')
@@ -181,7 +191,10 @@ class Guard {
             .join('circle')
             .attr('r', d => isNaN(d.radius) ? 0 : d.radius )
             .attr('fill', this.flowGraphColorNode)
-            .call(this.flowGraphDrag(simulation))
+            .call(d3.drag()
+                .on('start', dragstarted)
+                .on('drag', dragged)
+                .on('end', dragended))
             .on('click', function(event, d) {
                 showModal(d);
             });
@@ -201,22 +214,6 @@ class Guard {
                 .attr('cy', d => d.y);
         });
     
-        function showModal(nodeData) {
-            const modal = new bootstrap.Modal(document.getElementById('nodeDetailModal'), {});
-            document.getElementById('nodeDetailModalLabel').innerText = `Node Details: ${nodeData.name}`;
-            document.getElementById('nodeDetailModalBody').innerHTML = `
-                <p><strong>Name:</strong> <a href="${dashboard_area_generate_uri_from_database(nodeData.area.uri)}" target="_blank">${nodeData.name}</a></p>
-                <p><strong>Metric relative strength:</strong> ${nodeData.radius}</p>
-            `;
-            modal.show();
-        }
-    }
-
-    flowGraphColorNode(d) {
-        return d.radius > 20 ? '#ff7f0e' : '#1f77b4';
-    }
-
-    flowGraphDrag(simulation) {
         function dragstarted(event) {
             if (!event.active) simulation.alphaTarget(0.3).restart();
             event.subject.fx = event.subject.x;
@@ -234,12 +231,16 @@ class Guard {
             event.subject.fy = null;
         }
     
-        return d3.drag()
-            .on('start', dragstarted)
-            .on('drag', dragged)
-            .on('end', dragended);
+        function showModal(nodeData) {
+            const modal = new bootstrap.Modal(document.getElementById('nodeDetailModal'), {});
+            document.getElementById('nodeDetailModalLabel').innerText = `Node Details: ${nodeData.name}`;
+            document.getElementById('nodeDetailModalBody').innerHTML = `
+                <p><strong>Name:</strong> <a href="${dashboard_area_generate_uri_from_database(nodeData.area.uri)}" target="_blank">${nodeData.name}</a></p>
+                <p><strong>Metric relative strength:</strong> ${nodeData.radius}</p>
+            `;
+            modal.show();
+        }
     }
-
 }
 
 const guard = new Guard()
