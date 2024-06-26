@@ -12,6 +12,7 @@ class Guard {
         const area = await fetchAreaAPI('/area', undefined, areaData);
         area['trades'] = await fetchAreaAPI('/trades', undefined, areaData);
         area['metrics'] = await fetchAreaAPI('/metrics', undefined, areaData);
+        area['processes'] = await fetchAreaAPI('/processes', undefined, areaData);
         return area;
     }
 
@@ -131,7 +132,21 @@ class Guard {
     
     }
 
+    async area_retrieve(uri, id) {
+        let area = this.areas.find((area) => area.id == id);
+        if ( ! area ) {
+            area = await Guard.areaFetchAllData({uri: uri, id: id});
+            this.areas.push(area);
+        }
+        return area;
+    }
+
+    area_net_flow(area, metric) {
+        return area.metrics.flow.output[metric] - area.metrics.flow.input[metric];
+    }
+
     async flowGraphUpdate() {
+
         const title = document.getElementById("flowGraphTitle");
         const metricObj = Processes.metricsGetList().find((o) => o.id == this.selected_metric);
         title.innerHTML = `
@@ -184,7 +199,7 @@ class Guard {
         }
 
         function buildNodeFor(area) {
-            let metricValue = area.metrics.flow.output[_this.selected_metric] - area.metrics.flow.input[_this.selected_metric];
+            let metricValue = Guard.area_net_flow(area, _this.selected_metric);
             metricValue = isNaN(metricValue) ? 0 : metricValue < 0 ? 0 : metricValue;
             return {
                 data: {
@@ -206,6 +221,8 @@ class Guard {
             ) {
                 const sourceId = genGraphId(area.uri, area.id);
                 const targetId = genGraphId(trade.remote_host_uri, trade.remote_area_id);
+
+                // should set a weight based on processes
                 return { data: { source: sourceId, target: targetId } };
             }
         }
@@ -263,7 +280,7 @@ class Guard {
             `;
             modal.show();
         }
-    
+
         async function expandNode(node) {
             node.data('expanded', true);
             const area = node.data('area');
@@ -271,11 +288,7 @@ class Guard {
             let edges = [];
             const node_id = node.id();
             for(let composition of area.compositions) {
-                let compo_area = _this.areas.find((area) => area.id == composition.id);
-                if ( ! compo_area ) {
-                    compo_area = await Guard.areaFetchAllData({uri: area.uri, id: composition.id});
-                    _this.areas.push(compo_area);
-                }
+                const child_area = await _this.area_retrieve(area.uri, composition.id);
                 const newNode = buildNodeFor(compo_area);
                 newNode.data.parent = node_id;
                 nodes.push(newNode);
