@@ -178,7 +178,7 @@ class Guard {
             }
         }
 
-        function nodeFromArea(area) {
+        function buildNodeFor(area) {
             let metricValue = area.metrics.flow.output[_this.selected_metric] - area.metrics.flow.input[_this.selected_metric];
             metricValue = isNaN(metricValue) ? 0 : metricValue < 0 ? 0 : metricValue;
             return {
@@ -193,24 +193,26 @@ class Guard {
             }
         }
 
-        function edgeFromAreaTrade(area,trade) {
-            const sourceId = genGraphId(area.uri, area.id);
-            const targetId = genGraphId(trade.remote_host_uri, trade.remote_area_id);
-            return { data: { source: sourceId, target: targetId } };
+        function buildEdgeFor(area,trade) {
+            if ( area.id == trade.home_area_id || area.id == trade.remote_area_id 
+                || parseInt(area.uri) == trade.home_area_id || parseInt(area.uri) == trade.remote_area_id) {
+                const sourceId = genGraphId(area.uri, area.id);
+                const targetId = genGraphId(trade.remote_host_uri, trade.remote_area_id);
+                return { data: { source: sourceId, target: targetId } };
+            }
         }
 
         let nodes = [];
         let edges = [];
         for (let area of this.areas) {
-            nodes.push(nodeFromArea(area));
+            nodes.push(buildNodeFor(area));
             for (let trade of area.trades) {
-                const edge = edgeFromAreaTrade(area,trade);
+                const edge = buildEdgeFor(area,trade);
                 if ( edge ) {
                     edges.push(edge);
                 }
             }
         }
-        console.warn(nodes, edges);
         cy.add(nodes);
         cy.add(edges);
     
@@ -241,19 +243,18 @@ class Guard {
         function expandNode(node) {
             node.data('expanded', true);
             const area = node.data('area');
-            const compositions = area.compositions;
             let nodes = [];
             let edges = [];
             for(let composition of area.compositions) {
                 const compo_area = _this.areas.find((area) => area.id == composition.id);
                 if ( compo_area ) {
-                    nodes.push(nodeFromArea(compo_area));
+                    nodes.push(buildNodeFor(compo_area));
                 } else {
                     console.warn("should fetch on the remote or local the area");
                 }
                 if ( compo_area ) {
                     for (let trade of compo_area.trades) {
-                        const edge = edgeFromAreaTrade(compo_area,trade);
+                        const edge = buildEdgeFor(compo_area,trade);
                         if ( edge ) {
                             edges.push(edge);
                         }
