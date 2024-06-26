@@ -262,7 +262,7 @@ function attachSelectedEvent() {
 			event.stopPropagation();
 						
 			const formData = new FormData(this);
-			fetchAreaAPI(this.action, {
+			fetchAreaAPI("/set_process", {
 				method: 'POST',
 				body: formData
 			})
