@@ -133,7 +133,7 @@ class Guard {
     }
 
     async area_retrieve(uri, id) {
-        let area = this.areas.find((area) => area.id == id);
+        let area = this.areas.find((area) => area.id == id && area.uri == uri);
         if ( ! area ) {
             area = await Guard.areaFetchAllData({uri: uri, id: id});
             this.areas.push(area);
@@ -213,13 +213,13 @@ class Guard {
                 return `${area_id}`;
             } else if (area_id == null || area_id == undefined) {
                 if ( uri_parsed != null && uri_parsed.origin == HOME_HOST_URI() ) {
-                    return '1';
+                    return `${uri} - 1`;
                 } else {
                     return `${uri}`;
                 }
             } else {
                 if ( URL.parse(uri).origin == HOME_HOST_URI() ) {
-                    return `${area_id}`;
+                    return `${HOME_HOST_URI()} - ${area_id}`;
                 } else {
                     return `${uri} - ${area_id}`;
                 }
@@ -275,7 +275,7 @@ class Guard {
 
             edges = edges.filter(edge => nodeIds.has(edge.data.source) && nodeIds.has(edge.data.target));
             cy.add(edges);
-        
+
             cy.nodes().each(function(node) {
 
                 if (!node.data('flowGraphEventsAttached')) {
