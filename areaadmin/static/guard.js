@@ -126,17 +126,37 @@ class Guard {
         return d.radius > 20 ? '#ff7f0e' : '#1f77b4';
     }
     
-    flowGraphUpdate() {
-        const svg = d3.select('#flowGraph');
-        svg.selectAll('*').remove();
+    async flowGraphUpdate() {
         const title = document.getElementById("flowGraphTitle");
         const metricObj = Processes.metricsGetList().find((o) => o.id == this.selected_metric);
         title.innerHTML = `
             <h3><img src="/static/${metricObj == undefined ? '' : metricObj.icon}" class="ms-2" style="max-width: 50px;" />${this.selected_metric} flow and amount per area</h3>
         `;
     
-        const width = +svg.attr('width');
-        const height = +svg.attr('height');
+        const cy = cytoscape({
+            container: document.getElementById('flowGraph'),
+            style: [
+                {
+                    selector: 'node',
+                    style: {
+                        'background-color': '#1f77b4',
+                        'label': 'data(name)',
+                        'width': 'mapData(radius, 0, 10, 10, 50)',
+                        'height': 'mapData(radius, 0, 10, 10, 50)'
+                    }
+                },
+                {
+                    selector: 'edge',
+                    style: {
+                        'width': 2,
+                        'line-color': '#999'
+                    }
+                }
+            ],
+            layout: {
+                name: 'cose'
+            }
+        });
     
         function genGraphId(uri, area_id) {
             if (uri == null || uri == undefined) {
@@ -148,114 +168,52 @@ class Guard {
             }
         }
     
-        let nodes = this.areas.map((area, index) => ({
-            id: genGraphId(area.uri, area.id),
-            radius: area.metrics.flow.output[this.selected_metric] - area.metrics.flow.input[this.selected_metric],
-            metricValue: area.metrics.flow.output[this.selected_metric] - area.metrics.flow.input[this.selected_metric],
-            name: area.name,
-            area: area,
-            expanded: false
-        }));
+        let nodes = this.areas.map((area) => {
+            let metricValue = area.metrics.flow.output[this.selected_metric] - area.metrics.flow.input[this.selected_metric];
+            metricValue = isNaN(metricValue) ? 0 : metricValue < 0 ? 0 : metricValue;
+            console.warn(metricValue, Math.log(metricValue + 1), (metricValue + 1));
+            return {
+                data: {
+                    id: genGraphId(area.uri, area.id),
+                    name: area.name,
+                    radius: Math.log(metricValue + 1),
+                    metricValue: metricValue,
+                    area: area
+                },
+                position: { x: Math.random() * 800, y: Math.random() * 600 }
+            }
+        });
     
-        const maxRadius = d3.max(nodes, d => d.radius);
-        nodes.forEach(node => node.radius = Math.log(node.radius + 1) / Math.log(maxRadius + 1) * 10);
+        let nodeIds = new Set(nodes.map(node => node.data.id));
     
-        let nodeIds = new Set(nodes.map(node => node.id));
-    
-        let graphEdges = [];
+        let edges = [];
         for (let area of this.areas) {
             for (let trade of area.trades) {
                 const sourceId = genGraphId(area.uri, area.id);
                 const targetId = genGraphId(trade.remote_host_uri, trade.remote_area_id);
     
                 if (nodeIds.has(sourceId) && nodeIds.has(targetId)) {
-                    graphEdges.push({
-                        source: sourceId,
-                        target: targetId,
-                        value: 2
-                    });
+                    edges.push({ data: { source: sourceId, target: targetId } });
                 }
             }
         }
     
-        const zoom = d3.zoom()
-            .scaleExtent([1, 10])
-            .on('zoom', (event) => {
-                svgGroup.attr('transform', event.transform);
-            });
+        cy.add(nodes);
+        cy.add(edges);
     
-        svg.call(zoom);
-    
-        const svgGroup = svg.append('g');
-    
-        let simulation = d3.forceSimulation(nodes)
-            .force('link', d3.forceLink(graphEdges).id(d => d.id).distance(150))
-            .force('charge', d3.forceManyBody().strength(-50))
-            .force('center', d3.forceCenter(width / 2, height / 2))
-            .force('collision', d3.forceCollide().radius(d => d.radius + 5));
-    
-        let link = svgGroup.append('g')
-            .attr('stroke', '#999')
-            .selectAll('line')
-            .data(graphEdges)
-            .join('line')
-            .attr('stroke-width', d => d.value * 0.1);
-    
-        let node = svgGroup.append('g')
-            .attr('stroke', '#fff')
-            .attr('stroke-width', 1.5)
-            .selectAll('circle')
-            .data(nodes)
-            .join('circle')
-            .attr('r', d => isNaN(d.radius) ? 0 : d.radius)
-            .attr('fill', Guard.flowGraphColorNode)
-            .call(d3.drag()
-                .on('start', dragstarted)
-                .on('drag', dragged)
-                .on('end', dragended))
-            .on('dblclick', function(event, d) {
-                showModal(d);
-            })
-            .on('contextmenu', function(event, d) {
-                event.preventDefault();
-                if (d.expanded) {
-                    collapseNode(d);
-                } else {
-                    expandNode(d);
-                }
-            });
-    
-        node.append('title')
-            .text(d => d.name);
-    
-        simulation.on('tick', () => {
-            link
-                .attr('x1', d => d.source.x)
-                .attr('y1', d => d.source.y)
-                .attr('x2', d => d.target.x)
-                .attr('y2', d => d.target.y);
-    
-            node
-                .attr('cx', d => d.x)
-                .attr('cy', d => d.y);
+        cy.nodes().on('dblclick', function (event) {
+            console.warn(event);
+            showModal(event.target.data());
         });
     
-        function dragstarted(event) {
-            if (!event.active) simulation.alphaTarget(0.3).restart();
-            event.subject.fx = event.subject.x;
-            event.subject.fy = event.subject.y;
-        }
-    
-        function dragged(event) {
-            event.subject.fx = event.x;
-            event.subject.fy = event.y;
-        }
-    
-        function dragended(event) {
-            if (!event.active) simulation.alphaTarget(0);
-            event.subject.fx = null;
-            event.subject.fy = null;
-        }
+        cy.nodes().on('cxttap', function (event) {
+            const node = event.target;
+            if (node.data('expanded')) {
+                collapseNode(node);
+            } else {
+                expandNode(node);
+            }
+        });
     
         const this_selected_metric = this.selected_metric;
         function showModal(nodeData) {
@@ -263,79 +221,44 @@ class Guard {
             const metricObj = Processes.metricsGetList().find((o) => o.id == this_selected_metric);
             document.getElementById('nodeDetailModalLabel').innerText = `Area ${nodeData.name} - ${metricObj.label}:`;
             document.getElementById('nodeDetailModalBody').innerHTML = `
-                <p><strong>Name:</strong> <a href="${dashboard_area_generate_uri_from_database(nodeData.area.uri)}" target="_blank">${nodeData.name}</a></p>
-                <p><strong>${metricObj.label}:</strong> ${nodeData.metricValue} ${metricObj.unit}</p>
+                <p><strong>Name:</strong> ${nodeData.name}</p>
+                <p><strong>${metricObj.label}:</strong> ${nodeData.radius}</p>
             `;
             modal.show();
         }
     
-        function expandNode(nodeData) {
-            nodeData.expanded = true;
-            const compositions = nodeData.area.compositions;
-            const newNodes = compositions.map(compo => ({
-                id: genGraphId(null, compo.id),
-                radius: 10,
-                metricValue: 10,
-                name: `Compo ${compo.id}`,
-                area: nodeData.area,
-                expanded: false
+        function expandNode(node) {
+            node.data('expanded', true);
+            const compositions = node.data('area').compositions;
+            const newNodes = compositions.map((compo, index) => ({
+                data: {
+                    id: genGraphId(null, compo.id),
+                    name: `Compo ${compo.id}`,
+                    radius: 5
+                },
+                position: { x: node.position().x + (index * 20), y: node.position().y + (index * 20) },
+                classes: 'composition'
             }));
-            nodes = nodes.concat(newNodes);
-            nodeIds = new Set(nodes.map(node => node.id));
-            simulation.nodes(nodes);
     
+            cy.add(newNodes);
             const newEdges = newNodes.map(newNode => ({
-                source: nodeData.id,
-                target: newNode.id,
-                value: 2
+                data: {
+                    source: node.id(),
+                    target: newNode.data.id
+                }
             }));
-            graphEdges = graphEdges.concat(newEdges);
-            simulation.force('link').links(graphEdges);
     
-            updateGraph();
+            cy.add(newEdges);
+            node.style('background-color', '#ffa500'); // Adjust the color
+            cy.layout({ name: 'cose' }).run();
         }
     
-        function collapseNode(nodeData) {
-            nodeData.expanded = false;
-            const compositions = nodeData.area.compositions.map(compo => genGraphId(null, compo.id));
-            nodes = nodes.filter(node => !compositions.includes(node.id));
-            nodeIds = new Set(nodes.map(node => node.id));
-            simulation.nodes(nodes);
-    
-            graphEdges = graphEdges.filter(edge => edge.source.id !== nodeData.id && !compositions.includes(edge.target.id));
-            simulation.force('link').links(graphEdges);
-    
-            updateGraph();
-        }
-    
-        function updateGraph() {
-            link = link.data(graphEdges);
-            link.exit().remove();
-            link = link.enter().append('line').attr('stroke-width', d => d.value * 0.1).merge(link);
-    
-            node = node.data(nodes);
-            node.exit().remove();
-            node = node.enter().append('circle')
-                .attr('r', d => isNaN(d.radius) ? 0 : d.radius)
-                .attr('fill', Guard.flowGraphColorNode)
-                .call(d3.drag()
-                    .on('start', dragstarted)
-                    .on('drag', dragged)
-                    .on('end', dragended))
-                .on('dblclick', function(event, d) {
-                    showModal(d);
-                })
-                .on('contextmenu', function(event, d) {
-                    event.preventDefault();
-                    if (d.expanded) {
-                        collapseNode(d);
-                    } else {
-                        expandNode(d);
-                    }
-                })
-                .merge(node);
-    
-            simulation.alpha(1).restart();
+        function collapseNode(node) {
+            node.data('expanded', false);
+            const compositions = node.data('area').compositions.map(compo => genGraphId(null, compo.id));
+            cy.remove(cy.nodes().filter(n => compositions.includes(n.id())));
+            node.style('background-color', '#1f77b4'); // Restore the original color
+            cy.layout({ name: 'cose' }).run();
         }
     }
 
