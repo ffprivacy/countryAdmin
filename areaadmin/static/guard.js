@@ -145,6 +145,17 @@ class Guard {
         return area.metrics.flow.output[metric] - area.metrics.flow.input[metric];
     }
 
+    flowGraphShowModal(nodeData) {
+        const modal = new bootstrap.Modal(document.getElementById('nodeDetailModal'), {});
+        const metricObj = Processes.metricsGetList().find((o) => o.id == this.selected_metric);
+        document.getElementById('nodeDetailModalLabel').innerText = `Area ${nodeData.name} - ${metricObj.label}:`;
+        document.getElementById('nodeDetailModalBody').innerHTML = `
+            <p><strong>Name:</strong> ${nodeData.name}</p>
+            <p><strong>${metricObj.label}:</strong> ${nodeData.metricValue} ${metricObj.unit}</p>
+        `;
+        modal.show();
+    }
+
     async flowGraphUpdate() {
 
         const title = document.getElementById("flowGraphTitle");
@@ -199,7 +210,7 @@ class Guard {
         }
 
         function buildNodeFor(area) {
-            let metricValue = Guard.area_net_flow(area, _this.selected_metric);
+            let metricValue = _this.area_net_flow(area, _this.selected_metric);
             metricValue = isNaN(metricValue) ? 0 : metricValue < 0 ? 0 : metricValue;
             return {
                 data: {
@@ -241,6 +252,11 @@ class Guard {
 
         function flowGraphAppendData(cy,nodes,edges) {
             cy.add(nodes);
+            let newNodeIds = new Set(nodes.map(node => node.data.id));
+            let existingNodeIds = new Set(cy.nodes().map(node => node.id()));
+            let nodeIds = new Set([...existingNodeIds, ...newNodeIds]);
+
+            edges = edges.filter(edge => nodeIds.has(edge.data.source) && nodeIds.has(edge.data.target));
             cy.add(edges);
         
             cy.nodes().each(function(node) {
@@ -250,7 +266,7 @@ class Guard {
                     node.on('dblclick', function (event) {
                         event.stopPropagation();
                         event.preventDefault();
-                        showModal(event.target.data());
+                        _this.flowGraphShowModal(event.target.data());
                     });
                 
                     node.on('cxttap', function (event) {
@@ -270,17 +286,6 @@ class Guard {
         
         flowGraphAppendData(cy,nodes,edges);
 
-        function showModal(nodeData) {
-            const modal = new bootstrap.Modal(document.getElementById('nodeDetailModal'), {});
-            const metricObj = Processes.metricsGetList().find((o) => o.id == _this.selected_metric);
-            document.getElementById('nodeDetailModalLabel').innerText = `Area ${nodeData.name} - ${metricObj.label}:`;
-            document.getElementById('nodeDetailModalBody').innerHTML = `
-                <p><strong>Name:</strong> ${nodeData.name}</p>
-                <p><strong>${metricObj.label}:</strong> ${nodeData.metricValue} ${metricObj.unit}</p>
-            `;
-            modal.show();
-        }
-
         async function expandNode(node) {
             node.data('expanded', true);
             const area = node.data('area');
@@ -289,17 +294,17 @@ class Guard {
             const node_id = node.id();
             for(let composition of area.compositions) {
                 const child_area = await _this.area_retrieve(area.uri, composition.id);
-                const newNode = buildNodeFor(compo_area);
+                const newNode = buildNodeFor(child_area);
                 newNode.data.parent = node_id;
                 nodes.push(newNode);
-                for (let trade of compo_area.trades) {
-                    const edge = buildEdgeFor(compo_area,trade);
+                for (let trade of child_area.trades) {
+                    const edge = buildEdgeFor(child_area,trade);
                     if ( edge ) {
                         edges.push(edge);
                     }
                 }
             }
-
+            console.warn(cy,nodes,edges);
             flowGraphAppendData(cy,nodes,edges);
     
             node.style('background-color', '#ffa500'); // Adjust the color
@@ -308,7 +313,8 @@ class Guard {
     
         function collapseNode(node) {
             node.data('expanded', false);
-            const compositions = node.data('area').compositions.map(compo => genGraphId(null, compo.id));
+            const area = node.data('area');
+            const compositions = area.compositions.map(compo => genGraphId(area.uri, compo.id));
             cy.remove(cy.nodes().filter(n => compositions.includes(n.id())));
             node.style('background-color', '#1f77b4'); // Restore the original color
             cy.layout({ name: 'cose' }).run();
