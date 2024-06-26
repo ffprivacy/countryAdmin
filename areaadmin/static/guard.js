@@ -195,7 +195,10 @@ class Guard {
 
         function buildEdgeFor(area,trade) {
             if ( area.id == trade.home_area_id || area.id == trade.remote_area_id 
-                || parseInt(area.uri) == trade.home_area_id || parseInt(area.uri) == trade.remote_area_id) {
+                || IS_LOCAL_AREA_REGEX(area.uri) && ( 
+                    parseInt(area.uri) == trade.home_area_id || parseInt(area.uri) == trade.remote_area_id
+                )
+            ) {
                 const sourceId = genGraphId(area.uri, area.id);
                 const targetId = genGraphId(trade.remote_host_uri, trade.remote_area_id);
                 return { data: { source: sourceId, target: targetId } };
@@ -353,7 +356,6 @@ document.getElementById('refresh-btn').addEventListener('click', function() {
 document.addEventListener('DOMContentLoaded', async () => {
     const metrics = await Processes.fetchMetricsGetList();
     const selectElement = document.getElementById('metric-select');
-    selectElement.value = 'envEmissions';
 
     selectElement.innerHTML = '';
 
@@ -363,6 +365,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         option.textContent = metric.id;
         selectElement.appendChild(option);
     });
+    selectElement.value = 'envEmissions';
+    guard.selected_metric = selectElement.value;
     guard.refresh();
 });
 
