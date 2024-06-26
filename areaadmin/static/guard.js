@@ -118,11 +118,11 @@ class Guard {
             }
         }
     
-        this.updateGraph();
+        this.flowGraphUpdate();
     
     }
     
-    updateGraph() {
+    flowGraphUpdate() {
         const svg = d3.select('#graphSvg');
         svg.selectAll('*').remove();
     
@@ -144,6 +144,14 @@ class Guard {
             radius: area.metrics.flow.output[this.selected_metric]
         }));
 
+        const x = d3.scaleLog()
+            .domain([1, d3.max(nodes, d => d.radius)])
+            .range([0, width]);
+
+        const y = d3.scaleLog()
+            .domain([1, d3.max(nodes, d => d.radius)])
+            .range([height, 0]);
+            
         const graphEdges = [];
         for(let area of this.areas) {
             for(let trade of area.trades) {
@@ -173,31 +181,31 @@ class Guard {
             .selectAll('circle')
             .data(nodes)
             .join('circle')
-            .attr('r', d => d.radius)
-            .attr('fill', this.colorNode)
-            .call(this.drag(simulation));
+            .attr('r', d => x(d.radius))
+            .attr('fill', this.flowGraphColorNode)
+            .call(this.flowGraphDrag(simulation));
 
         node.append('title')
             .text(d => d.id);
     
         simulation.on('tick', () => {
             link
-                .attr('x1', d => d.source.x)
-                .attr('y1', d => d.source.y)
-                .attr('x2', d => d.target.x)
-                .attr('y2', d => d.target.y);
+                .attr('x1', d => x(d.source.x))
+                .attr('y1', d => y(d.source.y))
+                .attr('x2', d => x(d.target.x))
+                .attr('y2', d => y(d.target.y));
     
             node
-                .attr('cx', d => d.x)
-                .attr('cy', d => d.y);
+                .attr('cx', d => x(d.x))
+                .attr('cy', d => y(d.y));
         });
     }
 
-    colorNode(d) {
+    flowGraphColorNode(d) {
         return d.radius > 20 ? '#ff7f0e' : '#1f77b4';
     }
 
-    drag(simulation) {
+    flowGraphDrag(simulation) {
         function dragstarted(event) {
             if (!event.active) simulation.alphaTarget(0.3).restart();
             event.subject.fx = event.subject.x;
