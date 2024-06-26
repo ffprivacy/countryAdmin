@@ -41,6 +41,7 @@ class Guard {
         this.areas = [];
         for(let uri of this.state.area_uris) {
             const area = await fetchAreaAPI('/area', undefined, uri);
+            area['trades'] = await fetchAreaAPI('/trades', undefined, uri);
             area['metrics'] = await fetchAreaAPI('/metrics', undefined, uri);
             area['uri'] = uri;
             this.areas.push(area);
@@ -128,25 +129,41 @@ class Guard {
         const width = +svg.attr('width');
         const height = +svg.attr('height');
     
+        function genGraphId(uri, area_id) {
+            if ( uri == null || uri == undefined ) {
+                return `${area_id}`;
+            } else if ( area_id == null || area_id == undefined ) {
+                return `${uri}`;
+            } else {
+                return `${uri} - ${area_id}`;
+            }
+        }
+
         const nodes = this.areas.map((area, index) => ({
-            id: area.name,
+            id: genGraphId(area.uri, area.id),
             radius: area.metrics.flow.output[this.selected_metric]
         }));
-    
-        const links = [];
-        /*areaData.map((area, index) => {
-            return {source: area.name, target: area.name, value: area.metrics.flow.output[this.selected_metric]};
-        });*/
+
+        const graphEdges = [];
+        for(let area of this.areas) {
+            for(let trade of area.trades) {
+                graphEdges.push({
+                    source: genGraphId(area.uri,area.id), 
+                    target: genGraphId(trade.remote_host_uri,trade.remote_area_id),
+                    value: 2
+                })
+            }
+        }
     
         const simulation = d3.forceSimulation(nodes)
-            .force('link', d3.forceLink(links).id(d => d.id).distance(200))
+            .force('link', d3.forceLink(graphEdges).id(d => d.id).distance(200))
             .force('charge', d3.forceManyBody().strength(-400))
             .force('center', d3.forceCenter(width / 2, height / 2));
     
         const link = svg.append('g')
             .attr('stroke', '#999')
             .selectAll('line')
-            .data(links)
+            .data(graphEdges)
             .join('line')
             .attr('stroke-width', d => d.value * 0.1);
     
