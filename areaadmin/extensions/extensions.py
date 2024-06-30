@@ -16,6 +16,7 @@ def process_import(process):
 def list_modules():
     available_modules = {
         'lowtechlab': 'https://wiki.lowtechlab.org/wiki/Explore',
+        'localfile': ''
     }
     print("Available modules:")
     for module, description in available_modules.items():
@@ -26,13 +27,14 @@ def main():
     parser.add_argument('command', help='Command to execute')
     parser.add_argument('module', nargs='?', help='Name of the module')
     
-    args = parser.parse_args()
+    args, unknown_args = parser.parse_known_args()
 
     command = args.command
 
     if command == "import":
+        modName = f"areaadmin.extensions.{args.module}"
         try:
-            module = importlib.import_module(args.module)
+            module = importlib.import_module(modName)
         except ImportError:
             print(f"Module '{args.module}' not found")
             sys.exit(1)
@@ -42,7 +44,7 @@ def main():
             print(f"Function '{args.extension_get_processes}' not found in module '{args.module}'")
             sys.exit(1)
         
-        processes = extension_get_processes()
+        processes = extension_get_processes(*sys.argv[3:])
         for process in processes:
             process_import(process)
 

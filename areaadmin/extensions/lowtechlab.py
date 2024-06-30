@@ -53,7 +53,7 @@ def fetch_tutorials(url):
     return tutorials
 
 
-def extension_get_processes():
+def extension_get_processes(*args):
     explore_url = 'https://wiki.lowtechlab.org/wiki/Explore?page=1'
     tutorials_list = fetch_tutorials(explore_url)
 
