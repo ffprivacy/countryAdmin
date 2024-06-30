@@ -2,29 +2,25 @@ import requests
 from bs4 import BeautifulSoup
 
 def extractMetric(soup, metric="money"):
-    # Find the element using a CSS selector and navigate two levels up in the DOM
-    value_container = soup.select_one(".tuto-details-box .fa-money")
+    value_container = soup.select_one(f".tuto-details-box .fa-{metric}")
     if value_container:
         grandparent = value_container.parent.parent
         
-        # Now find the desired data container using another CSS selector
         target = grandparent.select_one(".tuto-items-details-container-right")
         if target:
-            # Extract the numeric part, assuming it is prefixed with the currency and space
             value_text = target.text.strip()
             number_part = value_text.split(" ")[0].replace(',', '.')
             try:
-                # Convert the extracted number part to float
                 return float(number_part)
             except ValueError:
-                # Handle cases where conversion to float fails
                 return None
     return None
 
 def fetchDetails(url):
     response = requests.get(url)
     soup = BeautifulSoup(response.text, 'html.parser')    
-    return {'cost': extractMetric(soup, "money"), 'duration': extractMetric(soup, "clock")}
+    description = soup.select_one(".tuto-details-about-title")
+    return {'cost': extractMetric(soup, "money"), 'duration': extractMetric(soup, "clock-o"), "description": description}
 
 def fetch_tutorials(url):
     tutorials = []
@@ -40,7 +36,11 @@ def fetch_tutorials(url):
             if href and title:
                 tutorial_url = f'https://wiki.lowtechlab.org{href}'
                 details = fetchDetails(tutorial_url)
-                tutorials.append({'title': title, 'url': tutorial_url, 'cost': details['cost'], 'duration': details['duration']})
+                tutorials.append({
+                    'title': title, 'url': tutorial_url, 
+                    'description': details['description'],
+                    'cost': details['cost'], 'duration': details['duration']
+                })
         
         next_page = soup.find('a', text='Load more')
         if next_page:
@@ -49,8 +49,6 @@ def fetch_tutorials(url):
             break
 
     return tutorials
-
-import requests
 
 def post_tutorial_to_endpoint(tutorial):
     endpoint_url = 'http://127.0.0.1:5000/api/set_process'

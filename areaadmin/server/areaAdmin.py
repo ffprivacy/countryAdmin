@@ -83,7 +83,8 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
     class Process(db.Model):
         id = DB.Column(DB.Integer, primary_key=True)
-        title = DB.Column(DB.String(100))  # Add title attribute
+        title = DB.Column(DB.String, default="")
+        description = DB.Column(DB.String, default="")
         composition = db.relationship('Composition', backref='process', lazy=True)
         tags = db.relationship('ProcessTag', back_populates='process')
         tags_names = association_proxy('tags', 'tag.name')
@@ -445,11 +446,12 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 'resources_depletion': resources_depletion
             }
         
-        def toJson(self):
+        def toJson(self, deep=False):
             processes = [{
                 'id': pu.process_id,
                 'title': pu.process.title,
-                'usage_count': pu.usage_count
+                'usage_count': pu.usage_count,
+                **({'metrics': pu.process.metrics, 'description': pu.process.description} if deep else {})
             } for pu in self.process_usages]
 
             compositions = [{'id': composition.child_id} for composition in self.compositions]
@@ -508,7 +510,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                     data['id'] = id
                 return jsonify(Area.set_area_data(data))
             elif request.method == 'GET':
-                return jsonify(area.toJson())
+                return jsonify(area.toJson(request.args.get('deep', False)))
             elif request.method == 'DELETE':
                 Area.query.get(id).delete()
                 db.session.commit()
