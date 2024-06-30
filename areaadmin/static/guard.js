@@ -36,7 +36,7 @@ class Guard {
                     console.warn("no amount provided");
                 } else {
                     alertElement.innerHTML += `
-                        <button onclick="clearPollutionDebt(${alert.id},'${alert.area}',${amount})" class="btn btn-primary mt-2">Clear the debt</div>
+                        <button onclick="clearPollutionDebt(${alert.id},'${alert.area.uri}',${alert.area.id},${amount})" class="btn btn-primary mt-2">Clear the debt</div>
                     `;
                 }
             }
@@ -354,7 +354,7 @@ function guardClearAlerts() {
         guard.refresh()
     })
 }
-function clearPollutionDebt(alert_id, remote_area, emissionEnv=90) {
+function clearPollutionDebt(alert_id, remote_area_uri, remote_area_id, emissionEnv=90) {
     const process = {
         title: 'Remote area has capability and proposed to absorbe your emissions',
         description: 'Clear your emissions debt (overpollution)',
@@ -369,19 +369,14 @@ function clearPollutionDebt(alert_id, remote_area, emissionEnv=90) {
             }
         }
     }
-    let areaData = {};
-    if ( IS_LOCAL_AREA_REGEX(area_uri) ) {
-        areaData['id'] = parseInt(area_uri);
-    } else {
-        areaData['uri'] = area_uri;
-    }
     fetchAreaAPI('/set_process',{
         method: 'POST',
         body: JSON.stringify(process)
-    },areaData)
+    },{'uri': remote_area_uri, 'id': remote_area_id})
     .then(response => {
         const tradeData = {
-            remote_host_uri: remote_area,
+            remote_host_uri: remote_area_uri,
+            remote_area_id: remote_area_id,
             remote_processes: response.processes.map(obj => ({id: obj.id, amount: 1}))
         };
         fetchAreaAPI('/trade',{

@@ -980,7 +980,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                         'id': alert.id,
                         'title': alert.title,
                         'description': alert.description,
-                        'area': alert.area,
+                        'area': { 'uri': alert.area_uri, 'id': alert.area_id },
                         'time': alert.time
                     })
                 return jsonify({
