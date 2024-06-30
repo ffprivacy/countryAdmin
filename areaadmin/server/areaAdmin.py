@@ -128,6 +128,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             return {
                 'id': self.id,
                 'title': self.title,
+                'description': self.description,
                 'selected': selected,
                 'amount': amount,
                 'metrics': self.metrics,
@@ -859,9 +860,10 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                         selected = ast.literal_eval(selected.capitalize())
 
                     title = process_data.get('title', '')
+                    description = process_data.get('description', '')
                     tags = process_data.get('tags', [])
 
-                    new_process = Process(id=id, title=title, metrics={
+                    new_process = Process(id=id, title=title, description=description, metrics={
                         "input": input_metrics,
                         "output": output_metrics
                     })

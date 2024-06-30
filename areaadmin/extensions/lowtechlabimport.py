@@ -19,7 +19,7 @@ def extractMetric(soup, metric="money"):
 def fetchDetails(url):
     response = requests.get(url)
     soup = BeautifulSoup(response.text, 'html.parser')    
-    description = soup.select_one(".tuto-details-about-title")
+    description = soup.select_one(".tuto-details-about-title").text.strip()
     return {'cost': extractMetric(soup, "money"), 'duration': extractMetric(soup, "clock-o"), "description": description}
 
 def fetch_tutorials(url):
@@ -58,6 +58,7 @@ def post_tutorial_to_endpoint(tutorial):
     
     data = {
         'title': tutorial['title'],
+        'description': tutorial['description'],
         'metrics': {
             'input': {
                 'economic': tutorial['cost']

@@ -63,6 +63,9 @@ function processCreateElement(allProcesses,process) {
 		</div>
 		<div id="process-list-process-${process.id}-body" class="accordion-collapse collapse" aria-labelledby="process-list-process-${process.id}-title" data-bs-parent="#process-list">
 			<div class="row p-3">
+				${process.description}
+			</div>
+			<div class="row p-3">
 				<div class="col-md-4">
 					<h6>Amount</h6>
 					<ul class="list-unstyled">
