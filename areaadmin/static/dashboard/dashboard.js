@@ -289,15 +289,8 @@ function tradesAddProcess(area) {
 function submitTrade() {
     const homeProcessIds = document.querySelectorAll('input[name="homeProcessId[]"]');
     const homeAmounts = document.querySelectorAll('input[name="homeAmount[]"]');
-	const foreignAreaUri = document.getElementById('trade-initiate-foreign-area-uri').value;
-    let remote_host_uri, remote_area_id;
-	if ( IS_LOCAL_AREA_REGEX(foreignAreaUri) ) {
-		remote_host_uri = null;
-		remote_area_id = parseInt(foreignAreaUri);
-	} else {
-		remote_host_uri = foreignAreaUri;
-		remote_area_id = 1;
-	}
+	const remote_host_uri = document.getElementById('trade-initiate-foreign-area-uri').value;
+	const remote_area_id = parseInt(document.getElementById('trade-initiate-foreign-area-id').value);
 	const tradeData = {
         home_processes: [],
 		remote_host_uri: remote_host_uri,
