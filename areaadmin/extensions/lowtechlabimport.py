@@ -29,10 +29,12 @@ def fetch_tutorials(url):
         soup = BeautifulSoup(response.text, 'html.parser')
         tutorial_links = soup.select('.searchresults a[href*="/wiki/"]')
 
+        print(f"Found {len(tutorial_links)} processes")
         for link in tutorial_links:
             title = link.text.strip()
             title = title.split("\n")[0]
             href = link.get('href')
+            print(f"Fetching {href}")
             if href and title:
                 tutorial_url = f'https://wiki.lowtechlab.org{href}'
                 details = fetchDetails(tutorial_url)
@@ -42,7 +44,7 @@ def fetch_tutorials(url):
                     'cost': details['cost'], 'duration': details['duration']
                 })
         
-        next_page = soup.find('a', text='Load more')
+        next_page = soup.find('a', string='Load more')
         if next_page:
             url = 'https://wiki.lowtechlab.org' + next_page['href']
         else:
