@@ -52,31 +52,23 @@ def fetch_tutorials(url):
 
     return tutorials
 
-def post_tutorial_to_endpoint(tutorial):
-    endpoint_url = 'http://127.0.0.1:5000/api/set_process'
-    headers = {'Content-Type': 'application/json'}
-    
-    data = {
-        'title': tutorial['title'],
-        'description': tutorial['description'],
-        'metrics': {
-            'input': {
-                'economic': tutorial['cost']
+
+def extension_get_processes():
+    explore_url = 'https://wiki.lowtechlab.org/wiki/Explore?page=1'
+    tutorials_list = fetch_tutorials(explore_url)
+
+    processes = []
+    for tutorial in tutorials_list:
+        processes.append(
+            {
+            'title': tutorial['title'],
+            'description': tutorial['description'],
+            'metrics': {
+                'input': {
+                    'economic': tutorial['cost']
+                },
+                'output': {}
             },
-            'output': {}
-        },
-        'tags': []
-    }
-    
-    response = requests.post(endpoint_url, json=data, headers=headers)
-    if response.status_code == 200:
-        print("Successfully posted:", tutorial['title'])
-    else:
-        print("Failed to post:", tutorial['title'], response.text)
-
-explore_url = 'https://wiki.lowtechlab.org/wiki/Explore?page=1'
-tutorials_list = fetch_tutorials(explore_url)
-
-for tutorial in tutorials_list:
-    post_tutorial_to_endpoint(tutorial)
-post_tutorial_to_endpoint(tutorials_list[0])
+            'tags': []
+        })
+    return processes

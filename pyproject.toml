@@ -24,6 +24,7 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry.scripts]
 areaAdmin = 'areaadmin.server.areaAdmin:main'
 areaManager = 'areaadmin.server.manager:main'
+areaAdminExt = 'areaadmin.extensions.extensions:main'
 
 [tool.pytest.ini_options]
 testpaths = [
