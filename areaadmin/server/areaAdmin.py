@@ -95,7 +95,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
         def get_usage(self, area=None):
             process_usage = next((pu for pu in self.usages if area == None or pu.area_id == area.id), None)
-            process_usage = process_usage.usage_count if process_usage else 0
+            process_usage = process_usage.amount if process_usage else 0
             if area is not None:
                 for composition in area.compositions:
                     process_usage += self.get_usage(composition.child)
@@ -235,13 +235,13 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
     class ProcessUsage(db.Model):
         area_id = DB.Column(DB.Integer, DB.ForeignKey('area.id'), primary_key=True)
         process_id = DB.Column(DB.Integer, DB.ForeignKey('process.id'), primary_key=True)
-        usage_count = DB.Column(DB.Integer, default=0)
+        amount = DB.Column(DB.Integer, default=0)
 
         area = db.relationship('Area', back_populates='process_usages')
         process = db.relationship('Process', back_populates='usages')
 
         def __repr__(self):
-            return f"<ProcessUsage area_id={self.area_id} process_id={self.process_id} usage_count={self.usage_count}>"
+            return f"<ProcessUsage area_id={self.area_id} process_id={self.process_id} amount={self.amount}>"
 
     class User(db.Model):
         id = DB.Column(DB.Integer, primary_key=True)
@@ -390,9 +390,9 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             process_usage = ProcessUsage.query.filter_by(area_id=self.id, process_id=process.id).first()
             if 0 < amount:
                 if process_usage:
-                    process_usage.usage_count = amount
+                    process_usage.amount = amount
                 else:
-                    new_process_usage = ProcessUsage(area_id=self.id, process_id=process.id, usage_count=amount)
+                    new_process_usage = ProcessUsage(area_id=self.id, process_id=process.id, amount=amount)
                     db.session.add(new_process_usage)
             else:
                 if process_usage:
@@ -405,7 +405,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 process = usage.process
                 for metric in Area.metrics_get_ids_list():
                     for sens in ['input','output']:
-                        flow[sens][metric] += Processes.retrieve_metric(processes, process, sens, metric) * usage.usage_count
+                        flow[sens][metric] += Processes.retrieve_metric(processes, process, sens, metric) * usage.amount
             
             for trade in self.trades:
                 for home_trade_process in trade.home_processes:
@@ -448,12 +448,17 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             }
         
         def toJson(self, deep=False):
-            processes = [{
-                'id': pu.process_id,
-                'title': pu.process.title,
-                'usage_count': pu.usage_count,
-                **({'metrics': pu.process.metrics, 'description': pu.process.description} if deep else {})
-            } for pu in self.process_usages]
+            
+            processes = []
+            if deep:
+                processes = Process.query.all()
+                processes = [process.wrap_for_response(self) for process in processes]
+            else:
+                processes = [{
+                    'id': pu.process_id,
+                    'title': pu.process.title,
+                    'amount': pu.amount,
+                } for pu in self.process_usages]
 
             compositions = [{'id': composition.child_id} for composition in self.compositions]
 
@@ -739,20 +744,20 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             @staticmethod
             def update_process_usage(id,process_id):
                 data = request.json
-                new_usage_count = data.get('usage_count')
+                new_amount = data.get('amount')
 
-                if new_usage_count is None:
+                if new_amount is None:
                     return jsonify({'error': 'Missing usage count'}), 400
 
                 process_usage = ProcessUsage.query.filter_by(area_id=id, process_id=process_id).first()
                 if not process_usage:
-                    process_usage = ProcessUsage(area_id=id, process_id=process_id, usage_count=new_usage_count)
+                    process_usage = ProcessUsage(area_id=id, process_id=process_id, amount=new_amount)
                     db.session.add(process_usage)
                 else:
-                    process_usage.usage_count = new_usage_count
+                    process_usage.amount = new_amount
 
                 db.session.commit()
-                return jsonify({'success': True, 'id': process_id, 'new_usage_count': new_usage_count})
+                return jsonify({'success': True, 'id': process_id, 'new_amount': new_amount})
 
             @app.route('/api/area/<int:id>/process/<int:process_id>/like', methods=['POST'])
             @auth_required

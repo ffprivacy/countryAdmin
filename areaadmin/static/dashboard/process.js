@@ -159,7 +159,7 @@ function processCreateElement(allProcesses,process) {
 		fetchAreaAPI(`/update_process_usage/${process.id}`, {
 			method: 'POST',
 			body: JSON.stringify({
-				usage_count: newAmount
+				amount: newAmount
 			})
 		})
 		.then(updatedProcess => {
