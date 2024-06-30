@@ -51,6 +51,24 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             # TODO
             return f(*args, **kwargs)
         return decorated_function
+    
+    def area_api_url(area):
+
+        uri = area.get('uri')
+        id = area.get('id')
+
+        if uri is None:
+            if id is None:               
+                raise Exception("Both uri and id none")
+            uri = HOME_HOST_URI()
+
+        if id is None:
+            id = 1
+        
+        if uri == "":
+            uri = HOME_HOST_URI()
+
+        return f"{uri}{'/' if not uri.endswith('/') and uri else ''}api/area/{id}/"
 
     class Composition(db.Model):
         id = DB.Column(DB.Integer, primary_key=True)
@@ -935,18 +953,16 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 if not area:
                     return jsonify({'error': 'Area not found'}), 404
                 guard = area.guard
-                uris = request.json.get('uri')
+                uri = request.json.get('uri')
+                id = request.json.get('id')
                 
-                if not uris:
-                    return jsonify({'error': 'Missing parameter "uri"'}), 400
+                if not uri and not id:
+                    return jsonify({'error': 'Missing parameter'}), 400
                 
-                if not isinstance(uris,list):
-                    uris = [uris]
+                if not id:
+                    id = 1
 
-                oldURIs = guard.area_uris
-                guard.area_uris = []
-                guard.area_uris.extend(uris)
-                guard.area_uris.extend(oldURIs)
+                db.session.add(GuardAreaWatch(area_id=id,area_uri=uri,guard_id=guard.id))
                 db.session.commit()
                 return {'success': True}
 
@@ -968,7 +984,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                         'time': alert.time
                     })
                 return jsonify({
-                    'area_uris': guard.area_uris,
+                    'watches': GuardAreaWatch.allToJson(guard.watches),
                     'last_check_date': guard.last_check_date,
                     'alerts': alerts
                 })
@@ -1141,29 +1157,48 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         db.session.query(Trade).delete()
         db.session.query(Guard).delete()
         db.session.query(GuardAlert).delete()
+        db.session.query(GuardAreaWatch).delete()
         db.session.commit()
         Area.set_area_data({})
         return redirect(url_for('logout'))
-
-    def guard_get_id():
-        return Guard.get().id
 
     class GuardAlert(db.Model):
         id = DB.Column(DB.Integer, primary_key=True)
         title = DB.Column(DB.String)
         description = DB.Column(DB.String)
         time = DB.Column(DB.DateTime, default=datetime.now)
-        area = DB.Column(DB.String)
+        area_uri = DB.Column(DB.String)
+        area_id = DB.Column(DB.Integer)
 
-        guard_id = DB.Column(DB.Integer, DB.ForeignKey('guard.id'), default=guard_get_id)
+        guard_id = DB.Column(DB.Integer, DB.ForeignKey('guard.id'))
         guard = db.relationship('Guard', foreign_keys='GuardAlert.guard_id', back_populates='alerts')
+
+    class GuardAreaWatch(db.Model):
+        id = DB.Column(DB.Integer, primary_key=True)
+        area_id = DB.Column(DB.Integer, default=1)
+        area_uri = DB.Column(DB.String, nullable=True)
+
+        guard_id = DB.Column(DB.Integer, DB.ForeignKey('guard.id'))
+        guard = db.relationship('Guard', foreign_keys='GuardAreaWatch.guard_id', back_populates='watches')
+
+        @staticmethod
+        def allToJson(watches):
+            json = []
+            for watch in watches:
+                json.append(watch.toJson())
+            return json
+        
+        def toJson(self):
+            return {
+                'id': self.area_id,
+                'uri': self.area_uri
+            }
 
     class Guard(db.Model):
         id = DB.Column(DB.Integer, primary_key=True)
-        # TODO: Allow to specify an area for remote hosts
-        area_uris = DB.Column(DB.JSON, default=[])
         last_check_date = DB.Column(DB.DateTime, default=datetime.now)
         alerts = db.relationship('GuardAlert', back_populates='guard', lazy=True)
+        watches = db.relationship('GuardAreaWatch', back_populates='guard', lazy=True)
 
         def signal_a_pass(self):
             self.last_check_date = datetime.now()
@@ -1171,14 +1206,6 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         @staticmethod
         def get():
             return Area.Main.main_get().guard
-        
-        def generate_api_uri_from_database(uri):
-            host_part = uri
-            path_part = "api"
-            if ( IS_LOCAL_AREA_REGEX(uri) ):
-                host_part = HOME_HOST_URI()
-                path_part = f"api/area/{int(uri)}"
-            return host_part, f"{host_part}{'' if host_part.endswith('/') else '/'}{path_part}"
 
         def daemon_loop(self_id):
             time.sleep(5)
@@ -1186,9 +1213,10 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             with app.app_context():
                 self = Guard.query.get(self_id)
                 while True:
-                    countries = []
-                    for uri in self.area_uris:
-                        hostUri, apiURI = Guard.generate_api_uri_from_database(uri)
+                    areas = []
+                    for watch in self.watches:
+                        apiURI = area_api_url({'uri': watch.area_uri, 'id': watch.area_id})
+                        apiURI = apiURI.removesuffix('/')
 
                         response = requests.get(f"{apiURI}/area")
                         response.raise_for_status()
@@ -1202,8 +1230,9 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                         response.raise_for_status()
                         metrics = response.json()
 
-                        countries.append({
-                            'uri': uri,
+                        areas.append({
+                            'uri': watch.area_uri,
+                            'id': watch.area_id,
                             'data': {
                                 'area': area,
                                 'processes': processes,
@@ -1215,11 +1244,14 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                     # exemple en comparant les input/ouput des process, + title desc
                     # pour l'instant on utilise des ids (qui ne sont potentiellement pas les mêmes)
                     processesOffers = {}
-                    for area in countries:
+                    for area in areas:
                         for process_usage in area['data']['area']['processes']:
                             id = process_usage['id']
                             processOffer = processesOffers.get(id, {
-                                'uri': area['uri'], 'count': 0, 'id': id
+                                'area': {
+                                    'id': area['id'],
+                                    'uri': area['uri']
+                                }, 'count': 0, 'id': id
                             })
                             processOffer['count'] += 1;
                             processesOffers[id] = processOffer
@@ -1231,9 +1263,10 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                             # Si il n'y a pas d'échanges avec d'autres pays l'alerte ne devrait pas être utilisée
                             db.session.add(GuardAlert( 
                                 title="Monopole detecté",
-                                area=f"{processOffer['uri']}",
+                                area_uri=f"{processOffer['area']['uri']}",
+                                area_id=f"{processOffer['area']['id']}",
                                 guard_id=self.id,
-                                description=f"De la part de {processOffer['uri']} sur {processOffer['id']}"
+                                description=f"De la part de {processOffer['area']['uri']} sur {processOffer['id']}"
                             ))
                         else:
                             # Dans l'idéal estimer à quel point deux processus sont différents ou similaires
@@ -1241,16 +1274,17 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                             # Et on devrait regarder uniquement les processus impliqué dans des échanges (même indirecte)
                             process_id = processOffer['id']
                             price = -1
-                            for area in countries:
+                            for area in areas:
                                 for process in area['data']['processes']:
                                     if process['id'] == process_id:
                                         sell_price = process['metrics']['input'].get('economic', 0) - process['metrics']['output'].get('economic', 0)
                                         if sell_price < price:
                                             db.session.add(GuardAlert( 
-                                                title="Potentiel situation de vente à perte détectée",
-                                                area=f"{processOffer['uri']}",
                                                 guard_id=self.id,
-                                                description=f"sur {processOffer['id']} proposed price {sell_price} on previous {price}"
+                                                title="Potentiel situation de vente à perte détectée",
+                                                area_uri=f"{processOffer['area']['uri']}",
+                                                area_id=f"{processOffer['area']['id']}",
+                                                description=f"sur {processOffer['area']['id']} proposed price {sell_price} on previous {price}"
                                             ))
 
                         # Définit comme la valeur de sociale entre les bénéficiaires de tous les processus du pays cible (bénéficiaires de impors)
@@ -1258,18 +1292,20 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                         if random.random() <= 0.1:
                             db.session.add(GuardAlert( 
                                 title="Injustice social",
-                                area=f"{processOffer['uri']}",
+                                area_uri=f"{processOffer['area']['uri']}",
+                                area_id=f"{processOffer['area']['id']}",
                                 guard_id=self.id,
-                                description=f"{processOffer['uri']} induit de la misère sociale via ses imports"
+                                description=f"{processOffer['area']['uri']} induit de la misère sociale via ses imports"
                             ))
 
-                    for area in countries:
+                    for area in areas:
                         envEmissionsNet = area['data']['metrics']['flow']['output']['envEmissions'] - area['data']['metrics']['flow']['input']['envEmissions']
                         atmosphereFill = area['data']['area']['resources'].get('envEmissions',{'amount': 0})['amount'] * (1 + area['data']['area']['resources'].get('envEmissions',{'renew_rate': 0})['renew_rate']) - envEmissionsNet
                         if atmosphereFill < 0:
                             db.session.add(GuardAlert( 
                                 title="Overpollution",
-                                area=f"{processOffer['uri']}",
+                                area_uri=f"{processOffer['area']['uri']}",
+                                area_id=f"{processOffer['area']['id']}",
                                 guard_id=self.id,
                                 description=f"Pays eméttant plus de CO2 que ce que sa capacité d'absorption amount={abs(atmosphereFill)}"
                             ))

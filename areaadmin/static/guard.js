@@ -47,14 +47,8 @@ class Guard {
         document.getElementById("guard-title").innerText = ` - ${currentArea.name}`;
 
         this.areas = [];
-        for(let area_uri of this.state.area_uris) {
-            let areaData = {};
-            if ( IS_LOCAL_AREA_REGEX(area_uri) ) {
-                areaData['id'] = parseInt(area_uri);
-            } else {
-                areaData['uri'] = area_uri;
-            }
-            this.areas.push(await Guard.areaFetchAllData(areaData));
+        for(let watch of this.state.watches) {
+            this.areas.push(await Guard.areaFetchAllData(watch));
         }
     
         this.updateTable();
@@ -401,14 +395,18 @@ function clearPollutionDebt(alert_id, remote_area, emissionEnv=90) {
 }
 
 document.getElementById('add-area-btn').addEventListener('click', function() {
-    const newUri = document.getElementById('new-area-uri').value.trim();
-    if (newUri) {
-        document.getElementById('new-area-uri').value = '';
-
+    const areaURIElement =  document.getElementById('new-area-uri');
+    const areaIDElement =  document.getElementById('new-area-id');
+    const newUri = areaURIElement.value.trim();
+    const areaID = parseInt(areaIDElement.value.trim());
+    if (newUri || areaID) {
+        areaURIElement.value = '';
+        areaIDElement.value = 1;
         fetchAreaAPI('/guard/subscribe',{
 			method: 'POST',
 			body: JSON.stringify({
-				uri: newUri
+				uri: newUri,
+                id: areaID
 			})
 		}).then(response => {
             guard.refresh();
