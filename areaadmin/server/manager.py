@@ -15,11 +15,12 @@ def is_port_available(port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         return s.connect_ex(('127.0.0.1', port)) != 0
 
-def set_default(remoteAreaURI):
+def set_default(name):
+    remoteAreaURI = f"http://127.0.0.1:{instances[name]['port']}/api/area"
     print(f"Set default for {remoteAreaURI}")
     response = requests.post(f"{remoteAreaURI}", json={
-        "name": "France",
-        "description": "Country of France",
+        "name": f"{name}",
+        "description": f"Country of {name}",
         "resources": {
             "social": {
                 "amount": 50,
@@ -87,7 +88,7 @@ def start_instance():
     try:
         print(f"Waiting the instance {name} to start ...")
         time.sleep(5)
-        set_default(f"http://127.0.0.1:{port}/api/area")
+        set_default(name)
     except Exception as e:
         return jsonify({'success': False, 'error': f'Failed to set defaults: {str(e)}'}), 500
 
