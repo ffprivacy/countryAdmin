@@ -4,6 +4,8 @@ from areaadmin.server.areaAdmin import run_app
 import os
 from flask import Flask, render_template, request, redirect, url_for, jsonify, session, send_file
 import socket
+import requests
+import time
 
 app = Flask(__name__, template_folder='../static/', static_folder='../static/')
 
@@ -13,12 +15,61 @@ def is_port_available(port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         return s.connect_ex(('127.0.0.1', port)) != 0
 
+def set_default(remoteAreaURI):
+    print(f"Set default for {remoteAreaURI}")
+    response = requests.post(f"{remoteAreaURI}", json={
+        "name": "France",
+        "description": "Country of France",
+        "resources": {
+            "social": {
+                "amount": 50,
+                "renew_rate": 0.002
+            },
+            "economic": {
+                "amount": 250000000,
+                "renew_rate": 0
+            },
+            "envEmissions": {
+                "amount": 1000000,
+                "renew_rate": -0.01
+            },
+            "human": {
+                "amount": 67000000,
+                "renew_rate": 0.01
+            },
+            "ground": {
+                "amount": 643801,
+                "renew_rate": 0.001
+            },
+            "ores": {
+                "amount": 100000,
+                "renew_rate": 0.001
+            },
+            "water": {
+                "amount": 200000,
+                "renew_rate": 0.01
+            },
+            "oil": {
+                "amount": 0,
+                "renew_rate": 0
+            },
+            "gas": {
+                "amount": 0,
+                "renew_rate": 0
+            },
+            "pm25": {
+                "amount": 12,
+                "renew_rate": -0.001
+            }
+        }
+    })
+    response.raise_for_status()
+
 @app.route('/start', methods=['POST'])
 def start_instance():
     data = request.get_json()
     name = data.get('name')
     port = int(data.get('port'))
-    db_path = data.get('db_path', None)
     
     if name in instances:
         return jsonify({'error': 'Instance already running'}), 400
@@ -26,21 +77,20 @@ def start_instance():
     if not is_port_available(port):
         return jsonify({'success': False, 'error': f'Port {port} is already in use.'}), 400
 
-    if not db_path:
-        db_path = "area_default.db"
-
-    try:
-        import shutil
-        destination_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), f'../../instance/{name}.db')
-        shutil.copyfile(db_path, destination_path)
-    except Exception as e:
-        return jsonify({'success': False, 'error': f'Failed to import database: {str(e)}'}), 500
-
     thread = threading.Thread(target=run_app, args=(name, port), daemon=True)
     thread.start()
+
     instances[name] = {'thread': thread, 'port': port}
     status = f'Instance {name} started on port {port}'
     print(f'http://127.0.0.1:{port}/', status)
+
+    try:
+        print(f"Waiting the instance {name} to start ...")
+        time.sleep(5)
+        set_default(f"http://127.0.0.1:{port}/api/area")
+    except Exception as e:
+        return jsonify({'success': False, 'error': f'Failed to set defaults: {str(e)}'}), 500
+
     return jsonify({'message': status}), 200
 
 @app.route('/shutdown', methods=['POST'])
