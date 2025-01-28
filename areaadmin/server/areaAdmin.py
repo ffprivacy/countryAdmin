@@ -27,7 +27,7 @@ def IS_LOCAL_AREA_REGEX(uri):
 def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEFAULT_COUNTRY_DESCRIPTION):
 
     db_name_fname = f'{db_name}.db'
-    app = APIFlask(__name__, title="Example API", version="1.0", template_folder='../static/', static_folder='../static/')
+    app = APIFlask(__name__, title="AreaAdmin API", version="1.0", template_folder='../static/', static_folder='../static/')
     app.url_map.strict_slashes = False
     app.secret_key = 'your_secret_key'
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + db_name_fname
