@@ -174,7 +174,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         @app.route('/api/process/<int:id>/composition', methods=['POST'])
         @auth_required
         @staticmethod
-        def composition(id):
+        def composition_add(id):
             data = request.json
             component_process_id = data.get('id')
             amount = data.get('amount')
@@ -731,8 +731,8 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             @app.route('/api/area/<int:trash>/process/<int:id>/composition', methods=['POST'])
             @auth_required
             @staticmethod
-            def process_composition(trash, id):
-                return Process.composition(id)
+            def process_composition_add(trash, id):
+                return Process.composition_add(id)
 
             @app.route('/api/area/<int:trash>/process/<int:id>/composition/<int:component_process_id>', methods=['DELETE'])
             @auth_required
