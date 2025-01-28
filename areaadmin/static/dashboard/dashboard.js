@@ -95,20 +95,8 @@ function dashboardRefresh() {
 					const areaDescription = document.getElementById("area-data-description");
 					areaDescription.value = area.description;
 
-					const subzones = document.getElementById("area-subareas");
-					subzones.innerHTML = '';
-					for(let composition of area.compositions) {
-						const id = composition['id'];
-						let child = await fetchAreaAPI('/area',undefined, {id: id});
-						let childElement = document.createElement('div');
-						childElement.className = "card card-body";
-						let childUri = area_dashboard_url(child);
-						childElement.innerHTML = `
-							<div><a href="${childUri}" target="_blank">${child.name}</a></div>
-							<div>${child.description}</div>
-						`;
-						subzones.appendChild(childElement);
-					}
+					await fill_subzones(area);
+
 				});
             })
             .catch(error => {

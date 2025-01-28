@@ -8,13 +8,15 @@
     <script src="/static/common.js"></script>
     <link href="/static/cache/bootstrap.min.css" rel="stylesheet">
     <script src="/static/cache/bootstrap.bundle.min.js" defer></script>
-    <script src="/static/cache/chart.js"></script>
+    <script src="/static/cache/chart.js" defer></script>
+    <script src="/static/cache/d3.v6.min.js" defer></script>
     <script src="/static/process.js" defer></script>
     <script src="/static/dashboard/process.js" defer></script>
     <script src="/static/dashboard/helpers.js" defer></script>
     <script src="/static/dashboard/dashboard.js" defer></script>
     <script src="/static/dashboard/countries.js" defer></script>
     <script src="/static/dashboard/governance.js" defer></script>
+    <script src="/static/dashboard/subareas.js" defer></script>
     <link rel="icon" href="/static/logo_2_24x24.png">
 </head>
 
@@ -153,7 +155,10 @@
             </div> 
             <div class="col-md-6 mb-4">
                 <h3>Sub areas</h3>
-                <div id="area-subareas"></div>
+                <div id="area-subareas">
+                    <div id="area-subareas-list"></div>
+                    <div id="area-subareas-graph"></div>
+                </div>
             </div>                     
         </div>
         <hr>
@@ -216,7 +221,7 @@
                             Context:
                             <textarea type="text" class="form-control" id="add-process-composition-guess-context" placeholder="Met en place un système qui marche avec les contraintes suivantes commune de 3000 habitant dans le sud de la france, peu d'industrie, principale de tourisme avec des thermes. Le terrain est de la plaine, quelque agriculteurs. Des jeunes plutôt désoeuvrés, plutôt un manque d'hôpitaux."></textarea>
                             <button type="button" class="btn btn-secondary" id="add-process-composition-guess" onclick="addProcessCompositionGuess()">
-                                Guess compositions form the context
+                                Guess compositions from the context
                             </button>
                         </div>
                         <button type="button" class="btn btn-secondary" id="add-process-add-composition">Ajouter une nouvelle composition au processus</button>

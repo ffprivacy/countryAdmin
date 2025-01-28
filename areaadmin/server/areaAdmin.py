@@ -689,7 +689,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         @login_required
         @staticmethod
         def render_dashboard(id):
-            return render_template('dashboard.html', area_id=id)
+            return render_template('dashboard/dashboard.html', area_id=id)
 
         @app.route('/api/area/<int:id>/processes/metrics', methods=['GET'])
         @auth_required
