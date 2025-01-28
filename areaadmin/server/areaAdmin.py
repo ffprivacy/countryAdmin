@@ -12,6 +12,7 @@ import flask, json
 import threading, time, re
 import random
 import sqlalchemy as DB
+from apiflask import APIFlask
 from areaadmin.server.custom.flask import jsonify
 from areaadmin.server.custom.tools import *
 
@@ -26,7 +27,7 @@ def IS_LOCAL_AREA_REGEX(uri):
 def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEFAULT_COUNTRY_DESCRIPTION):
 
     db_name_fname = f'{db_name}.db'
-    app = Flask(__name__, template_folder='../static/', static_folder='../static/')
+    app = APIFlask(__name__, title="Example API", version="1.0", template_folder='../static/', static_folder='../static/')
     app.url_map.strict_slashes = False
     app.secret_key = 'your_secret_key'
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + db_name_fname
@@ -1149,6 +1150,10 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
     @app.route('/')
     def index():
         return render_template('index.html')
+    
+    @app.route('/openapi')
+    def openapi():
+        return render_template('openapi.html')
 
     @app.route('/api/reset_database', methods=['POST'])
     @login_required
