@@ -1427,6 +1427,7 @@ def run_app(db_name=DEFAULT_DB_NAME,port=DEFAULT_PORT,name=DEFAULT_COUNTRY_NAME,
     app, db = create_app(db_name,name,description)
     app.config['SERVING_PORT'] = port
     app.run(host='127.0.0.1', port=port, debug=True,use_reloader=cli)
+    return app, db
 
 def main(cli=False):
     db_name = DEFAULT_DB_NAME
