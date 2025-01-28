@@ -20,7 +20,7 @@ async function fill_subzones(area) {
         const scale = 0.05; // Scale factor for square area
 
         // Sample data: countries with surface area (in million square kilometers)
-        const areas = compositions.map((composition) => ({name: composition.name, surface: composition.resources.ground.amount, url: area_dashboard_url(composition)}))
+        const areas = compositions.map((composition) => ({name: composition.name, surface: composition.resources.ground === undefined ? 0 : composition.resources.ground.amount, url: area_dashboard_url(composition)}))
 
         // Calculate the total surface area to create a reasonable layout
         const totalArea = areas.reduce((acc, area) => acc + area.surface, 0);
