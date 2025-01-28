@@ -126,7 +126,7 @@ class Processes {
     }
 
     static compositionUpdate(process_id, composition) {
-        return fetchAreaAPI(`/process/${process_id}/update_composition`, {
+        return fetchAreaAPI(`/process/${process_id}/composition`, {
             method: 'POST',
             body: JSON.stringify(composition)
         })
@@ -142,8 +142,8 @@ class Processes {
     }
     
     static compositionDelete(process_id, compositionId) {
-        return fetchAreaAPI(`/process/${process_id}/delete_composition/${compositionId}`, {
-            method: 'POST'
+        return fetchAreaAPI(`/process/${process_id}/composition/${compositionId}`, {
+            method: 'DELETE'
         })
         .then(data => {
             if (data.success) {

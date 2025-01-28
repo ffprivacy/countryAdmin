@@ -170,10 +170,10 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 db.session.commit()
                 return jsonify({'success': True}), 200
 
-        @app.route('/api/process/<int:id>/update_composition', methods=['POST'])
+        @app.route('/api/process/<int:id>/composition', methods=['POST'])
         @auth_required
         @staticmethod
-        def update_composition(id):
+        def composition(id):
             data = request.json
             component_process_id = data.get('id')
             amount = data.get('amount')
@@ -186,10 +186,10 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             db.session.commit()
             return jsonify({'success': True}), 200
 
-        @app.route('/api/process/<int:id>/delete_composition/<int:component_process_id>', methods=['POST'])
+        @app.route('/api/process/<int:id>/composition/<int:component_process_id>', methods=['DELETE'])
         @auth_required
         @staticmethod
-        def delete_composition(id, component_process_id):
+        def composition_delete(id, component_process_id):
             composition = Composition.query.filter_by(composed_process_id=id, component_process_id=component_process_id).first()
             if not composition:
                 return jsonify({'error': 'Composition not found'}), 404
@@ -727,17 +727,17 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             def process_handle(trash,id):
                 return Process.handle(id)
 
-            @app.route('/api/area/<int:trash>/process/<int:id>/update_composition', methods=['POST'])
+            @app.route('/api/area/<int:trash>/process/<int:id>/composition', methods=['POST'])
             @auth_required
             @staticmethod
-            def process_update_composition(trash, id):
-                return Process.update_composition(id)
+            def process_composition(trash, id):
+                return Process.composition(id)
 
-            @app.route('/api/area/<int:trash>/process/<int:id>/delete_composition/<int:component_process_id>', methods=['POST'])
+            @app.route('/api/area/<int:trash>/process/<int:id>/composition/<int:component_process_id>', methods=['DELETE'])
             @auth_required
             @staticmethod
-            def process_delete_composition(trash, id, component_process_id):
-                return Process.delete_composition(id,component_process_id)
+            def process_composition_delete(trash, id, component_process_id):
+                return Process.composition_delete(id,component_process_id)
             
             @app.route('/api/area/<int:id>/update_process_usage/<int:process_id>', methods=['POST'])
             @auth_required
