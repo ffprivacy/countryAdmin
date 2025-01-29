@@ -12,7 +12,7 @@ import flask, json
 import threading, time, re
 import random
 import sqlalchemy as DB
-from apiflask import APIFlask
+from apiflask import APIFlask, HTTPTokenAuth
 from areaadmin.server.custom.flask import jsonify
 from areaadmin.server.custom.tools import *
 
@@ -31,27 +31,49 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
     app.url_map.strict_slashes = False
     app.secret_key = 'your_secret_key'
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + db_name_fname
+    app.security_schemes = {
+        'BearerAuth': {
+            'type': 'http',
+            'scheme': 'bearer',
+            'bearerFormat': 'JWT'
+        }
+    }
     db = SQLAlchemy(app)
     CORS(app)
 
     def HOME_HOST_URI():
         return f'http://127.0.0.1:{app.config["SERVING_PORT"]}'
 
+    def user_is_logged():
+        return 'user_id' in session
     def login_required(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            if 'user_id' not in session:
-                return redirect(url_for('login'))
-            return f(*args, **kwargs)
+            if user_is_logged():
+                return f(*args, **kwargs)
+            return redirect(url_for('login'))
         return decorated_function
 
     # For API not intented for users
     def auth_required(f):
         @wraps(f)
+        @app.doc(security='BearerAuth')
         def decorated_function(*args, **kwargs):
-            # TODO
+            if not user_is_logged():
+
+                auth_header = request.headers.get('Authorization')
+                if not auth_header or not auth_header.startswith('Bearer '):
+                    return jsonify({'message': 'Missing or invalid token'}), 401
+                
+                token = auth_header.split(' ')[1]
+                if not validate_token(token):
+                    return jsonify({'message': 'Invalid or expired token'}), 401
+            
             return f(*args, **kwargs)
         return decorated_function
+
+    def validate_token(token):
+        return token == "admin"  # Replace with real validation logic
     
     def area_api_url(area):
 
