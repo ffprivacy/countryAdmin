@@ -277,8 +277,17 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         def check_password(self, password):
             return check_password_hash(self.password_hash, password)
         
-        @app.route('/api/user/<')
+        @app.route('/api/user/<int:id>', methods=['GET'])
+        @auth_required
         def get(id):
+            user = User.query.filter_by(id=id).first()
+            if user is None:
+                return jsonify({'success': False, 'message': 'user not found'}), 404
+            else:
+                return jsonify({
+                    'id': user.id,
+                    'username': user.username
+                }), 200
 
     class Trade(db.Model):
         id = DB.Column(DB.Integer, primary_key=True)
@@ -497,6 +506,12 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 'processes': processes,
                 'compositions': compositions
             }
+
+        @app.route('/api/area/<int:trash>/user/<int:id>', methods=['GET'])
+        @auth_required
+        @staticmethod
+        def user_get(trash,id):
+            return User.get(id)
 
         @app.route('/api/area/<int:id>/metrics', methods=['GET'])
         @auth_required

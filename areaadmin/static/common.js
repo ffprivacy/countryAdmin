@@ -41,7 +41,7 @@ function area_api_url(area={}) {
     let id = area.id;
     if ( uri == undefined ) {
         if ( id == undefined ) {
-            if ( AREA_DATA != undefined && AREA_DATA['area_id'] != undefined ) {
+            if ( typeof(AREA_DATA) !== 'undefined' && AREA_DATA['area_id'] != undefined ) {
                 id = `${AREA_DATA['area_id']}`;
             } else {
                 throw "Must provide uri or loadVars";

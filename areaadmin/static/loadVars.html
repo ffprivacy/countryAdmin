@@ -2,4 +2,7 @@
     const AREA_DATA = {
         'area_id': {{ area_id }}
     }
+    if ( typeof(AREA_DATA.area_id) === 'undefined' ) {
+        AREA_DATA.area_id = 1;
+    }
 </script>
