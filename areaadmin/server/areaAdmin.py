@@ -1355,6 +1355,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             thread.start()
 
     @app.route('/login', methods=['GET', 'POST'])
+    @staticmethod
     def login():
         if request.method == 'POST':
             username = request.form['username']
@@ -1375,9 +1376,16 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
     @app.route('/logout')
     @login_required
+    @staticmethod
     def logout():
         session.pop('user_id', None)
         return redirect(url_for('index'))
+
+    @app.route('/user')
+    @login_required
+    @staticmethod
+    def user():
+        return render_template('user/user.html', user_id=session["user_id"])
 
     class Processes:
         @staticmethod

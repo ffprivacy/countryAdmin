@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
+    {% include '/loadVars.html' %}
+    <script src="/static/common.js"></script>
+    <link href="/static/cache/bootstrap.min.css" rel="stylesheet">
+    <script src="/static/cache/bootstrap.bundle.min.js" defer></script>
+    <script src="/static/cache/chart.js" defer></script>
+    <script src="/static/cache/d3.v6.min.js" defer></script>
+    <script src="/static/process.js" defer></script>
+    <script src="/static/dashboard/process.js" defer></script>
+    <script src="/static/dashboard/helpers.js" defer></script>
+    <script src="/static/dashboard/dashboard.js" defer></script>
+    <script src="/static/dashboard/countries.js" defer></script>
+    <script src="/static/dashboard/governance.js" defer></script>
+    <script src="/static/dashboard/subareas.js" defer></script>
+    <link rel="icon" href="/static/logo_2_24x24.png">
+</head>
+
+<body class="container" style="margin-top: 80px;">
+    <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
+        <a class="navbar-brand" href="/">
+            <img src="/static/logo_2_24x24.png" width="30" height="30" class="d-inline-block align-top" alt="Logo">
+            Dashboard<span id="dashboard-title"></span>
+        </a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/guard">Guard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/dashboard">Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row card card-body">
+            User name<br />
+            User tokens
+        </div>
+    </div>
+</body>
