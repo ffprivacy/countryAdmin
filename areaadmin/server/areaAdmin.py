@@ -276,6 +276,9 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
         def check_password(self, password):
             return check_password_hash(self.password_hash, password)
+        
+        @app.route('/api/user/<')
+        def get(id):
 
     class Trade(db.Model):
         id = DB.Column(DB.Integer, primary_key=True)
