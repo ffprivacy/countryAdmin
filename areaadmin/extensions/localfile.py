@@ -22,3 +22,6 @@ def extension_get_processes(*args):
                 raise("Unknown while parsing")
 
     return processes
+
+def extension_display_help():
+    print("")

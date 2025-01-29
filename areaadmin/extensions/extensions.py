@@ -22,6 +22,13 @@ def list_modules():
     for module, description in available_modules.items():
         print(f"{module}: {description}")
 
+def display_help():
+    print("""
+            list
+            help [module]
+            exec <module> [args]
+        """)
+
 def main():
     parser = argparse.ArgumentParser(description="AreaAdmin extensions")
     parser.add_argument('command', help='Command to execute')
@@ -30,14 +37,16 @@ def main():
     args, unknown_args = parser.parse_known_args()
 
     command = args.command
-
-    if command == "import":
-        modName = f"areaadmin.extensions.{args.module}"
+    module = None
+    if args.module is not None:
+        modName = f"areaadmin.extensions.{args.module}" 
         try:
             module = importlib.import_module(modName)
         except ImportError:
             print(f"Module '{args.module}' not found")
             sys.exit(1)
+
+    if command == "exec":    
         try:
             extension_get_processes = getattr(module, "extension_get_processes")
         except AttributeError:
@@ -50,12 +59,18 @@ def main():
 
     elif command == "list":
         list_modules()
+    elif command == "help":
+        if module is None:
+            display_help()
+        else:
+            try:
+                extension_display_help = getattr(module, "extension_display_help")
+            except AttributeError:
+                print(f"Function '{args.extension_display_help}' not found in module '{args.module}'")
+                sys.exit(1)
+            extension_display_help()
     else:
-        print("""
-            list
-            help
-            import <module>
-        """)
+        display_help()
 
 if __name__ == "__main__":
     main()

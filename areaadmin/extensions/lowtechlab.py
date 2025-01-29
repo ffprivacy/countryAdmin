@@ -24,6 +24,7 @@ def fetchDetails(url):
 
 def fetch_tutorials(url):
     tutorials = []
+    print(f"tutorial list at {url}")
     while True:
         response = requests.get(url)
         soup = BeautifulSoup(response.text, 'html.parser')
@@ -54,21 +55,31 @@ def fetch_tutorials(url):
 
 
 def extension_get_processes(*args):
-    explore_url = 'https://wiki.lowtechlab.org/wiki/Explore?page=1'
-    tutorials_list = fetch_tutorials(explore_url)
 
     processes = []
-    for tutorial in tutorials_list:
-        processes.append(
-            {
-            'title': tutorial['title'],
-            'description': tutorial['description'],
-            'metrics': {
-                'input': {
-                    'economic': tutorial['cost']
+    page_max = 1
+
+    if 0 < len(args):
+        page_max = int(args[0])
+
+    for page in range(1,page_max+1):
+        explore_url = f'https://wiki.lowtechlab.org/wiki/Explore?page={page}'
+        tutorials_list = fetch_tutorials(explore_url)
+
+        for tutorial in tutorials_list:
+            processes.append(
+                {
+                'title': tutorial['title'],
+                'description': tutorial['description'],
+                'metrics': {
+                    'input': {
+                        'economic': tutorial['cost']
+                    },
+                    'output': {}
                 },
-                'output': {}
-            },
-            'tags': []
-        })
+                'tags': []
+            })
     return processes
+
+def extension_display_help():
+    print("args: [page no max]")
