@@ -18,6 +18,8 @@ conda create -n areaAdmin python=3.11 && \
 ### Run 
 ```
 areaAdmin
+areaManager
+areaAdminExt
 ```
 ### Develop
 #### Install
