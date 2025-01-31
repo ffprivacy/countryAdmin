@@ -5,7 +5,7 @@ import requests
 
 def process_import(process):
     endpoint_url = 'http://127.0.0.1:5000/api/set_process'
-    headers = {'Content-Type': 'application/json'}
+    headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer admin'}
     
     response = requests.post(endpoint_url, json=process, headers=headers)
     if response.status_code == 200:
@@ -16,7 +16,8 @@ def process_import(process):
 def list_modules():
     available_modules = {
         'lowtechlab': 'https://wiki.lowtechlab.org/wiki/Explore',
-        'localfile': ''
+        'localfile': '',
+        'lafabriquediy': 'http://www.lafabriquediy.com/'
     }
     print("Available modules:")
     for module, description in available_modules.items():
