@@ -281,6 +281,16 @@ document.addEventListener('DOMContentLoaded', async function () {
         }).then(response => dashboardRefresh())
 	});
 
+	const searchInput = document.getElementById("process-list-search");
+    searchInput.addEventListener("input", function () {
+        const searchTerm = searchInput.value.toLowerCase();
+		const accordionItems = document.querySelectorAll(".accordion-item");
+        accordionItems.forEach(item => {
+            const text = item.textContent.toLowerCase();
+            item.style.display = text.includes(searchTerm) ? "block" : "none";
+        });
+    });
+
 	updateRadarChart(0, 0, 0);
 
 	document.getElementById("btn-adjust").addEventListener("click", governanceBuildScenario);
