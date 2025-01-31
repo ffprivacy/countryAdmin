@@ -42,6 +42,7 @@ def fetch_tutorials(url):
                 tutorials.append({
                     'title': title, 'url': tutorial_url, 
                     'description': details['description'],
+                    'url': tutorial_url,
                     'cost': details['cost'], 'duration': details['duration']
                 })
         
@@ -70,7 +71,7 @@ def extension_get_processes(*args):
             processes.append(
                 {
                 'title': tutorial['title'],
-                'description': tutorial['description'],
+                'description': tutorial['description'] + "<a href=\"" + tutorial['url'] + "\" target=\"_blank\">link</a>",
                 'metrics': {
                     'input': {
                         'economic': tutorial['cost']
