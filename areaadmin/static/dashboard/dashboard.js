@@ -45,6 +45,14 @@ function dashboardRefresh() {
             const allProcesses = data;
             processList.innerHTML = '';
 
+			document.getElementById("process-list-number").innerText = `${allProcesses.length} processes`;
+			document.getElementById("process-list-amount").innerText = `${allProcesses.reduce(function (accumulator, process) {
+				for(let composition of process.composition) {
+					accumulator += composition.amount * process.amount;
+				}
+				return accumulator + process.amount;
+			}, 0)} process used`;
+
             fetchAreaAPI('/metrics')
             .then(metrics => {
                 const areaMetrics = metrics.flow;
