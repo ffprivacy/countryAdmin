@@ -1043,7 +1043,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             @login_required
             @staticmethod
             def render_guard(id):
-                return render_template('guard.html', area_id=id)
+                return render_template('guard/guard.html', area_id=id)
 
         class Main():
 

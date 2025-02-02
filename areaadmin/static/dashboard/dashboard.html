@@ -17,13 +17,13 @@
     <script src="/static/dashboard/countries.js" defer></script>
     <script src="/static/dashboard/governance.js" defer></script>
     <script src="/static/dashboard/subareas.js" defer></script>
-    <link rel="icon" href="/static/logo_2_24x24.png">
+    <link rel="icon" href="/static/media/logo_2_24x24.png">
 </head>
 
 <body class="container" style="margin-top: 80px;">
     <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
         <a class="navbar-brand" href="/">
-            <img src="/static/logo_2_24x24.png" width="30" height="30" class="d-inline-block align-top" alt="Logo">
+            <img src="/static/media/logo_2_24x24.png" width="30" height="30" class="d-inline-block align-top" alt="Logo">
             Dashboard<span id="dashboard-title"></span>
         </a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -244,6 +244,10 @@
                 <label for="import-file" class="btn btn-warning ml-2">Import</label>
                 <input type="file" name="import-file" id="import-file" class="d-none" accept="application/json">
             </h3>
+            <div class="row">
+                <div class="col-md-6 card card-body">stat 1</div>
+                <div class="col-md-6 card card-body">stat 2</div>
+            </div>
             <input type="text" id="process-list-search" class="form-control mb-3" placeholder="Search..." />
             <div id="process-list" class="accordion"></div>
         </div>

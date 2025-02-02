@@ -37,7 +37,7 @@ class Processes {
                 };
                 return {
                     ...item,
-                    icon: iconMapping[item.id] || 'default_icon.png'
+                    icon: "media/" + ( iconMapping[item.id] || 'default_icon.png' )
                 };
             }));
         })
