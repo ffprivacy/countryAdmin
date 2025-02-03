@@ -28,6 +28,7 @@ async function fill_subzones(area) {
         const gridSize = Math.sqrt(numAreas); // Estimate grid size for better packing
 
         // Create an SVG container
+        document.getElementById("area-subareas-graph").innerHTML = '';
         const svg = d3.select("#area-subareas-graph").append("svg")
             .attr("width", width)
             .attr("height", height);
