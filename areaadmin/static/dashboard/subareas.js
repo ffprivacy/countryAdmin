@@ -20,7 +20,7 @@ async function fill_subzones(area) {
         const scale = 0.05; // Scale factor for square area
 
         // Sample data: countries with surface area (in million square kilometers)
-        const areas = compositions.map((composition) => ({name: composition.name, surface: composition.resources.ground === undefined ? 0 : composition.resources.ground.amount, url: area_dashboard_url(composition)}))
+        const areas = compositions.map((composition) => ({name: composition.name, surface: typeof(composition.resources.ground) === 'undefined' ? 0 : composition.resources.ground.amount, url: area_dashboard_url(composition)}))
 
         // Calculate the total surface area to create a reasonable layout
         const totalArea = areas.reduce((acc, area) => acc + area.surface, 0);
@@ -53,8 +53,8 @@ async function fill_subzones(area) {
             .attr("class", "area-subareas-graph-area-square")
             .attr("x", (d, i) => (i % gridSize) * squareSize)
             .attr("y", (d, i) => Math.floor(i / gridSize) * squareSize)
-            .attr("width", d => Math.sqrt(d.surface / maxArea) * squareSize)
-            .attr("height", d => Math.sqrt(d.surface / maxArea) * squareSize)
+            .attr("width", d => maxArea == 0 ? 0 : Math.sqrt(d.surface / maxArea) * squareSize)
+            .attr("height", d => maxArea == 0 ? 0 : Math.sqrt(d.surface / maxArea) * squareSize)
             .attr("rx", 5)  // Rounded corners for squares
             .attr("ry", 5)
             .attr("fill", (d, i) => pickColor(i));
@@ -63,8 +63,8 @@ async function fill_subzones(area) {
         svg.selectAll("text")
             .data(areas)
             .enter().append("text")
-            .attr("x", (d, i) => (i % gridSize) * squareSize + Math.sqrt(d.surface / maxArea) * squareSize / 2)
-            .attr("y", (d, i) => Math.floor(i / gridSize) * squareSize + Math.sqrt(d.surface / maxArea) * squareSize / 2)
+            .attr("x", (d, i) => (gridSize == 0 ? 0 : (i % gridSize) * squareSize) + (maxArea == 0 ? 0 : Math.sqrt(d.surface / maxArea) * squareSize / 2))
+            .attr("y", (d, i) => (gridSize == 0 ? 0 : Math.floor(i / gridSize)) * squareSize + (maxArea == 0 ? 0 : Math.sqrt(d.surface / maxArea) * squareSize / 2))
             .text(d => d.name)
             .style("font-size", "10px")
             .style("fill", "white")
