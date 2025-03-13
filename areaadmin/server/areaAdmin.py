@@ -15,6 +15,7 @@ import sqlalchemy as DB
 from apiflask import APIFlask, HTTPTokenAuth
 from areaadmin.server.custom.flask import jsonify
 from areaadmin.server.custom.tools import *
+from sqlalchemy.orm import backref
 
 DEFAULT_DB_NAME = "area"
 DEFAULT_PORT = 5000
@@ -46,6 +47,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
     def user_is_logged():
         return 'user_id' in session
+
     def login_required(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
@@ -104,6 +106,27 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         name = DB.Column(DB.String(50), unique=True)
         processes = db.relationship('ProcessTag', back_populates='tag')
 
+    class Object(db.Model):
+        id = DB.Column(DB.Integer, primary_key=True)
+        description = DB.Column(DB.String)
+        descriptor = DB.Column(DB.JSON)
+        tree_paths = DB.Column(DB.String) # TODO
+        unit = db.Column(db.String, nullable=True)
+
+    class ProcessMetric(db.Model):
+        id = db.Column(db.Integer, primary_key=True)
+        process_id = db.Column(db.Integer, db.ForeignKey('process.id'), nullable=False)
+        object_id = db.Column(db.Integer, db.ForeignKey('object.id'), nullable=False)
+        io_type = db.Column(db.String(10), nullable=False)
+        amount = db.Column(db.Integer, nullable=False)
+
+        object = db.relationship('Object')
+
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+            if self.io_type not in ['input', 'output']:
+                raise ValueError("io_type must be 'input' or 'output'")
+
     class Process(db.Model):
         id = DB.Column(DB.Integer, primary_key=True)
         title = DB.Column(DB.String, default="")
@@ -111,7 +134,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         composition = db.relationship('Composition', backref='process', lazy=True)
         tags = db.relationship('ProcessTag', back_populates='process')
         tags_names = association_proxy('tags', 'tag.name')
-        metrics = DB.Column(DB.JSON)
+        metrics = db.relationship('ProcessMetric', backref='process', lazy=True)
         interactions = db.relationship('ProcessInteraction', back_populates='process', lazy=True)
         comments = db.relationship('ProcessComment', back_populates='process', lazy=True)
         usages = db.relationship('ProcessUsage', back_populates='process', cascade='delete')
@@ -154,7 +177,17 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 'description': self.description,
                 'selected': selected,
                 'amount': amount,
-                'metrics': self.metrics,
+                'metrics': {
+                    'input': [{
+                        'id': metric.object_id, 
+                        'amount': metric.amount,
+                        'unit': metric.object.unit
+                    } for metric in self.metrics if metric.io_type == 'input'],
+                    'output': [{
+                        'id': metric.object_id, 
+                        'amount': metric.amount,
+                        'unit': metric.object.unit
+                    } for metric in self.metrics if metric.io_type == 'output'],                },
                 'tags': [tag.tag.name for tag in self.tags],
                 'composition': [{
                     'id': comp.component_process_id,
@@ -731,34 +764,16 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         def render_dashboard(id):
             return render_template('dashboard/dashboard.html', area_id=id)
 
-        @app.route('/api/area/<int:id>/processes/metrics', methods=['GET'])
+        @app.route('/api/area/<int:trash>/processes/objects', methods=['GET'])
         @auth_required
-        def endpoint_metrics_get_list(id): 
-            return jsonify(Area.metrics_get_list())
-        
-        @app.route('/api/area/<int:id>/processes/metrics/ids', methods=['GET'])
-        @auth_required
-        def endpoint_metrics_get_ids_list(id): 
-            return jsonify(Area.metrics_get_ids_list())
-        
-        @staticmethod
-        def metrics_get_list():
-            return [
-                {'id': 'social', 'label': 'Social', 'unit': ''},
-                {'id': 'economic', 'label': 'Economic', 'unit': '$'},
-                {'id': 'envEmissions', 'label': 'GES emissions in kgCO2eq', 'unit': 'kgCO2eq'},
-                {'id': 'human', 'label': 'Human', 'unit': 'people'},
-                {'id': 'ground', 'label': 'Ground', 'unit': 'km2'},
-                {'id': 'ores', 'label': 'Ores', 'unit': 'tonnes'},
-                {'id': 'water', 'label': 'Water', 'unit': 'L'},
-                {'id': 'oil', 'label': 'Oil', 'unit': 'L'},
-                {'id': 'gas', 'label': 'Gas', 'unit': 'L'},
-                {'id': 'pm25', 'label': 'PM2.5', 'unit': 'µg/m3'}
-            ]
-
-        @staticmethod
-        def metrics_get_ids_list():
-            return [metric['id'] for metric in Area.metrics_get_list()]
+        def endpoint_metrics_get_list(trash):
+            return jsonify([{
+                "id": object.id,
+                "description": object.description,
+                "descriptor": object.descriptor,
+                "tree_paths": object.tree_paths,
+                "unit": object.unit
+            } for object in Object.query.all()])
 
         class Process():
             
@@ -1461,13 +1476,32 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 db.create_all()
                 return jsonify({'success': True})
             return jsonify({'success': False}), 400
-
+    
+    def insert_primitive_types_if_not_in():
+        if len(Object.query.all()) == 0:
+            for object in [
+                {'description': 'Social', 'unit': ''},
+                {'description': 'Economic', 'unit': '$'},
+                {'description': 'GES emissions in kgCO2eq', 'unit': 'kgCO2eq'},
+                {'description': 'Human', 'unit': 'people'},
+                {'description': 'Ground', 'unit': 'km2'},
+                {'description': 'Ores', 'unit': 'tonnes'},
+                {'description': 'Water', 'unit': 'L'},
+                {'description': 'Oil', 'unit': 'L'},
+                {'description': 'Gas', 'unit': 'L'},
+                {'description': 'PM2.5', 'unit': 'µg/m3'}
+            ]:
+                object = Object(description=object["description"], unit=object['unit'])
+                db.session.add(object)
+            db.session.commit()
 
     with app.app_context():
         db.create_all()
         Area.Main.ensurePresent(name,description)
         for guard in Guard.query.all():
             guard.daemon()
+        
+        insert_primitive_types_if_not_in()
 
     return app, db
 
