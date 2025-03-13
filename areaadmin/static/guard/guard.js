@@ -414,15 +414,15 @@ document.getElementById('refresh-btn').addEventListener('click', function() {
 });
 
 document.addEventListener('DOMContentLoaded', async () => {
-    const metrics = await Processes.fetchMetricsGetList();
+    const objects = await Processes.fetchObjects();
     const selectElement = document.getElementById('metric-select');
 
     selectElement.innerHTML = '';
 
-    metrics.forEach(metric => {
+    objects.forEach(object => {
         const option = document.createElement('option');
-        option.value = metric.id;
-        option.textContent = metric.id;
+        option.value = object.id;
+        option.textContent = object.id;
         selectElement.appendChild(option);
     });
     selectElement.value = 'envEmissions';

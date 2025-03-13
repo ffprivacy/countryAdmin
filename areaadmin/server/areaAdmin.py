@@ -766,7 +766,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
 
         @app.route('/api/area/<int:trash>/processes/objects', methods=['GET'])
         @auth_required
-        def endpoint_metrics_get_list(trash):
+        def endpoint_processes_objects(trash):
             return jsonify([{
                 "id": object.id,
                 "description": object.description,
@@ -1121,15 +1121,10 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             def dashboard():
                 return Area.render_dashboard(Area.Main.main_get().id)
             
-            @app.route('/api/processes/metrics', methods=['GET'])
+            @app.route('/api/processes/objects', methods=['GET'])
             @auth_required
-            def main_endpoint_metrics_get_list(): 
-                return Area.endpoint_metrics_get_list(Area.Main.main_get().id)
-            
-            @app.route('/api/processes/metrics/ids', methods=['GET'])
-            @auth_required
-            def main_endpoint_metrics_get_ids_list(): 
-                return Area.endpoint_metrics_get_ids_list(Area.Main.main_get().id)
+            def main_endpoint_processes_objects(): 
+                return Area.endpoint_processes_objects(Area.Main.main_get().id)
 
             class Process():
                 @app.route('/api/process/<int:id>/add_comment', methods=['POST'])

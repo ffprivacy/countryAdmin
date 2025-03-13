@@ -18,22 +18,22 @@ class Processes {
         return total + process.metrics[sens][metric];
     }
 
-    static area_metrics_list = [];
+    static processes_objects = [];
     
-    static async fetchMetricsGetList() {
-        return fetchAreaAPI('/processes/metrics').then(area_metrics_list => {
-            return (Processes.area_metrics_list = area_metrics_list.map(item => {
+    static async fetchObjects() {
+        return fetchAreaAPI('/processes/objects').then(processes_objects => {
+            return (Processes.processes_objects = processes_objects.map(item => {
                 const iconMapping = {
-                    social: 'human.png',
-                    economic: 'economic.png',
-                    envEmissions: 'carbon.png',
-                    human: 'human.png',
-                    ground: 'land.png',
-                    ores: 'ore2.png',
-                    water: 'water_drop.png',
-                    oil: 'oil.png',
-                    gas: 'gas.png',
-                    pm25: 'smoke.png'
+                    1: 'human.png',
+                    2: 'economic.png',
+                    3: 'carbon.png',
+                    4: 'human.png',
+                    5: 'land.png',
+                    6: 'ore2.png',
+                    7: 'water_drop.png',
+                    8: 'oil.png',
+                    9: 'gas.png',
+                    10: 'smoke.png'
                 };
                 return {
                     ...item,
@@ -44,7 +44,7 @@ class Processes {
     }
     
     static metricsGetList() {
-        return Processes.area_metrics_list;
+        return Processes.processes_objects;
     }
 
     static metricsGetIdsList() {

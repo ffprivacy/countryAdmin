@@ -262,7 +262,7 @@ function generateHomeProcessInput(tradeId,process_id='',process_amount=1,home_co
 }
 document.addEventListener('DOMContentLoaded', async function () {
 
-	await Processes.fetchMetricsGetList();
+	await Processes.fetchObjects();
 	tradesSetup();
 	setupExportDatabaseElement(document.getElementById('export-database-btn'));
 	setupImportDatabaseElement(document.getElementById('import-database-file'));
