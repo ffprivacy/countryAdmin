@@ -127,7 +127,7 @@ function processCreateElement(allProcesses,process) {
 
 	for(let sens of ['input','output']) {
 		const metricsElement = e.querySelector(`#process-view-metrics-${sens}`);
-		for(let metric of Processes.metricsGetIdsList()) {
+		for(let metric of Processes.processesGetObjectsIds()) {
 			const metricElement = document.createElement('li');
 			const metricValue = process.metrics[sens][metric] ? process.metrics[sens][metric] : 0;
 			if ( 0 < metricValue ) {
@@ -136,7 +136,7 @@ function processCreateElement(allProcesses,process) {
 			}
 		}
 		const cumulativeMetricsElement = e.querySelector(`#process-view-cumulative-metrics-${sens}`);
-		for(let metric of Processes.metricsGetIdsList()) {
+		for(let metric of Processes.processesGetObjectsIds()) {
 			const cumulativeMetricElement = document.createElement('li');
 			let metricValue = Processes.retrieveMetric(allProcesses, process, sens, metric);
 			if ( isNaN(metricValue) ) {
@@ -216,20 +216,20 @@ function addProcessMetricsForm(sens='input') {
     const container = document.createElement('div');
     container.className = 'row';
 
-    Processes.metricsGetList().forEach(metric => {
+    Processes.processesGetObjects().forEach(object => {
         const formGroup = document.createElement('div');
         formGroup.className = 'form-group p-2 col-md-6 card card group';
 
         const label = document.createElement('label');
-        label.htmlFor = `add-process-metric-${sens}-${metric.id}`;
-        label.textContent = metric.label;
+        label.htmlFor = `add-process-metric-${sens}-${object.id}`;
+        label.textContent = object.label;
         formGroup.appendChild(label);
 
         const input = document.createElement('input');
         input.type = 'number';
         input.className = 'form-control';
-        input.id = `add-process-metric-${sens}-${metric.id}`;
-        input.name = `add-process-metric-${sens}-${metric.id}`;
+        input.id = `add-process-metric-${sens}-${object.id}`;
+        input.name = `add-process-metric-${sens}-${object.id}`;
         input.value = 0;
         formGroup.appendChild(input);
 

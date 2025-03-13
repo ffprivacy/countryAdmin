@@ -142,10 +142,10 @@ class Guard {
     flowGraphShowModal(nodeData) {
         const area = nodeData.area;
         const modal = new bootstrap.Modal(document.getElementById('nodeDetailModal'), {});
-        const metricObj = Processes.metricsGetList().find((o) => o.id == this.selected_metric);
+        const metricObj = Processes.processesGetObjects().find((o) => o.id == this.selected_metric);
         const url = area_dashboard_url(area);
         document.getElementById('nodeDetailModalLabel').innerHTML = `
-            <a href="${url}" target="_blank">${nodeData.name}</a> - ${metricObj.label}
+            <a href="${url}" target="_blank">${nodeData.name}</a> - ${metricObj.description}
         `;
         document.getElementById('nodeDetailModalBody').innerHTML = `
             <p><strong>${metricObj.label}:</strong> ${nodeData.metricValue} ${metricObj.unit}</p>
@@ -156,7 +156,7 @@ class Guard {
     async flowGraphUpdate() {
 
         const title = document.getElementById("flowGraphTitle");
-        const metricObj = Processes.metricsGetList().find((o) => o.id == this.selected_metric);
+        const metricObj = Processes.processesGetObjects().find((o) => o.id == this.selected_metric);
         title.innerHTML = `
             <h3><img src="/static/${metricObj == undefined ? '' : metricObj.icon}" class="ms-2" style="max-width: 50px;" />${this.selected_metric} flow and amount per area</h3>
         `;

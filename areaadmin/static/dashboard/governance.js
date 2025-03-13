@@ -22,10 +22,9 @@ function governanceScenario(scenario) {
 function governanceShowScenario(data) {
     const govElement = document.getElementById('current-governance-driver');
     govElement.innerHTML = '';
-    const metricsList = Processes.metricsGetList();
-    for(const metric of metricsList) {
-        if ( data.metrics[metric.id] != undefined ) {
-            govElement.innerHTML += `<div>${metric.label} ${data.metrics[metric.id]} ${metric.unit}</div>`;
+    for(const object of Processes.processesGetObjects()) {
+        if ( data.metrics[object.id] != undefined ) {
+            govElement.innerHTML += `<div>${object.description} ${data.metrics[object.id]} ${object.unit}</div>`;
         }
     }
 }

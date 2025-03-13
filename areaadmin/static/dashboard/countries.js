@@ -29,7 +29,7 @@ document.getElementById('prefill-button').addEventListener('click', function() {
     const selectedArea = document.getElementById('area-prefill').value;
     const defaults = areaResourcesDefaults[selectedArea];
 
-    for(let metric of Processes.metricsGetIdsList()) {
+    for(let metric of Processes.processesGetObjectsIds()) {
         document.getElementById(`area-resources-${metric}-amount`).value = defaults[metric].amount;
         document.getElementById(`area-resources-${metric}-renew-rate`).value = defaults[metric].renew_rate;
     }

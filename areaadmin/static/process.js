@@ -43,12 +43,12 @@ class Processes {
         })
     }
     
-    static metricsGetList() {
+    static processesGetObjects() {
         return Processes.processes_objects;
     }
 
-    static metricsGetIdsList() {
-        return Processes.metricsGetList().map(obj => obj.id);
+    static processesGetObjectsIds() {
+        return Processes.processesGetObjects().map(obj => obj.id);
     }
 
     static countSubProcesses(allProcesses, process) {

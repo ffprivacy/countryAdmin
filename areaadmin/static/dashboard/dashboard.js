@@ -64,8 +64,8 @@ function dashboardRefresh() {
 
                 for (let sens of ['input', 'output']) {
                     const container = document.getElementById(`area-resource-total-${sens}`);
-                    Processes.metricsGetList().forEach(metric => {
-                        const id = `area-resource-total-${sens}-${metric.id}`;
+                    Processes.processesGetObjects().forEach(object => {
+                        const id = `area-resource-total-${sens}-${object.id}`;
                         let element = document.getElementById(id);
                         if (!element) {
                             element = document.createElement('div');
@@ -73,13 +73,13 @@ function dashboardRefresh() {
                             element.id = id;
                             container.appendChild(element);
                         }
-                        element.innerHTML = `<p>${metric.label}: <span>${areaMetrics[sens][metric.id]}</span> ${metric.unit}</p>`;
+                        element.innerHTML = `<p>${object.description}: <span>${areaMetrics[sens][object.id]}</span> ${object.unit}</p>`;
                     });
                 }
 
                 const containerDepletion = document.getElementById("area-resource-depletion");
-                Processes.metricsGetList().forEach(metric => {
-                    const id = `area-resources-depletion-time-${metric.id}-container`;
+                Processes.processesGetObjects().forEach(object => {
+                    const id = `area-resources-depletion-time-${object.id}-container`;
                     let element = document.getElementById(id);
                     if (!element) {
                         element = document.createElement('div');
@@ -87,7 +87,7 @@ function dashboardRefresh() {
                         element.id = id;
                         containerDepletion.appendChild(element);
                     }
-                    element.innerHTML = `<p>${metric.label}: <span>${resourcesDepletion[metric.id] == Infinity ? "∞" : resourcesDepletion[metric.id]}</span></p>`;
+                    element.innerHTML = `<p>${object.description}: <span>${resourcesDepletion[object.id] == Infinity ? "∞" : resourcesDepletion[object.id]}</span></p>`;
                 });
 
                 updateRadarChart(areaMetrics['output'].economic, areaMetrics['input'].envEmissions - areaMetrics['output'].envEmissions, areaMetrics['output'].social);
@@ -314,7 +314,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 		let metrics = {};
 		for(let sens of ['input','output']) {
 			metrics[sens] = {};
-			for(let metric of Processes.metricsGetIdsList()) {
+			for(let metric of Processes.processesGetObjectsIds()) {
 				metrics[sens][metric] = parseFloat(document.getElementById(`add-process-metric-${sens}-${metric}`).value || 0);
 			}
 		}
