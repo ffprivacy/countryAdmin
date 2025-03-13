@@ -471,24 +471,24 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             processes = Process.query.all()
             for usage in self.process_usages:
                 process = usage.process
-                for metric in Area.metrics_get_ids_list():
+                for object in Object.query.all():
                     for sens in ['input','output']:
-                        flow[sens][metric] += Processes.retrieve_metric(processes, process, sens, metric) * usage.amount
+                        flow[sens][object.id] += Processes.retrieve_metric(processes, process, sens, object.id) * usage.amount
             
             for trade in self.trades:
                 for home_trade_process in trade.home_processes:
-                    for metric in Area.metrics_get_ids_list():
+                    for object in Object.query.all():
                         if 'id' in home_trade_process and 'amount' in home_trade_process:
-                            flow['output'][metric] -= Processes.retrieve_metric(processes, Processes.get_by_id(processes, home_trade_process['id']), 'output', metric) * home_trade_process['amount']
+                            flow['output'][object.id] -= Processes.retrieve_metric(processes, Processes.get_by_id(processes, home_trade_process['id']), 'output', object.id) * home_trade_process['amount']
                 
                 uri, apiURI = trade.get_remote_host_and_api()
                 response = requests.get(f"{apiURI}/processes")
                 response.raise_for_status()
                 remote_processes = response.json()
                 for foreign_trade_process in trade.remote_processes:
-                    for metric in Area.metrics_get_ids_list():
+                    for object in Object.query.all():
                         if 'id' in foreign_trade_process and 'amount' in foreign_trade_process:
-                            flow['output'][metric] += Processes.retrieve_metric(remote_processes, Processes.get_by_id(remote_processes, foreign_trade_process['id']), 'output', metric) * foreign_trade_process['amount']
+                            flow['output'][object.id] += Processes.retrieve_metric(remote_processes, Processes.get_by_id(remote_processes, foreign_trade_process['id']), 'output', object.id) * foreign_trade_process['amount']
 
             for composition in self.compositions:
                 composition.child.fill_flow(flow)
@@ -496,19 +496,19 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         def metrics(self):
             flow = {'input': {}, 'output': {}}
             
-            for metric in Area.metrics_get_ids_list():
-                flow['input'][metric] = 0
-                flow['output'][metric] = 0
+            for object in Object.query.all():
+                flow['input'][object.id] = 0
+                flow['output'][object.id] = 0
             
             self.fill_flow(flow)
             
             resources_depletion = {}
-            for metric in Area.metrics_get_ids_list():
-                usage_balance = flow['output'][metric] - flow['input'][metric]
-                if self.resources.get(metric):
-                    resources_depletion[metric] = self.get_time_to_depletion(metric, usage_balance)
+            for object in Object.query.all():
+                usage_balance = flow['output'][object.id] - flow['input'][object.id]
+                if self.resources.get(object.id):
+                    resources_depletion[object.id] = self.get_time_to_depletion(object.id, usage_balance)
                 else:
-                    resources_depletion[metric] = float('inf') if usage_balance > 0 else 0
+                    resources_depletion[object.id] = float('inf') if usage_balance > 0 else 0
 
             return {
                 'flow': flow,
@@ -1425,18 +1425,25 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             ), None)
 
         @staticmethod
-        def retrieve_metric(all_processes, process, sens, metric):
+        def retrieve_metric(all_processes, process, sens, object_id):
             total = 0
             composition = []
             metricValue = 0
 
             if isinstance(process, Process):
                 composition = process.composition
-                metricValue = process.metrics.get(sens, {}).get(metric, 0)
+                metricValue = next(
+                    (metric.amount for metric in process.metrics if metric.object_id == object_id and metric.io_type == sens),
+                    0
+                )
             elif isinstance(process, dict):
                 composition = process.get('composition', [])
-                metricValue = process.get('metrics', {}).get(sens, {}).get(metric, 0)
-            
+                metricValue = next(
+                    (metric['amount'] for metric in process.get('metrics', []) 
+                    if metric.get('object_id') == object_id and metric.get('io_type') == sens), 
+                    0
+                )
+
             for compo in composition:
                 child_process_id = None
                 compo_amount = 0
@@ -1451,7 +1458,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 if child_process_id is not None:
                     compo_process = Processes.get_by_id(all_processes, child_process_id)
                     if compo_process:
-                        total += Processes.retrieve_metric(all_processes, compo_process, sens, metric) * compo_amount
+                        total += Processes.retrieve_metric(all_processes, compo_process, sens, object_id) * compo_amount
                     else:
                         print(f"Process with id {child_process_id} is not in the retrieved processes.")
 
