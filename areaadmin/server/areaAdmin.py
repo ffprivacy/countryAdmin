@@ -441,9 +441,10 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             rv['area_id'] = area.id
             return {'success': True}
 
-        def get_time_to_depletion(self, metric, usage_balance):
-            resource_amount = self.resources[metric]['amount']
-            renew_rate = self.resources[metric]['renew_rate']
+        def get_time_to_depletion(self, obj_id_str, usage_balance):
+            assert type(obj_id_str) == type("")
+            resource_amount = self.resources[obj_id_str]['amount']
+            renew_rate = self.resources[obj_id_str]['renew_rate']
             resource_renew_amount = resource_amount * renew_rate
             net_usage = resource_renew_amount + usage_balance
 
@@ -506,8 +507,9 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             resources_depletion = {}
             for object in Object.query.all():
                 usage_balance = flow['output'][object.id] - flow['input'][object.id]
-                if self.resources.get(object.id):
-                    resources_depletion[object.id] = self.get_time_to_depletion(object.id, usage_balance)
+                key = str(object.id)
+                if self.resources.get(key):
+                    resources_depletion[object.id] = self.get_time_to_depletion(key, usage_balance)
                 else:
                     resources_depletion[object.id] = float('inf') if usage_balance >= 0 else 0
 
