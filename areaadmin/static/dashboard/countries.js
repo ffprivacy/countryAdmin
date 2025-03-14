@@ -30,7 +30,7 @@ document.getElementById('prefill-button').addEventListener('click', function() {
     const defaults = areaResourcesDefaults[selectedArea];
 
     for(let object_id of Processes.processesGetObjectsIds()) {
-        document.getElementById(`area-resources-${metric}-amount`).value = defaults[object_id].amount;
-        document.getElementById(`area-resources-${metric}-renew-rate`).value = defaults[object_id].renew_rate;
+        document.getElementById(`area-resources-${object_id}-amount`).value = defaults[object_id] == null ? 0 : defaults[object_id].amount;
+        document.getElementById(`area-resources-${object_id}-renew-rate`).value = defaults[object_id] == null ? 0 : defaults[object_id].renew_rate;
     }
 });
