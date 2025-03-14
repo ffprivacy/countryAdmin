@@ -124,12 +124,11 @@ function processCreateElement(allProcesses,process) {
 			</div>
 		</div>
 	`;
-
 	for(let sens of ['input','output']) {
 		const metricsElement = e.querySelector(`#process-view-metrics-${sens}`);
 		for(let object of Processes.processesGetObjects()) {
 			const metricElement = document.createElement('li');
-			const metricValue = process.metrics[sens][object.id] ? process.metrics[sens][object.id] : 0;
+			const metricValue = process.metrics[sens][object.id-1] ? process.metrics[sens][object.id-1].amount : 0;
 			if ( 0 < metricValue ) {
 				metricElement.textContent = `${object.description}: ${metricValue}`;
 				metricsElement.appendChild(metricElement);

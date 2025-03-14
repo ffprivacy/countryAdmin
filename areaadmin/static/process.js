@@ -15,7 +15,7 @@ class Processes {
                 console.warn(`process with id ${compo.id} is not in the retrieved processes.`);
             }
         }
-        return total + (process.metrics[sens][object.id] === undefined ? 0 : process.metrics[sens][object.id]["amount"]);
+        return total + (process.metrics[sens][object.id-1] === undefined ? 0 : process.metrics[sens][object.id-1]["amount"]);
     }
 
     static processes_objects = [];
