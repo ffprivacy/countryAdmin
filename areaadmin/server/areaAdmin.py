@@ -1251,12 +1251,14 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         db.session.query(ProcessUsage).delete()
         db.session.query(ProcessComment).delete()
         db.session.query(ProcessInteraction).delete()
+        db.session.query(Object).delete()
         db.session.query(Trade).delete()
         db.session.query(Guard).delete()
         db.session.query(GuardAlert).delete()
         db.session.query(GuardAreaWatch).delete()
         db.session.commit()
         Area.set_area_data({})
+        insert_primitive_types_if_not_in()
         return redirect(url_for('logout'))
 
     class GuardAlert(db.Model):
