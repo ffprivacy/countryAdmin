@@ -509,7 +509,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 if self.resources.get(object.id):
                     resources_depletion[object.id] = self.get_time_to_depletion(object.id, usage_balance)
                 else:
-                    resources_depletion[object.id] = float('inf') if usage_balance > 0 else 0
+                    resources_depletion[object.id] = float('inf') if usage_balance >= 0 else 0
 
             return {
                 'flow': flow,
