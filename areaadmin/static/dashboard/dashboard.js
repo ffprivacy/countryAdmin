@@ -314,8 +314,8 @@ document.addEventListener('DOMContentLoaded', async function () {
 		let metrics = {};
 		for(let sens of ['input','output']) {
 			metrics[sens] = {};
-			for(let metric of Processes.processesGetObjectsIds()) {
-				metrics[sens][metric] = parseFloat(document.getElementById(`add-process-metric-${sens}-${metric}`).value || 0);
+			for(let object_id of Processes.processesGetObjectsIds()) {
+				metrics[sens][object_id] = parseFloat(document.getElementById(`add-process-metric-${sens}-${object_id}`).value || 0);
 			}
 		}
 		const processForm = document.getElementById('add-process-form');

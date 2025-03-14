@@ -222,7 +222,7 @@ function addProcessMetricsForm(sens='input') {
 
         const label = document.createElement('label');
         label.htmlFor = `add-process-metric-${sens}-${object.id}`;
-        label.textContent = object.label;
+        label.textContent = object.description;
         formGroup.appendChild(label);
 
         const input = document.createElement('input');
