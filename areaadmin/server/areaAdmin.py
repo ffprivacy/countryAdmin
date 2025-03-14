@@ -449,10 +449,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             net_usage = resource_renew_amount + usage_balance
 
             if net_usage >= 0:
-                if net_usage == 0 and resource_amount == 0:
-                    return 0
-                else:
-                    return float('inf')
+                return float('inf')
             else:
                 return abs(resource_amount / net_usage) 
 
