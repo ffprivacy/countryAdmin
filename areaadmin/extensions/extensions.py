@@ -11,7 +11,7 @@ def process_import(process):
     if response.status_code == 200:
         print("Successfully imported:", process['title'])
     else:
-        print("Failed to import:", process['title'], response.text)
+        print("Failed to import:", response.status_code, process['title'], response.text)
 
 def list_modules():
     available_modules = {

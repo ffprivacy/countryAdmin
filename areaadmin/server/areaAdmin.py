@@ -1514,7 +1514,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
     
     def insert_primitive_types_if_not_in():
         if len(Object.query.all()) == 0:
-            for object in [
+            objects = [
                 {'description': 'Social', 'unit': ''},
                 {'description': 'Economic', 'unit': '$'},
                 {'description': 'GES emissions in kgCO2eq', 'unit': 'kgCO2eq'},
@@ -1525,7 +1525,9 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 {'description': 'Oil', 'unit': 'L'},
                 {'description': 'Gas', 'unit': 'L'},
                 {'description': 'PM2.5', 'unit': 'µg/m3'}
-            ]:
+            ]
+            for object_i in range(len(objects)):
+                object = objects[object_i]
                 object = Object(description=object["description"], unit=object['unit'])
                 db.session.add(object)
             db.session.commit()

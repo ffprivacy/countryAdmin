@@ -54,6 +54,7 @@ def fetch_tutorials(url):
 
     return tutorials
 
+AREA_ADMIN_OBJECT_ECONOMIC = 2
 
 def extension_get_processes(*args):
 
@@ -74,7 +75,7 @@ def extension_get_processes(*args):
                 'description': tutorial['description'] + "<a href=\"" + tutorial['url'] + "\" target=\"_blank\">link</a>",
                 'metrics': {
                     'input': {
-                        'economic': tutorial['cost']
+                        AREA_ADMIN_OBJECT_ECONOMIC: tutorial['cost']
                     },
                     'output': {}
                 },
