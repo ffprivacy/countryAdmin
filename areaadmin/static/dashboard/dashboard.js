@@ -318,8 +318,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 				"unit": unit
 			})
         }).then(data => {
-			console.log('Object submitted successfully:', data);
-			dashboardRefresh();
+            console.log('Object submitted successfully:', data);
         }).catch(error => {
             console.error('Error submitting data:', error);
         });
