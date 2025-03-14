@@ -210,6 +210,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             elif request.method == 'DELETE':
                 Composition.query.filter_by(composed_process_id=id).delete()
                 Composition.query.filter_by(component_process_id=id).delete()
+                ProcessMetric.query.filter_by(process_id=id).delete()
                 ProcessInteraction.query.filter_by(process_id=id).delete()
                 ProcessComment.query.filter_by(process_id=id).delete()
                 ProcessUsage.query.filter_by(process_id=id).delete()
@@ -1222,6 +1223,7 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
         db.session.query(Composition).delete()
         db.session.query(Area).delete()
         db.session.query(AreaComposition).delete()
+        db.session.query(ProcessMetric).delete()
         db.session.query(Process).delete()
         db.session.query(ProcessTag).delete()
         db.session.query(ProcessUsage).delete()
