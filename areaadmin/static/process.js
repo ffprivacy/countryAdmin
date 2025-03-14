@@ -4,18 +4,18 @@ class Processes {
         return processes.find(process => process.id === id);
     }
 
-    static retrieveMetric(allProcesses, process, sens, metric) {
+    static retrieveMetric(allProcesses, process, sens, object) {
         let total = 0;
         for (let compo of process.composition) {
             let compoProcess = Processes.getById(allProcesses, compo.id);
             if (compoProcess) {
-                const metric2 = Processes.retrieveMetric(allProcesses, compoProcess, sens, metric);
+                const metric2 = Processes.retrieveMetric(allProcesses, compoProcess, sens, object);
                 total += metric2 * compo.amount;
             } else {
                 console.warn(`process with id ${compo.id} is not in the retrieved processes.`);
             }
         }
-        return total + process.metrics[sens][metric];
+        return total + (process.metrics[sens][object.id] === undefined ? 0 : process.metrics[sens][object.id]["amount"]);
     }
 
     static processes_objects = [];

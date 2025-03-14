@@ -127,23 +127,23 @@ function processCreateElement(allProcesses,process) {
 
 	for(let sens of ['input','output']) {
 		const metricsElement = e.querySelector(`#process-view-metrics-${sens}`);
-		for(let metric of Processes.processesGetObjectsIds()) {
+		for(let object of Processes.processesGetObjects()) {
 			const metricElement = document.createElement('li');
-			const metricValue = process.metrics[sens][metric] ? process.metrics[sens][metric] : 0;
+			const metricValue = process.metrics[sens][object.id] ? process.metrics[sens][object.id] : 0;
 			if ( 0 < metricValue ) {
-				metricElement.textContent = `${metric}: ${metricValue}`;
+				metricElement.textContent = `${object.description}: ${metricValue}`;
 				metricsElement.appendChild(metricElement);
 			}
 		}
 		const cumulativeMetricsElement = e.querySelector(`#process-view-cumulative-metrics-${sens}`);
-		for(let metric of Processes.processesGetObjectsIds()) {
+		for(let object of Processes.processesGetObjects()) {
 			const cumulativeMetricElement = document.createElement('li');
-			let metricValue = Processes.retrieveMetric(allProcesses, process, sens, metric);
+			let metricValue = Processes.retrieveMetric(allProcesses, process, sens, object);
 			if ( isNaN(metricValue) ) {
 				metricValue = 0;
 			}
 			if ( 0 < metricValue ) {
-				cumulativeMetricElement.textContent = `${metric}: ${metricValue}`;
+				cumulativeMetricElement.textContent = `${object.description}: ${metricValue}`;
 				cumulativeMetricsElement.appendChild(cumulativeMetricElement);
 			}
 		}
