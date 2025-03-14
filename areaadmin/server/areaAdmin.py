@@ -924,10 +924,20 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                     description = process_data.get('description', '')
                     tags = process_data.get('tags', [])
 
-                    new_process = Process(id=id, title=title, description=description, metrics={
+                    new_process = Process(id=id, title=title, description=description)
+                    db.session.add(new_process)
+                    db.session.commit()
+                    id = new_process.id
+
+                    metrics={
                         "input": input_metrics,
                         "output": output_metrics
-                    })
+                    }
+                    for metrics in [{"sens": "input", "data": input_metrics}, {"sens": "output", "data": output_metrics}]:
+                        for object_id, amount in metrics["data"].items():
+                            object_id = int(object_id)
+                            process_metric = ProcessMetric(process_id=id, object_id=object_id, io_type=metrics.get("sens"), amount=amount)
+                            db.session.add(process_metric)
 
                     for tag_name in tags:
                         tag_name = tag_name.strip()
@@ -938,7 +948,6 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                                 db.session.add(tag)
                             new_process.tags.append(tag)
                     
-                    db.session.add(new_process)
                     db.session.commit()
 
                     if process_data.get('amount') is not None:
