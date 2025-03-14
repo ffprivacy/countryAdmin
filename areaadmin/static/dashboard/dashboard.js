@@ -307,6 +307,23 @@ document.addEventListener('DOMContentLoaded', async function () {
 	dashboardRefresh();
 
 	attachSelectedEvent();
+	document.getElementById('add-process-object-btn').addEventListener("click", function (event) {
+		event.preventDefault();
+		description = document.getElementById("add-process-object-description").value;
+		unit = document.getElementById("add-process-object-unit").value;
+		fetchAreaAPI(`/object`, {
+            method: 'POST',
+            body: JSON.stringify({
+				"description": description,
+				"unit": unit
+			})
+        }).then(data => {
+			console.log('Object submitted successfully:', data);
+			dashboardRefresh();
+        }).catch(error => {
+            console.error('Error submitting data:', error);
+        });
+	});
 
 	document.getElementById('add-process-btn').addEventListener('click', function(event) {
 		event.preventDefault();

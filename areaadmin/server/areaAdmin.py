@@ -777,6 +777,24 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
                 "tree_paths": object.tree_paths,
                 "unit": object.unit
             } for object in Object.query.all()])
+        
+        @app.route('/api/area/<int:trash>/object', methods=['POST'])
+        @auth_required
+        def endpoint_object(trash):
+            data = request.json
+            object = Object(
+                description=data.get("description"),descriptor=data.get("descriptor"),
+                unit=data.get("unit"), tree_paths=data.get("tree_paths")
+            )
+            db.session.add(object)
+            db.session.commit()
+            return jsonify({
+                'id': object.id,
+                'description': object.description,
+                'descriptor': object.descriptor,
+                'tree_paths': object.tree_paths,
+                'unit': object.unit
+            })
 
         class Process():
             
@@ -1137,6 +1155,11 @@ def create_app(db_name=DEFAULT_DB_NAME,name=DEFAULT_COUNTRY_NAME,description=DEF
             @auth_required
             def main_endpoint_processes_objects(): 
                 return Area.endpoint_processes_objects(Area.Main.main_get().id)
+        
+            @app.route('/api/object', methods=['POST'])
+            @auth_required
+            def main_endpoint_object():
+                return Area.endpoint_object(Area.Main.main_get().id)
 
             class Process():
                 @app.route('/api/process/<int:id>/add_comment', methods=['POST'])
