@@ -318,6 +318,8 @@ document.addEventListener('DOMContentLoaded', async function () {
 				"unit": unit
 			})
         }).then(data => {
+			document.getElementById("add-process-object-result").innerText = JSON.stringify(data);
+			dashboardRefresh();
             console.log('Object submitted successfully:', data);
         }).catch(error => {
             console.error('Error submitting data:', error);
