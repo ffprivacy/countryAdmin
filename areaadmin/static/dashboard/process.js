@@ -128,7 +128,7 @@ function processCreateElement(allProcesses,process) {
 		const metricsElement = e.querySelector(`#process-view-metrics-${sens}`);
 		for(let object of Processes.processesGetObjects()) {
 			const metricElement = document.createElement('li');
-			const metricValue = process.metrics[sens][object.id-1] ? process.metrics[sens][object.id-1].amount : 0;
+			const metricValue = process.metrics[sens]?.find(item => item.id === object.id)?.amount || 0;
 			if ( 0 < metricValue ) {
 				metricElement.textContent = `${object.description}: ${metricValue}`;
 				metricsElement.appendChild(metricElement);
